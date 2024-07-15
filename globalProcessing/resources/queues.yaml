@@ -1,0 +1,28 @@
+cypress:
+    queueName: cypress_task_queue
+    exchangeName: global_processing_exchange
+    durable: true
+    exclusive: false
+    autoDelete: false
+    routingKey: cypress.processing
+robotic_arm:
+    queueName: robotic_arm_task_queue
+    exchangeName: global_processing_exchange
+    durable: true
+    exclusive: false
+    autoDelete: false
+    routingKey: roboticarm.processing
+3d_printer:
+    queueName: 3d_printer_task_queue
+    exchangeName: global_processing_exchange
+    durable: true
+    exclusive: false
+    autoDelete: false
+    routingKey: printer.processing
+electrical_grid:
+    queueName: electrical_grid_task_queue
+    exchangeName: global_processing_exchange
+    durable: true
+    exclusive: false
+    autoDelete: false
+    routingKey: grid.processing
