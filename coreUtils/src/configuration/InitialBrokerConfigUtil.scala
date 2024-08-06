@@ -7,10 +7,11 @@ package configuration
 import cats.effect.IO
 import cats.syntax.traverse.toTraverseOps
 import com.rabbitmq.client.Channel
-import configuration.ExternalConfigurationUtil.environmentVariableMap
+import configuration.ExternalResources.stringFromFilepath
 import messaging.MessagingUtil.bindedQueueWithExchange
 import messaging.MessagingUtil.channelWithExchange
 import messaging.MessagingUtil.channelWithQueue
+import org.virtuslab.yaml.*
 import types.ExchangeType
 import types.OpaqueTypes.ExchangeName
 import types.OpaqueTypes.QueueName
@@ -18,40 +19,58 @@ import types.OpaqueTypes.RoutingKey
 import types.YamlExchange
 import types.YamlQueue
 
-/** The BrokerConfigurationUtil object provides utility functions to configure
+/** The InitialBrokerConfigUtil object provides utility functions to configure
   * the message broker from environment variables and predefined elements of the
-  * system. This object is intended as a startup configuration of the broker but
-  * not continuous configuration. The functions are implemented using the IO
-  * monad from the Cats Effect library to abstract away side effects.
+  * system. This object is intended as a possible startup configuration for the
+  * broker but not continuous configuration.
   */
-object BrokerConfigurationUtil:
+object InitialBrokerConfigUtil:
 
-  /** The getBrokerEnvironmentVariables function reads the environment variables
-    * required to configure the message broker and returns them as a map.
+  /** The executeInitialBrokerConfiguration function configures the message
+    * broker with the predefined elements of the system.
+    *
+    * @param channel
+    *   the channel to communicate with the message broker
     *
     * @return
-    *   an IO monad with the environment variables as a map
+    *   an IO monad with the result of the operation
     */
-  def getBrokerEnvironmentVariables: IO[Map[String, String]] =
+  def executeInitialBrokerConfiguration(channel: Channel): IO[Unit] =
     for
-      envMap <- environmentVariableMap
-      rabbitmqHost <- IO.fromOption(envMap.get("RABBITMQ_HOST"))(
-        Exception("RABBITMQ_HOST not found in environment variables")
+      exchanges <- getBrokerExchangeConfiguration
+      queues <- getBrokerQueueConfiguration
+      _ <- configureBrokerExchanges(channel, exchanges)
+      _ <- configureBrokerQueues(channel, queues)
+    yield ()
+
+  /** The getBrokerExchangeConfiguration function reads the exchange
+    * configurations from a yaml file.
+    *
+    * @return
+    *   an IO monad with the exchange configurations
+    */
+  def getBrokerExchangeConfiguration: IO[Map[String, YamlExchange]] =
+    stringFromFilepath(
+      os.pwd / "globalProcessing" / "resources" / "exchanges.yaml"
+    ).use(text =>
+      IO.fromOption(text.as[Map[String, YamlExchange]].toOption)(
+        Exception("Exchange file not found")
       )
-      rabbitmqPort <- IO.fromOption(envMap.get("RABBITMQ_PORT"))(
-        Exception("RABBITMQ_PORT not found in environment variables")
+    )
+
+  /** The getBrokerQueueConfiguration function reads the queue configurations
+    * from a yaml file.
+    *
+    * @return
+    *   an IO monad with the queue configurations
+    */
+  def getBrokerQueueConfiguration: IO[Map[String, YamlQueue]] =
+    stringFromFilepath(
+      os.pwd / "globalProcessing" / "resources" / "queues.yaml"
+    ).use(text =>
+      IO.fromOption(text.as[Map[String, YamlQueue]].toOption)(
+        Exception("Queues file not found")
       )
-      rabbitmqUser <- IO.fromOption(envMap.get("RABBITMQ_USER"))(
-        Exception("RABBITMQ_USER not found in environment variables")
-      )
-      rabbitmqPass <- IO.fromOption(envMap.get("RABBITMQ_PASS"))(
-        Exception("RABBITMQ_PASS not found in environment variables")
-      )
-    yield Map(
-      "host" -> rabbitmqHost,
-      "port" -> rabbitmqPort,
-      "user" -> rabbitmqUser,
-      "pass" -> rabbitmqPass
     )
 
   /** The configureBrokerExchanges function configures the exchanges in the
@@ -90,15 +109,14 @@ object BrokerConfigurationUtil:
       channel: Channel,
       yamlExchange: YamlExchange
   ): IO[Unit] =
-    val exchangeName = ExchangeName(yamlExchange.exchangeName)
-    val exchangeType = yamlExchange.exchangeType match
-      case "direct"  => ExchangeType.Direct
-      case "fanout"  => ExchangeType.Fanout
-      case "topic"   => ExchangeType.Topic
-      case "headers" => ExchangeType.Headers
-      case _         => ExchangeType.Direct
-
-    for _ <- channelWithExchange(
+    for
+      exchangeName <- IO.pure(ExchangeName(yamlExchange.exchangeName))
+      exchangeType <- IO.fromOption(
+        ExchangeType.values.find(_.strValue == yamlExchange.exchangeType)
+      )(
+        Exception("Exchange type not found")
+      )
+      _ <- channelWithExchange(
         channel,
         exchangeName,
         exchangeType,

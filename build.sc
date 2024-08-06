@@ -42,6 +42,14 @@ object globalProcessing extends ProjectConfigs {
   )
 }
 
+object testingGround extends ProjectConfigs {
+  def ivyDeps = Agg(
+    // fs2, cats-effect
+    ivy"org.typelevel::cats-effect::3.6-0142603",
+    ivy"co.fs2::fs2-core::3.1.6"
+  )
+}
+
 // object processingCluster extends ProjectConfigs {
 //   def ivyDeps = Agg(
 //     ivy"org.scalameta::munit::1.0.0-M11",

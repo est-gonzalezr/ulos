@@ -15,6 +15,7 @@ import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.Consumer
 import types.ExchangeType
 import types.OpaqueTypes.*
+import cats.effect.kernel.Resource
 
 /** The MessagingUtil object provides utility functions to interact with the
   * RabbitMQ broker.
@@ -32,21 +33,23 @@ object MessagingUtil:
     *   the RabbitMQ password
     *
     * @return
-    *   an IO monad with the RabbitMQ connection
+    *   a Resource monad with the RabbitMQ connection
     */
   def brokerConnection(
       host: String,
       port: Int,
       username: String,
       password: String
-  ): IO[Connection] =
+  ): Resource[IO, Connection] =
     val factory = new ConnectionFactory()
     factory.setHost(host)
     factory.setPort(port)
     factory.setUsername(username)
     factory.setPassword(password)
 
-    IO.delay(factory.newConnection())
+    Resource.make(IO.delay(factory.newConnection()))(connection =>
+      IO.delay(connection.close())
+    )
 
   /** The channelFromConnection function creates a channel to the defined
     * RabbitMQ connection.
@@ -55,12 +58,14 @@ object MessagingUtil:
     *   the RabbitMQ connection
     *
     * @return
-    *   an IO monad with the RabbitMQ channel
+    *   a Resource monad with the RabbitMQ channel
     */
   def channelFromConnection(
       connection: Connection
-  ): IO[Channel] =
-    IO.delay(connection.createChannel())
+  ): Resource[IO, Channel] =
+    Resource.make(IO.delay(connection.createChannel()))(channel =>
+      IO.delay(channel.close())
+    )
 
   /** The channelWithExchange function creates an exchange on the defined
     * RabbitMQ channel.
@@ -85,7 +90,7 @@ object MessagingUtil:
       channel: Channel,
       exchangeName: ExchangeName,
       exchangeType: ExchangeType,
-      durable: Boolean = false,
+      durable: Boolean = true,
       autoDelete: Boolean = false,
       internal: Boolean = false
   ): IO[Exchange.DeclareOk] =
@@ -97,6 +102,31 @@ object MessagingUtil:
         autoDelete,
         internal,
         null
+      )
+    )
+
+  /** The channelWithoutExchange function deletes an exchange on the defined
+    * RabbitMQ channel.
+    *
+    * @param channel
+    *   the RabbitMQ channel
+    * @param exchangeName
+    *   the name of the exchange
+    * @param ifUnused
+    *   the ifUnused flag
+    *
+    * @return
+    *   an IO monad with the operation result of deleting the exchange
+    */
+  def channelWithoutExchange(
+      channel: Channel,
+      exchangeName: ExchangeName,
+      ifUnused: Boolean = true
+  ): IO[Exchange.DeleteOk] =
+    IO.delay(
+      channel.exchangeDelete(
+        exchangeName.value,
+        ifUnused
       )
     )
 
@@ -120,7 +150,7 @@ object MessagingUtil:
   def channelWithQueue(
       channel: Channel,
       queueName: QueueName,
-      durable: Boolean = false,
+      durable: Boolean = true,
       exclusive: Boolean = false,
       autoDelete: Boolean = false
   ): IO[Queue.DeclareOk] =
@@ -131,6 +161,35 @@ object MessagingUtil:
         exclusive,
         autoDelete,
         null
+      )
+    )
+
+  /** The channelWithoutQueue function deletes a queue on the defined RabbitMQ
+    * channel.
+    *
+    * @param channel
+    *   the RabbitMQ channel
+    * @param queueName
+    *   the name of the queue
+    * @param ifUsed
+    *   the ifUsed flag
+    * @param ifEmpty
+    *   the ifEmpty flag
+    *
+    * @return
+    *   an IO monad with the operation result of deleting the queue
+    */
+  def channelWithoutQueue(
+      channel: Channel,
+      queueName: QueueName,
+      ifUsed: Boolean = true,
+      ifEmpty: Boolean = true
+  ): IO[Queue.DeleteOk] =
+    IO.delay(
+      channel.queueDelete(
+        queueName.value,
+        ifUsed,
+        ifEmpty
       )
     )
 

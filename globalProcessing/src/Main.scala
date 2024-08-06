@@ -1,105 +1,159 @@
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import cats.effect.std.Console
 import messaging.MessagingUtil.brokerConnection
 import messaging.MessagingUtil.channelFromConnection
 import org.virtuslab.yaml.*
 import types.YamlExchange
 import types.YamlQueue
-import configuration.BrokerConfigurationUtil.getBrokerEnvironmentVariables
 import com.rabbitmq.client.Connection
-import configuration.ExternalConfigurationUtil.stringFromFilepath
-import configuration.BrokerConfigurationUtil.configureBrokerExchanges
-import configuration.BrokerConfigurationUtil.configureBrokerQueues
+import configuration.ExternalResources.stringFromFilepath
+import configuration.InitialBrokerConfigUtil.configureBrokerExchanges
+import configuration.InitialBrokerConfigUtil.configureBrokerQueues
+import cats.syntax.traverse.toTraverseOps
+import types.BrokerExchange
+import types.BrokerQueue
+import cats.effect.kernel.Ref
+import configuration.MiscConfigUtil.getBrokerEnvironmentVariables
+import com.rabbitmq.client.Channel
+import scala.util.Try
+import configuration.InitialBrokerConfigUtil.executeInitialBrokerConfiguration
+import types.ExchangeType
+import com.rabbitmq.client.AMQP.Exchange
+import types.OpaqueTypes.ExchangeName
+import types.ExchangeType
+import types.OpaqueTypes.QueueName
+import types.OpaqueTypes.RoutingKey
+import messaging.MessagingUtil.channelWithExchange
+import messaging.MessagingUtil.channelWithQueue
+import messaging.MessagingUtil.bindedQueueWithExchange
+import messaging.MessagingUtil.channelWithoutExchange
+import messaging.MessagingUtil.channelWithoutQueue
 
 @main
 def main(args: String*): Unit =
   println("Hello world!")
-  program.unsafeRunSync()
-  ()
+  val program =
+    for
+      envVars <- getBrokerEnvironmentVariables
+      host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
+      port <- IO.fromOption(envVars.get("port"))(Exception("port not found"))
+      user <- IO.fromOption(envVars.get("user"))(Exception("user not found"))
+      pass <- IO.fromOption(envVars.get("pass"))(Exception("pass not found"))
+      portInt <- IO.fromOption(port.toIntOption)(Exception("port not an int"))
+      _ <- brokerConnection(host, portInt, user, pass)
+        .use(connection =>
+          channelFromConnection(connection).use(channel =>
+            mainProgramLoop(channel)
+          )
+        )
+    yield ()
 
-def program: IO[Unit] =
+  program
+    .handleErrorWith(e => Console[IO].println(e.printStackTrace()))
+    .foreverM
+    .unsafeRunSync()
+
+def mainProgramLoop(
+    channel: Channel
+): IO[Nothing] =
+  (
+    for
+      _ <- Console[IO].println(
+        "Enter the number of the option you want to execute:"
+      )
+      _ <- options.traverse((number, description) =>
+        Console[IO].println(s"$number: $description")
+      )
+      input <- Console[IO].readLine
+      _ <- executeInput(channel, input.toInt)
+    yield ()
+  ).foreverM
+
+def executeInput(
+    channel: Channel,
+    input: Int
+): IO[Unit] =
+  input match
+    case 1 =>
+      executeInitialBrokerConfiguration(channel)
+    case 2 =>
+      for
+        exchangeArgs <- newExchangeInput
+        exchange <- IO.fromTry(newExchange(exchangeArgs))
+        _ <- channelWithExchange(
+          channel,
+          exchange.exchangeName,
+          exchange.exchangeType,
+          exchange.durable,
+          exchange.autoDelete,
+          exchange.internal
+        )
+      yield ()
+    case 3 =>
+      for
+        queueArgs <- newQueueInput
+        queue <- IO.fromTry(newQueue(queueArgs))
+        _ <- channelWithQueue(
+          channel,
+          queue.queueName,
+          queue.durable,
+          queue.exclusive,
+          queue.autoDelete
+        )
+        _ <- bindedQueueWithExchange(
+          channel,
+          queue.queueName,
+          queue.exchangeName,
+          queue.routingKey
+        )
+      yield ()
+    case 4 =>
+      for
+        exchange <- exchangeDeleteInput
+        exchangeName <- IO.fromTry(Try(ExchangeName(exchange)))
+        _ <- channelWithoutExchange(channel, exchangeName)
+      yield ()
+    case 5 =>
+      for
+        queue <- queueDeleteInput
+        queueName <- IO.fromTry(Try(QueueName(queue)))
+        _ <- channelWithoutQueue(channel, queueName)
+      yield ()
+
+    case _ => IO.unit
+
+def newExchange(args: Map[String, String]): Try[BrokerExchange] =
   for
-    connection <- createConnection
-    channel <- channelFromConnection(connection)
-
-    exchangesFile <- stringFromFilepath(
-      os.pwd / "globalProcessing" / "resources" / "exchanges.yaml"
+    exchangeName <- Try(ExchangeName(args.get("exchangeName").get))
+    exchangeType <- Try(
+      ExchangeType.values.find(_.strValue == args.get("exchangeType").get).get
     )
-    exchanges <- IO.fromOption(
-      exchangesFile.as[Map[String, YamlExchange]].toOption
-    )(Exception("exchanges not found"))
+    durable <- Try(args.get("durable").get.toBoolean)
+    autoDelete <- Try(args.get("autoDelete").get.toBoolean)
+    internal <- Try(args.get("internal").get.toBoolean)
+  yield BrokerExchange(
+    exchangeName,
+    exchangeType,
+    durable,
+    autoDelete,
+    internal,
+    Set.empty
+  )
 
-    queuesFile <- stringFromFilepath(
-      os.pwd / "globalProcessing" / "resources" / "queues.yaml"
-    )
-    queues <- IO.fromOption(
-      queuesFile.as[Map[String, YamlQueue]].toOption
-    )(Exception("queues not found"))
-
-    _ <- configureBrokerExchanges(channel, exchanges)
-    _ <- configureBrokerQueues(channel, queues)
-  yield ()
-  // IO.delay {
-  //   val connection = createConnection
-  //   val channel = connection.flatMap(channelFromConnection)
-  //   val yamlExchanges =
-  //     for
-  //       yaml <- stringFromFilepath(
-  //         os.pwd / "globalProcessing" / "resources" / "exchanges.yaml"
-  //       )
-  //       yamlExchanges <- IO.fromOption(
-  //         yaml.as[Map[String, YamlExchange]].toOption
-  //       )(Exception("exchanges not found"))
-  //     yield yamlExchanges
-
-  //   val yamlQueues =
-  //     for
-  //       yaml <- stringFromFilepath(
-  //         os.pwd / "globalProcessing" / "resources" / "queues.yaml"
-  //       )
-  //       yamlQueues <- IO.fromOption(
-  //         yaml.as[Map[String, YamlQueue]].toOption
-  //       )(Exception("queues not found"))
-  //     yield yamlQueues
-
-  //   val _ =
-  //     for
-  //       channel <- channel
-  //       exchanges <- yamlExchanges
-  //     yield configureBrokerExchanges(channel, exchanges)
-
-  //   val _ =
-  //     for
-  //       channel <- channel
-  //       queues <- yamlQueues
-  //     yield configureBrokerQueues(channel, queues)
-  // }
-
-def createConnection: IO[Connection] =
+def newQueue(args: Map[String, String]): Try[BrokerQueue] =
   for
-    env <- getBrokerEnvironmentVariables
-    host <- IO.fromOption(env.get("host"))(Exception("host not found"))
-    port <- IO.fromOption(env.get("port"))(Exception("port not found"))
-    user <- IO.fromOption(env.get("user"))(Exception("user not found"))
-    pass <- IO.fromOption(env.get("pass"))(Exception("pass not found"))
-    connection <- brokerConnection(
-      host,
-      port.toInt,
-      user,
-      pass
-    )
-  yield connection
-
-// println(os.pwd / "globalProcessing" / "resources" / "queues.yaml")
-// println(os.read(os.pwd / "globalProcessing" / "resources" / "queues.yaml"))
-// val queues =
-//   os.read(os.pwd / "globalProcessing" / "resources" / "queues.yaml")
-// val yaml = queues.as[Map[String, YamlQueue]]
-// println(yaml)
-
-// val exchanges =
-//   os.read(os.pwd / "globalProcessing" / "resources" / "exchanges.yaml")
-// val yamlExchanges = exchanges.as[Map[String, YamlExchange]]
-// println(yamlExchanges)
-
-// println(rabbitmqHost.unsafeRunSync())
+    queueName <- Try(QueueName(args.get("queueName").get))
+    exchangeName <- Try(ExchangeName(args.get("exchangeName").get))
+    durable <- Try(args.get("durable").get.toBoolean)
+    exclusive <- Try(args.get("exclusive").get.toBoolean)
+    autoDelete <- Try(args.get("autoDelete").get.toBoolean)
+    routingKey <- Try(RoutingKey(args.get("routingKey").get))
+  yield BrokerQueue(
+    queueName,
+    exchangeName,
+    durable,
+    exclusive,
+    autoDelete,
+    routingKey
+  )
