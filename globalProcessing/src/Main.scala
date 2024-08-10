@@ -1,3 +1,9 @@
+import ConsoleUtil.exchangeDeleteInput
+import ConsoleUtil.newExchangeInput
+import ConsoleUtil.newQueueInput
+import ConsoleUtil.options
+import ConsoleUtil.queueDeleteInput
+import InitialBrokerConfigUtil.executeInitialBrokerConfiguration
 import cats.effect.IO
 import cats.effect.std.Console
 import cats.effect.unsafe.implicits.global
@@ -5,7 +11,6 @@ import cats.syntax.traverse.toTraverseOps
 import com.rabbitmq.client.AMQP.Exchange
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
-import configuration.InitialBrokerConfigUtil.executeInitialBrokerConfiguration
 import configuration.MiscConfigUtil.getBrokerEnvironmentVariables
 import messaging.MessagingUtil.bindedQueueWithExchange
 import messaging.MessagingUtil.brokerConnection

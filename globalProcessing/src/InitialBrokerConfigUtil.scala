@@ -2,8 +2,6 @@
   *   Esteban Gonzalez Ruales
   */
 
-package configuration
-
 import cats.effect.IO
 import cats.syntax.traverse.toTraverseOps
 import com.rabbitmq.client.Channel

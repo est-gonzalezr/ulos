@@ -33,8 +33,21 @@ object coreUtils extends ProjectConfigs {
   )
 }
 
+object ftpUtils extends ProjectConfigs {
+  def ivyDeps = Agg(
+    ivy"commons-net:commons-net:3.10.0"
+  )
+}
+
 object globalProcessing extends ProjectConfigs {
-  def moduleDeps = Seq(coreUtils)
+  def moduleDeps = Seq(coreUtils, ftpUtils)
+}
+
+object processingCluster extends ProjectConfigs {
+  def moduleDeps = Seq(coreUtils, ftpUtils)
+  def ivyDeps = Agg(
+    ivy"commons-net:commons-net:3.10.0"
+  )
 }
 
 object testingGround extends ProjectConfigs {
@@ -42,12 +55,5 @@ object testingGround extends ProjectConfigs {
     // fs2, cats-effect
     ivy"org.typelevel::cats-effect::3.6-0142603",
     ivy"co.fs2::fs2-core::3.1.6"
-  )
-}
-
-object processingCluster extends ProjectConfigs {
-  def moduleDeps = Seq(coreUtils)
-  def ivyDeps = Agg(
-    ivy"commons-net:commons-net:3.10.0"
   )
 }

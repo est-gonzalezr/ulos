@@ -7,7 +7,24 @@ import cats.effect.kernel.Resource
 import org.apache.commons.net.ftp.FTP
 import org.apache.commons.net.ftp.FTPClient
 
+/** The FTPResources object provides resources to interact with an FTP server.
+  */
 object FTPResources:
+
+  /** The ftpConnection method provides a resource to connect to an FTP server.
+    *
+    * @param host
+    *   the host of the FTP server
+    * @param port
+    *   the port of the FTP server
+    * @param user
+    *   the user of the FTP server
+    * @param pass
+    *   the password of the FTP server
+    *
+    * @return
+    *   a Resource monad with an FTPClient
+    */
   def ftpConnection(
       host: String,
       port: Int,
@@ -27,6 +44,17 @@ object FTPResources:
     }
   )
 
+  /** The bytesFromServerFilepath method retrieves the bytes from a file in the
+    * server.
+    *
+    * @param client
+    *   the FTP client
+    * @param path
+    *   the path of the file in the server
+    *
+    * @return
+    *   an IO monad with the bytes of the file
+    */
   def bytesFromServerFilepath(
       client: FTPClient,
       path: String
@@ -37,6 +65,18 @@ object FTPResources:
       )
     )
 
+  /** The bytesToServerFilepath method stores the bytes in a file in the server.
+    *
+    * @param client
+    *   the FTP client
+    * @param path
+    *   the path of the file in the server
+    * @param bytes
+    *   the bytes to store in the file
+    *
+    * @return
+    *   an IO monad with a boolean indicating if the operation was successful
+    */
   def bytesToServerFilepath(
       client: FTPClient,
       path: String,
@@ -48,6 +88,16 @@ object FTPResources:
       )
     )
 
+  /** The deleteFromServerFilepath method deletes a file in the server.
+    *
+    * @param client
+    *   the FTP client
+    * @param path
+    *   the path of the file in the server
+    *
+    * @return
+    *   an IO monad with a boolean indicating if the operation was successful
+    */
   def deleteFromServerFilepath(
       client: FTPClient,
       path: String
@@ -62,6 +112,17 @@ object FTPResources:
 
     resource.use(IO.pure)
 
+  /** The inputStreamFromServerFilepath method provides a resource to retrieve
+    * an input stream from a file in the server.
+    *
+    * @param client
+    *   the FTP client
+    * @param path
+    *   the path of the file in the server
+    *
+    * @return
+    *   a Resource monad with an input stream
+    */
   private def inputStreamFromServerFilepath(
       client: FTPClient,
       path: String
@@ -75,6 +136,17 @@ object FTPResources:
       }
     )
 
+  /** The inputStreamToServerFilepath method provides a resource to store an
+    * input stream in a file in the server.
+    *
+    * @param client
+    *   the FTP client
+    * @param bytes
+    *   the bytes to store in the file
+    *
+    * @return
+    *   a Resource monad with an input stream
+    */
   private def inputStreamToServerFilepath(
       client: FTPClient,
       bytes: Array[Byte]
