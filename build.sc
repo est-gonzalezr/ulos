@@ -35,11 +35,6 @@ object coreUtils extends ProjectConfigs {
 
 object globalProcessing extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils)
-  def ivyDeps = Agg(
-    ivy"org.scalameta::munit::1.0.0-M11",
-    ivy"org.typelevel::cats-effect::3.6-0142603",
-    ivy"com.rabbitmq:amqp-client:5.21.0"
-  )
 }
 
 object testingGround extends ProjectConfigs {
@@ -50,12 +45,9 @@ object testingGround extends ProjectConfigs {
   )
 }
 
-// object processingCluster extends ProjectConfigs {
-//   def ivyDeps = Agg(
-//     ivy"org.scalameta::munit::1.0.0-M11",
-//     ivy"org.scala-lang::toolkit::0.4.0",
-//     ivy"org.typelevel::cats-effect::3.6-0142603",
-//     ivy"com.rabbitmq:amqp-client:5.21.0",
-//     ivy"commons-net:commons-net:3.10.0"
-//   )
-// }
+object processingCluster extends ProjectConfigs {
+  def moduleDeps = Seq(coreUtils)
+  def ivyDeps = Agg(
+    ivy"commons-net:commons-net:3.10.0"
+  )
+}

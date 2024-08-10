@@ -78,7 +78,7 @@ def queueDeleteInput: IO[String] =
     queueName <- Console[IO].readLine
   yield queueName
 
-/** The options variable contains a list of tuples with the options available to
+/** The options function contains a list of tuples with the options available to
   * the user.
   *
   * @return

@@ -306,7 +306,7 @@ object MessagingUtil:
     * @return
     *   an IO monad with the operation result of sending the message
     */
-  protected[messaging] def publishMessage(
+  def publishMessage(
       channel: Channel,
       exchangeName: ExchangeName,
       routingKey: RoutingKey,
@@ -337,7 +337,7 @@ object MessagingUtil:
     * @return
     *   an IO monad with the operation result of consuming the messages
     */
-  protected[messaging] def consumeMessages(
+  def consumeMessages(
       channel: Channel,
       queueName: QueueName,
       autoAck: Boolean = true,

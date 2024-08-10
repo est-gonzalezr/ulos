@@ -4,3 +4,4 @@
 out/
 *.py
 .DS_Store
+env/

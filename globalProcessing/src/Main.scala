@@ -1,39 +1,41 @@
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import cats.effect.std.Console
+import cats.effect.unsafe.implicits.global
+import cats.syntax.traverse.toTraverseOps
+import com.rabbitmq.client.AMQP.Exchange
+import com.rabbitmq.client.Channel
+import com.rabbitmq.client.Connection
+import configuration.InitialBrokerConfigUtil.executeInitialBrokerConfiguration
+import configuration.MiscConfigUtil.getBrokerEnvironmentVariables
+import messaging.MessagingUtil.bindedQueueWithExchange
 import messaging.MessagingUtil.brokerConnection
 import messaging.MessagingUtil.channelFromConnection
-import org.virtuslab.yaml.*
-import types.YamlExchange
-import types.YamlQueue
-import com.rabbitmq.client.Connection
-import configuration.ExternalResources.stringFromFilepath
-import configuration.InitialBrokerConfigUtil.configureBrokerExchanges
-import configuration.InitialBrokerConfigUtil.configureBrokerQueues
-import cats.syntax.traverse.toTraverseOps
-import types.BrokerExchange
-import types.BrokerQueue
-import cats.effect.kernel.Ref
-import configuration.MiscConfigUtil.getBrokerEnvironmentVariables
-import com.rabbitmq.client.Channel
-import scala.util.Try
-import configuration.InitialBrokerConfigUtil.executeInitialBrokerConfiguration
-import types.ExchangeType
-import com.rabbitmq.client.AMQP.Exchange
-import types.OpaqueTypes.ExchangeName
-import types.ExchangeType
-import types.OpaqueTypes.QueueName
-import types.OpaqueTypes.RoutingKey
 import messaging.MessagingUtil.channelWithExchange
 import messaging.MessagingUtil.channelWithQueue
-import messaging.MessagingUtil.bindedQueueWithExchange
 import messaging.MessagingUtil.channelWithoutExchange
 import messaging.MessagingUtil.channelWithoutQueue
+import types.BrokerExchange
+import types.BrokerQueue
+import types.ExchangeType
+import types.OpaqueTypes.ExchangeName
+import types.OpaqueTypes.QueueName
+import types.OpaqueTypes.RoutingKey
+
+import scala.util.Try
 
 @main
 def main(args: String*): Unit =
-  println("Hello world!")
-  val program =
+  connectionHandler.unsafeRunSync()
+
+/** The connectionHandler function is the entry point of the program. It is
+  * responsible for establishing a connection with the broker and handling any
+  * exceptions that may occur.
+  *
+  * @return
+  *   an IO monad that represents the connection handler.
+  */
+def connectionHandler: IO[Nothing] =
+  (
     for
       envVars <- getBrokerEnvironmentVariables
       host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
@@ -41,19 +43,36 @@ def main(args: String*): Unit =
       user <- IO.fromOption(envVars.get("user"))(Exception("user not found"))
       pass <- IO.fromOption(envVars.get("pass"))(Exception("pass not found"))
       portInt <- IO.fromOption(port.toIntOption)(Exception("port not an int"))
-      _ <- brokerConnection(host, portInt, user, pass)
-        .use(connection =>
-          channelFromConnection(connection).use(channel =>
-            mainProgramLoop(channel)
-          )
-        )
+      _ <- brokerConnection(host, portInt, user, pass).use(connection =>
+        channelHandler(connection)
+      )
     yield ()
+  ).handleErrorWith(Console[IO].printStackTrace).foreverM
 
-  program
-    .handleErrorWith(e => Console[IO].println(e.printStackTrace()))
+/** The channelHandler function is responsible for handling the channel that is
+  * created from the connection. It is responsible for handling any exceptions
+  * that may occur.
+  *
+  * @param connection
+  *   the connection that the channel is created from.
+  * @return
+  *   an IO monad that represents the channel handler.
+  */
+def channelHandler(connection: Connection): IO[Nothing] =
+  channelFromConnection(connection)
+    .use(channel => mainProgramLoop(channel))
+    .handleErrorWith(Console[IO].printStackTrace)
     .foreverM
-    .unsafeRunSync()
 
+/** The mainProgramLoop function is the main loop of the program. It is
+  * responsible for displaying the options to the user and executing the
+  * selected option.
+  *
+  * @param channel
+  *   the channel that the program is using.
+  * @return
+  *   an IO monad that represents the main loop of the program.
+  */
 def mainProgramLoop(
     channel: Channel
 ): IO[Nothing] =
@@ -70,6 +89,15 @@ def mainProgramLoop(
     yield ()
   ).foreverM
 
+/** The executeInput function is responsible for executing the selected option.
+  *
+  * @param channel
+  *   the channel that the program is using.
+  * @param input
+  *   the selected option.
+  * @return
+  *   an IO monad that represents the execution of the selected option.
+  */
 def executeInput(
     channel: Channel,
     input: Int
@@ -123,6 +151,14 @@ def executeInput(
 
     case _ => IO.unit
 
+/** The newExchange function is responsible for creating a new exchange from the
+  * user input.
+  *
+  * @param args
+  *   the arguments that the user has entered.
+  * @return
+  *   a Try monad that represents the creation of a new exchange.
+  */
 def newExchange(args: Map[String, String]): Try[BrokerExchange] =
   for
     exchangeName <- Try(ExchangeName(args.get("exchangeName").get))
@@ -137,10 +173,17 @@ def newExchange(args: Map[String, String]): Try[BrokerExchange] =
     exchangeType,
     durable,
     autoDelete,
-    internal,
-    Set.empty
+    internal
   )
 
+/** The newQueue function is responsible for creating a new queue from the user
+  * input.
+  *
+  * @param args
+  *   the arguments that the user has entered.
+  * @return
+  *   a Try monad that represents the creation of a new queue.
+  */
 def newQueue(args: Map[String, String]): Try[BrokerQueue] =
   for
     queueName <- Try(QueueName(args.get("queueName").get))

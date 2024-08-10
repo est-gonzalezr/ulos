@@ -41,3 +41,32 @@ object MiscConfigUtil:
         "pass" -> rabbitmqPass
       )
     )
+
+  /** The getFTPEnvironmentVariables function reads the environment variables
+    * required to configure the FTP server and returns them as a map.
+    *
+    * @return
+    *   an IO monad with the environment variables as a map
+    */
+  def getFTPEnvironmentVariables: IO[Map[String, String]] =
+    environmentVariableMap.use(envMap =>
+      for
+        ftpHost <- IO.fromOption(envMap.get("FTP_HOST"))(
+          Exception("FTP_HOST not found in environment variables")
+        )
+        ftpPort <- IO.fromOption(envMap.get("FTP_PORT"))(
+          Exception("FTP_PORT not found in environment variables")
+        )
+        ftpUser <- IO.fromOption(envMap.get("FTP_USER"))(
+          Exception("FTP_USER not found in environment variables")
+        )
+        ftpPass <- IO.fromOption(envMap.get("FTP_PASS"))(
+          Exception("FTP_PASS not found in environment variables")
+        )
+      yield Map(
+        "host" -> ftpHost,
+        "port" -> ftpPort,
+        "user" -> ftpUser,
+        "pass" -> ftpPass
+      )
+    )

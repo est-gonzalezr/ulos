@@ -8,8 +8,8 @@ import cats.effect.IO
 import cats.effect.kernel.Resource
 import os.Path
 
-/** The ExternalResources object provides utility functions to read environment
-  * variables and files in a functional way.
+/** The ExternalResources object provides utility functions to use external
+  * resources.
   */
 object ExternalResources:
 
