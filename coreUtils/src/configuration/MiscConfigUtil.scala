@@ -12,14 +12,14 @@ import ExternalResources.environmentVariableMap
   * necessarily related to the message broker configuration but are used in the
   * configuration process.
   */
-object MiscConfigUtil:
-  /** The getBrokerEnvironmentVariables function reads the environment variables
+case object MiscConfigUtil:
+  /** The brokerEnvironmentVariables function reads the environment variables
     * required to configure the message broker and returns them as a map.
     *
     * @return
     *   an IO monad with the environment variables as a map
     */
-  def getBrokerEnvironmentVariables: IO[Map[String, String]] =
+  def brokerEnvironmentVariables: IO[Map[String, String]] =
     environmentVariableMap.use(envMap =>
       for
         rabbitmqHost <- IO.fromOption(envMap.get("RABBITMQ_HOST"))(
@@ -42,13 +42,13 @@ object MiscConfigUtil:
       )
     )
 
-  /** The getFTPEnvironmentVariables function reads the environment variables
+  /** The ftoEnvironmentVariables function reads the environment variables
     * required to configure the FTP server and returns them as a map.
     *
     * @return
     *   an IO monad with the environment variables as a map
     */
-  def getFTPEnvironmentVariables: IO[Map[String, String]] =
+  def ftpEnvironmentVariables: IO[Map[String, String]] =
     environmentVariableMap.use(envMap =>
       for
         ftpHost <- IO.fromOption(envMap.get("FTP_HOST"))(

@@ -20,7 +20,7 @@ import cats.effect.kernel.Resource
 /** The MessagingUtil object provides utility functions to interact with the
   * RabbitMQ broker.
   */
-object MessagingUtil:
+case object MessagingUtil:
   /** The brokerConnection function creates a connection to the RabbitMQ broker.
     *
     * @param host
@@ -67,8 +67,8 @@ object MessagingUtil:
       IO.delay(channel.close())
     )
 
-  /** The channelWithExchange function creates an exchange on the defined
-    * RabbitMQ channel.
+  /** The createExchange function creates an exchange on the defined RabbitMQ
+    * channel.
     *
     * @param channel
     *   the RabbitMQ channel
@@ -86,7 +86,7 @@ object MessagingUtil:
     * @return
     *   an IO monad with the operation result of creating the exchange
     */
-  def channelWithExchange(
+  def createExchange(
       channel: Channel,
       exchangeName: ExchangeName,
       exchangeType: ExchangeType,
@@ -105,8 +105,8 @@ object MessagingUtil:
       )
     )
 
-  /** The channelWithoutExchange function deletes an exchange on the defined
-    * RabbitMQ channel.
+  /** The deleteExchange function deletes an exchange on the defined RabbitMQ
+    * channel.
     *
     * @param channel
     *   the RabbitMQ channel
@@ -118,7 +118,7 @@ object MessagingUtil:
     * @return
     *   an IO monad with the operation result of deleting the exchange
     */
-  def channelWithoutExchange(
+  def deleteExchange(
       channel: Channel,
       exchangeName: ExchangeName,
       ifUnused: Boolean = true
@@ -130,8 +130,7 @@ object MessagingUtil:
       )
     )
 
-  /** The channelWithQueue function creates a queue on the defined RabbitMQ
-    * channel.
+  /** The createQueue function creates a queue on the defined RabbitMQ channel.
     *
     * @param channel
     *   the RabbitMQ channel
@@ -147,7 +146,7 @@ object MessagingUtil:
     * @return
     *   an IO monad with the operation result of creating the queue
     */
-  def channelWithQueue(
+  def createQueue(
       channel: Channel,
       queueName: QueueName,
       durable: Boolean = true,
@@ -164,8 +163,7 @@ object MessagingUtil:
       )
     )
 
-  /** The channelWithoutQueue function deletes a queue on the defined RabbitMQ
-    * channel.
+  /** The deleteQueue function deletes a queue on the defined RabbitMQ channel.
     *
     * @param channel
     *   the RabbitMQ channel
@@ -179,7 +177,7 @@ object MessagingUtil:
     * @return
     *   an IO monad with the operation result of deleting the queue
     */
-  def channelWithoutQueue(
+  def deleteQueue(
       channel: Channel,
       queueName: QueueName,
       ifUsed: Boolean = true,
@@ -193,7 +191,7 @@ object MessagingUtil:
       )
     )
 
-  /** The bindedQueueWithExchange function binds a queue to an exchange on the
+  /** The bindQueueWithExchange function binds a queue to an exchange on the
     * defined RabbitMQ channel.
     *
     * @param channel
@@ -209,7 +207,7 @@ object MessagingUtil:
     *   an IO monad with the operation result of binding the queue to the
     *   exchange
     */
-  def bindedQueueWithExchange(
+  def bindQueueWithExchange(
       channel: Channel,
       queueName: QueueName,
       exchangeName: ExchangeName,
@@ -223,7 +221,7 @@ object MessagingUtil:
       )
     )
 
-  /** The bindedExchangeWithExchange function binds an exchange to another
+  /** The bindExchangeWithExchange function binds an exchange to another
     * exchange on the defined RabbitMQ channel.
     *
     * @param channel
@@ -239,7 +237,7 @@ object MessagingUtil:
     *   an IO monad with the operation result of binding the exchange to the
     *   other exchange
     */
-  def bindedExchangeWithExchange(
+  def bindExchangeWithExchange(
       channel: Channel,
       destinationExchangeName: ExchangeName,
       sourceExchangeName: ExchangeName,
@@ -253,8 +251,8 @@ object MessagingUtil:
       )
     )
 
-  /** The channelWithQOS function sets the quality of service on the defined
-    * RabbitMQ channel.
+  /** The defineQos function sets the quality of service on the defined RabbitMQ
+    * channel.
     *
     * @param channel
     *   the RabbitMQ channel
@@ -268,7 +266,7 @@ object MessagingUtil:
     * @return
     *   an IO monad with the operation result of setting the quality of service
     */
-  def channelWithQOS(
+  def defineQos(
       channel: Channel,
       prefetchSize: Int = 0,
       prefetchCount: Int = 0,
@@ -276,8 +274,8 @@ object MessagingUtil:
   ): IO[Unit] =
     IO.delay(channel.basicQos(prefetchSize, prefetchCount, global))
 
-  /** The channelWithPublisherConfirms function enables publisher confirms on
-    * the defined RabbitMQ channel.
+  /** The definePublisherConfirms function enables publisher confirms on the
+    * defined RabbitMQ channel.
     *
     * @param channel
     *   the RabbitMQ channel
@@ -286,10 +284,10 @@ object MessagingUtil:
     *   an IO monad with the operation result of enabling publisher confirms
     */
 
-  def channelWithPublisherConfirms(channel: Channel): IO[Confirm.SelectOk] =
+  def definePublisherConfirms(channel: Channel): IO[Confirm.SelectOk] =
     IO.delay(channel.confirmSelect())
 
-  /** The sendMessage function sends a message to an exchange on the defined
+  /** The publishMessage function sends a message to an exchange on the defined
     * RabbitMQ channel.
     *
     * @param channel
@@ -350,29 +348,3 @@ object MessagingUtil:
         consumer
       )
     )
-
-  /** The closeChannel function closes the RabbitMQ channel.
-    *
-    * @param channel
-    *   the RabbitMQ channel
-    *
-    * @return
-    *   an IO monad with the operation result of closing the channel
-    */
-  protected[messaging] def closeChannel(
-      channel: Channel
-  ): IO[Unit] =
-    IO.delay(channel.close())
-
-  /** The closeConnection function closes the RabbitMQ connection.
-    *
-    * @param connection
-    *   the RabbitMQ connection
-    *
-    * @return
-    *   an IO monad with the operation result of closing the connection
-    */
-  protected[messaging] def closeConnection(
-      connection: Connection
-  ): IO[Unit] =
-    IO.delay(connection.close())

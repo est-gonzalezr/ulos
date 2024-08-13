@@ -3,7 +3,7 @@ import cats.effect.std.Console
 import cats.effect.unsafe.implicits.global
 import cats.syntax.parallel.catsSyntaxParallelSequence1
 import com.rabbitmq.client.Connection
-import configuration.MiscConfigUtil.getBrokerEnvironmentVariables
+import configuration.MiscConfigUtil.brokerEnvironmentVariables
 import messaging.MessagingUtil
 import messaging.MessagingUtil.brokerConnection
 import messaging.MessagingUtil.channelFromConnection
@@ -18,7 +18,7 @@ val DefaultProcessingConsumerQuantity = 5
 @main
 def main: Unit =
   (for
-    envVars <- getBrokerEnvironmentVariables
+    envVars <- brokerEnvironmentVariables
     host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
     port <- IO.fromOption(envVars.get("port"))(Exception("port not found"))
     user <- IO.fromOption(envVars.get("user"))(Exception("user not found"))

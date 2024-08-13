@@ -9,7 +9,7 @@ package types
   * elements of the messaging system without exposing the actual type of the
   * elements. This makes the code more robust and less error-prone.
   */
-object OpaqueTypes:
+case object OpaqueTypes:
 
   /** The RoutingKey type represents the routing key for the messaging system.
     */

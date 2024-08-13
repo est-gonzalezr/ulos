@@ -11,14 +11,14 @@ import cats.syntax.traverse.toTraverseOps
 import com.rabbitmq.client.AMQP.Exchange
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
-import configuration.MiscConfigUtil.getBrokerEnvironmentVariables
-import messaging.MessagingUtil.bindedQueueWithExchange
+import configuration.MiscConfigUtil.brokerEnvironmentVariables
+import messaging.MessagingUtil.bindQueueWithExchange
 import messaging.MessagingUtil.brokerConnection
 import messaging.MessagingUtil.channelFromConnection
-import messaging.MessagingUtil.channelWithExchange
-import messaging.MessagingUtil.channelWithQueue
-import messaging.MessagingUtil.channelWithoutExchange
-import messaging.MessagingUtil.channelWithoutQueue
+import messaging.MessagingUtil.createExchange
+import messaging.MessagingUtil.createQueue
+import messaging.MessagingUtil.deleteExchange
+import messaging.MessagingUtil.deleteQueue
 import types.BrokerExchange
 import types.BrokerQueue
 import types.ExchangeType
@@ -42,7 +42,7 @@ def main(args: String*): Unit =
 def connectionHandler: IO[Nothing] =
   (
     for
-      envVars <- getBrokerEnvironmentVariables
+      envVars <- brokerEnvironmentVariables
       host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
       port <- IO.fromOption(envVars.get("port"))(Exception("port not found"))
       user <- IO.fromOption(envVars.get("user"))(Exception("user not found"))
@@ -114,7 +114,7 @@ def executeInput(
       for
         exchangeArgs <- newExchangeInput
         exchange <- IO.fromTry(newExchange(exchangeArgs))
-        _ <- channelWithExchange(
+        _ <- createExchange(
           channel,
           exchange.exchangeName,
           exchange.exchangeType,
@@ -127,14 +127,14 @@ def executeInput(
       for
         queueArgs <- newQueueInput
         queue <- IO.fromTry(newQueue(queueArgs))
-        _ <- channelWithQueue(
+        _ <- createQueue(
           channel,
           queue.queueName,
           queue.durable,
           queue.exclusive,
           queue.autoDelete
         )
-        _ <- bindedQueueWithExchange(
+        _ <- bindQueueWithExchange(
           channel,
           queue.queueName,
           queue.exchangeName,
@@ -145,13 +145,13 @@ def executeInput(
       for
         exchange <- exchangeDeleteInput
         exchangeName <- IO.fromTry(Try(ExchangeName(exchange)))
-        _ <- channelWithoutExchange(channel, exchangeName)
+        _ <- deleteExchange(channel, exchangeName)
       yield ()
     case 5 =>
       for
         queue <- queueDeleteInput
         queueName <- IO.fromTry(Try(QueueName(queue)))
-        _ <- channelWithoutQueue(channel, queueName)
+        _ <- deleteQueue(channel, queueName)
       yield ()
 
     case _ => IO.unit

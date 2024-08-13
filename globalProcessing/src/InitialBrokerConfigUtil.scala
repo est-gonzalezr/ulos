@@ -6,9 +6,9 @@ import cats.effect.IO
 import cats.syntax.traverse.toTraverseOps
 import com.rabbitmq.client.Channel
 import configuration.ExternalResources.stringFromFilepath
-import messaging.MessagingUtil.bindedQueueWithExchange
-import messaging.MessagingUtil.channelWithExchange
-import messaging.MessagingUtil.channelWithQueue
+import messaging.MessagingUtil.bindQueueWithExchange
+import messaging.MessagingUtil.createExchange
+import messaging.MessagingUtil.createQueue
 import org.virtuslab.yaml.*
 import types.ExchangeType
 import types.OpaqueTypes.ExchangeName
@@ -22,7 +22,7 @@ import types.YamlQueue
   * system. This object is intended as a possible startup configuration for the
   * broker but not continuous configuration.
   */
-object InitialBrokerConfigUtil:
+case object InitialBrokerConfigUtil:
 
   /** The executeInitialBrokerConfiguration function configures the message
     * broker with the predefined elements of the system.
@@ -114,7 +114,7 @@ object InitialBrokerConfigUtil:
       )(
         Exception("Exchange type not found")
       )
-      _ <- channelWithExchange(
+      _ <- createExchange(
         channel,
         exchangeName,
         exchangeType,
@@ -164,14 +164,14 @@ object InitialBrokerConfigUtil:
     val exchangeName = ExchangeName(queue.exchangeName)
 
     for
-      _ <- channelWithQueue(
+      _ <- createQueue(
         channel,
         queueName,
         queue.durable,
         queue.exclusive,
         queue.autoDelete
       )
-      _ <- bindedQueueWithExchange(
+      _ <- bindQueueWithExchange(
         channel,
         queueName,
         exchangeName,

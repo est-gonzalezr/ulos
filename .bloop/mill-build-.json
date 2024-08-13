@@ -1,0 +1,125 @@
+{
+    "version": "1.4.0",
+    "project": {
+        "name": "mill-build-",
+        "directory": "/Users/estebangonzalezruales/Downloads/ulos/mill-build",
+        "workspaceDir": "/Users/estebangonzalezruales/Downloads/ulos",
+        "sources": [
+            "/Users/estebangonzalezruales/Downloads/ulos/build.sc",
+            "/Users/estebangonzalezruales/Downloads/ulos/out/generateScriptSources.dest"
+        ],
+        "dependencies": [
+            
+        ],
+        "classpath": [
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-moduledefs_2.13/0.10.9/mill-moduledefs_2.13-0.10.9.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14.jar",
+            "/Users/estebangonzalezruales/Downloads/ulos/mill-build/compile-resources",
+            "/Users/estebangonzalezruales/Downloads/ulos/out/mill-launcher/0.11.11.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-runner-linenumbers_2.13/0.11.11/mill-runner-linenumbers_2.13-0.11.11.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.13.14/scala-compiler-2.13.14.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.14/scala-reflect-2.13.14.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/jline/jline/3.25.1/jline-3.25.1.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.13/0.3.0/sourcecode_2.13-0.3.0.jar"
+        ],
+        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/mill-build-",
+        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/mill-build-/classes",
+        "resources": [
+            "/Users/estebangonzalezruales/Downloads/ulos/mill-build/compile-resources"
+        ],
+        "scala": {
+            "organization": "org.scala-lang",
+            "name": "scala-compiler",
+            "version": "2.13.14",
+            "options": [
+                "-Xplugin:/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/scalac-mill-moduledefs-plugin_2.13.14/0.10.9/scalac-mill-moduledefs-plugin_2.13.14-0.10.9.jar",
+                "-Xplugin:/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-runner-linenumbers_2.13/0.11.11/mill-runner-linenumbers_2.13-0.11.11.jar,/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.13.14/scala-compiler-2.13.14.jar,/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14.jar,/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-moduledefs_2.13/0.10.9/mill-moduledefs_2.13-0.10.9.jar,/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.14/scala-reflect-2.13.14.jar,/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar,/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/jline/jline/3.25.1/jline-3.25.1.jar,/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar,/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.13/0.3.0/sourcecode_2.13-0.3.0.jar",
+                "-deprecation",
+                "-Xplugin-require:mill-linenumber-plugin"
+            ],
+            "jars": [
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.13.14/scala-compiler-2.13.14.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.14/scala-reflect-2.13.14.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14.jar"
+            ]
+        },
+        "java": {
+            "options": [
+                
+            ]
+        },
+        "platform": {
+            "name": "jvm",
+            "config": {
+                "home": "/Library/Java/JavaVirtualMachines/temurin-22.jdk/Contents/Home",
+                "options": [
+                    "-Duser.dir=/Users/estebangonzalezruales/Downloads/ulos"
+                ]
+            },
+            "mainClass": [
+                
+            ],
+            "classpath": [
+                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/mill-build-/classes",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-contrib-bloop_2.13/0.11.11/mill-contrib-bloop_2.13-0.11.11.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-moduledefs_2.13/0.10.9/mill-moduledefs_2.13-0.10.9.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/ch/epfl/scala/bloop-config_2.13/1.5.5/bloop-config_2.13-1.5.5.jar",
+                "/Users/estebangonzalezruales/Downloads/ulos/out/mill-launcher/0.11.11.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-runner-linenumbers_2.13/0.11.11/mill-runner-linenumbers_2.13-0.11.11.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.13.14/scala-compiler-2.13.14.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-moduledefs_2.13/0.10.9/mill-moduledefs_2.13-0.10.9.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.14/scala-reflect-2.13.14.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/jline/jline/3.25.1/jline-3.25.1.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.13/0.3.0/sourcecode_2.13-0.3.0.jar"
+            ],
+            "resources": [
+                "/Users/estebangonzalezruales/Downloads/ulos/mill-build/compile-resources"
+            ]
+        },
+        "resolution": {
+            "modules": [
+                {
+                    "organization": "org.scala-lang",
+                    "name": "scala-library",
+                    "version": "2.13.14",
+                    "artifacts": [
+                        {
+                            "name": "scala-library",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14.jar"
+                        },
+                        {
+                            "name": "scala-library",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "mill-moduledefs_2.13",
+                    "version": "0.10.9",
+                    "artifacts": [
+                        {
+                            "name": "mill-moduledefs_2.13",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-moduledefs_2.13/0.10.9/mill-moduledefs_2.13-0.10.9.jar"
+                        },
+                        {
+                            "name": "mill-moduledefs_2.13",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/mill-moduledefs_2.13/0.10.9/mill-moduledefs_2.13-0.10.9-sources.jar"
+                        }
+                    ]
+                }
+            ]
+        },
+        "tags": [
+            "library"
+        ]
+    }
+}

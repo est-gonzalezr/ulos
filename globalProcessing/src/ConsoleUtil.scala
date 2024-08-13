@@ -4,7 +4,7 @@ import cats.effect.std.Console
 /** The ConsoleUtil object provides utility functions to interact with the
   * console.
   */
-object ConsoleUtil:
+case object ConsoleUtil:
 
   /** The newExchangeInput function prompts the user for input to create a new
     * exchange.

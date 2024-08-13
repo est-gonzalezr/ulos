@@ -11,7 +11,7 @@ import os.Path
 /** The ExternalResources object provides utility functions to use external
   * resources.
   */
-object ExternalResources:
+case object ExternalResources:
 
   /** The environmentVariableMap function reads the environment variables and
     * returns them as a map.
@@ -43,8 +43,8 @@ object ExternalResources:
     * @return
     *   a Resource monad with the content of the file as a byte array
     */
-  def bytesFromFilepath(absPath: Path): Resource[IO, Array[Byte]] =
-    Resource.make(IO.delay(os.read.bytes(absPath)))(_ => IO.unit)
+  def bytesFromFilepath(absPath: Path): Resource[IO, Seq[Byte]] =
+    Resource.make(IO.delay(os.read.bytes(absPath).toSeq))(_ => IO.unit)
 
   /** The linesFromFilepath function reads a file and returns its content as a
     * sequence of strings.
