@@ -9,7 +9,7 @@ import configuration.ExternalResources.stringFromFilepath
 import messaging.MessagingUtil.bindQueueWithExchange
 import messaging.MessagingUtil.createExchange
 import messaging.MessagingUtil.createQueue
-import org.virtuslab.yaml.*
+import org.virtuslab.yaml.StringOps
 import types.ExchangeType
 import types.OpaqueTypes.ExchangeName
 import types.OpaqueTypes.QueueName
@@ -17,21 +17,20 @@ import types.OpaqueTypes.RoutingKey
 import types.YamlExchange
 import types.YamlQueue
 
-/** The InitialBrokerConfigUtil object provides utility functions to configure
-  * the message broker from environment variables and predefined elements of the
-  * system. This object is intended as a possible startup configuration for the
-  * broker but not continuous configuration.
+/** Provides utility functions to configure the message broker from environment
+  * variables and predefined elements of the system. This object is intended as
+  * a possible startup configuration for the broker but not continuous
+  * configuration.
   */
 case object InitialBrokerConfigUtil:
 
-  /** The executeInitialBrokerConfiguration function configures the message
-    * broker with the predefined elements of the system.
+  /** Configures the message broker with the predefined elements of the system.
     *
     * @param channel
-    *   the channel to communicate with the message broker
+    *   The channel to communicate with the message broker
     *
     * @return
-    *   an IO monad with the result of the operation
+    *   An IO monad with the result of the operation
     */
   def executeInitialBrokerConfiguration(channel: Channel): IO[Unit] =
     for
@@ -41,11 +40,10 @@ case object InitialBrokerConfigUtil:
       _ <- configureBrokerQueues(channel, queues)
     yield ()
 
-  /** The getBrokerExchangeConfiguration function reads the exchange
-    * configurations from a yaml file.
+  /** Reads the exchange configurations from a yaml file.
     *
     * @return
-    *   an IO monad with the exchange configurations
+    *   An IO monad with the exchange configurations
     */
   def getBrokerExchangeConfiguration: IO[Map[String, YamlExchange]] =
     stringFromFilepath(
@@ -56,11 +54,10 @@ case object InitialBrokerConfigUtil:
       )
     )
 
-  /** The getBrokerQueueConfiguration function reads the queue configurations
-    * from a yaml file.
+  /** Reads the queue configurations from a yaml file.
     *
     * @return
-    *   an IO monad with the queue configurations
+    *   An IO monad with the queue configurations
     */
   def getBrokerQueueConfiguration: IO[Map[String, YamlQueue]] =
     stringFromFilepath(
@@ -71,16 +68,15 @@ case object InitialBrokerConfigUtil:
       )
     )
 
-  /** The configureBrokerExchanges function configures the exchanges in the
-    * message broker.
+  /** Configures the exchanges in the message broker.
     *
     * @param channel
-    *   the channel to communicate with the message broker
+    *   The channel to communicate with the message broker
     * @param exchanges
-    *   the map of exchange configurations
+    *   The map of exchange configurations
     *
     * @return
-    *   an IO monad with the result of the operation
+    *   An IO monad with the result of the operation
     */
   def configureBrokerExchanges(
       channel: Channel,
@@ -92,16 +88,15 @@ case object InitialBrokerConfigUtil:
 
     ops.sequence
 
-  /** The configureBrokerExchange function configures an exchange in the message
-    * broker.
+  /** Configures an exchange in the message broker.
     *
     * @param channel
-    *   the channel to communicate with the message broker
+    *   The channel to communicate with the message broker
     * @param yamlExchange
-    *   the exchange configuration
+    *   The exchange configuration
     *
     * @return
-    *   an IO monad with the result of the operation
+    *   An IO monad with the result of the operation
     */
   private def configureBrokerExchange(
       channel: Channel,
@@ -124,16 +119,15 @@ case object InitialBrokerConfigUtil:
       )
     yield ()
 
-  /** The configureBrokerQueues function configures the queues in the message
-    * broker.
+  /** Configures the queues in the message broker.
     *
     * @param channel
-    *   the channel to communicate with the message broker
+    *   The channel to communicate with the message broker
     * @param queues
-    *   the map of queue configurations
+    *   The map of queue configurations
     *
     * @return
-    *   an IO monad with the result of the operation
+    *   An IO monad with the result of the operation
     */
   def configureBrokerQueues(
       channel: Channel,
@@ -145,16 +139,15 @@ case object InitialBrokerConfigUtil:
 
     ops.sequence
 
-  /** The configureBrokerQueue function configures a queue in the message
-    * broker.
+  /** Configures a queue in the message broker.
     *
     * @param channel
-    *   the channel to communicate with the message broker
+    *   The channel to communicate with the message broker
     * @param queue
-    *   the queue configuration
+    *   The queue configuration
     *
     * @return
-    *   an IO monad with the result of the operation
+    *   An IO monad with the result of the operation
     */
   private def configureBrokerQueue(
       channel: Channel,

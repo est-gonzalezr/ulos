@@ -6,9 +6,8 @@ package types
 
 import org.virtuslab.yaml.YamlCodec
 
-/** The YamlExchange case class represents the exchange configuration in the
-  * exchanges.yaml file. It provides a way to easily decode the YAML file into a
-  * Scala object.
+/** Represents the exchange configuration in the exchanges.yaml file. It
+  * provides a way to easily decode the YAML file into a Scala object.
   *
   * @param exchangeName
   * @param exchangeType

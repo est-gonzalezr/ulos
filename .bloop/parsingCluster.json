@@ -1,11 +1,11 @@
 {
     "version": "1.4.0",
     "project": {
-        "name": "processingCluster",
-        "directory": "/Users/estebangonzalezruales/Downloads/ulos/processingCluster",
+        "name": "parsingCluster",
+        "directory": "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster",
         "workspaceDir": "/Users/estebangonzalezruales/Downloads/ulos",
         "sources": [
-            "/Users/estebangonzalezruales/Downloads/ulos/processingCluster/src"
+            "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/src"
         ],
         "dependencies": [
             "coreUtils",
@@ -16,7 +16,7 @@
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.0-M11/munit_3-1.0.0-M11.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.4.0/toolkit_3-0.4.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.1.0/scala-yaml_3-0.1.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.3.0/scala-yaml_3-0.3.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/rabbitmq/amqp-client/5.21.0/amqp-client-5.21.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-net/commons-net/3.10.0/commons-net-3.10.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.12/scala-library-2.13.12.jar",
@@ -46,12 +46,12 @@
             "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
             "/Users/estebangonzalezruales/Downloads/ulos/storageUtils/compile-resources",
             "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/storageUtils/classes",
-            "/Users/estebangonzalezruales/Downloads/ulos/processingCluster/compile-resources"
+            "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/compile-resources"
         ],
-        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/processingCluster",
-        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/processingCluster/classes",
+        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/parsingCluster",
+        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/parsingCluster/classes",
         "resources": [
-            "/Users/estebangonzalezruales/Downloads/ulos/processingCluster/compile-resources"
+            "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/compile-resources"
         ],
         "scala": {
             "organization": "org.scala-lang",
@@ -63,7 +63,8 @@
                 "-unchecked",
                 "-Wunused:all",
                 "-Wnonunit-statement",
-                "-Wvalue-discard"
+                "-Wvalue-discard",
+                "-Werror"
             ],
             "jars": [
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/3.4.2/scala3-compiler_3-3.4.2.jar",
@@ -98,14 +99,14 @@
                 
             ],
             "classpath": [
-                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/processingCluster/classes",
+                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/parsingCluster/classes",
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/storageUtils/classes",
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.0-M11/munit_3-1.0.0-M11.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.4.0/toolkit_3-0.4.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.1.0/scala-yaml_3-0.1.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.3.0/scala-yaml_3-0.3.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/rabbitmq/amqp-client/5.21.0/amqp-client-5.21.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-net/commons-net/3.10.0/commons-net-3.10.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.12/scala-library-2.13.12.jar",
@@ -133,8 +134,8 @@
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0.jar"
             ],
             "resources": [
-                "/Users/estebangonzalezruales/Downloads/ulos/processingCluster/compile-resources",
-                "/Users/estebangonzalezruales/Downloads/ulos/processingCluster/resources"
+                "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/compile-resources",
+                "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/resources"
             ]
         },
         "resolution": {
@@ -168,6 +169,22 @@
                             "name": "junit-interface",
                             "classifier": "sources",
                             "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.0-M11/junit-interface-1.0.0-M11-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-sbt",
+                    "name": "test-interface",
+                    "version": "1.0",
+                    "artifacts": [
+                        {
+                            "name": "test-interface",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar"
+                        },
+                        {
+                            "name": "test-interface",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0-sources.jar"
                         }
                     ]
                 },
@@ -232,6 +249,22 @@
                             "name": "ujson_3",
                             "classifier": "sources",
                             "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.0/ujson_3-3.3.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.virtuslab",
+                    "name": "scala-yaml_3",
+                    "version": "0.3.0",
+                    "artifacts": [
+                        {
+                            "name": "scala-yaml_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.3.0/scala-yaml_3-0.3.0.jar"
+                        },
+                        {
+                            "name": "scala-yaml_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.3.0/scala-yaml_3-0.3.0-sources.jar"
                         }
                     ]
                 },
@@ -328,38 +361,6 @@
                             "name": "commons-net",
                             "classifier": "sources",
                             "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-net/commons-net/3.10.0/commons-net-3.10.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.scala-sbt",
-                    "name": "test-interface",
-                    "version": "1.0",
-                    "artifacts": [
-                        {
-                            "name": "test-interface",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar"
-                        },
-                        {
-                            "name": "test-interface",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.virtuslab",
-                    "name": "scala-yaml_3",
-                    "version": "0.1.0",
-                    "artifacts": [
-                        {
-                            "name": "scala-yaml_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.1.0/scala-yaml_3-0.1.0.jar"
-                        },
-                        {
-                            "name": "scala-yaml_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.1.0/scala-yaml_3-0.1.0-sources.jar"
                         }
                     ]
                 },

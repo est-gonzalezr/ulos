@@ -17,23 +17,22 @@ import types.ExchangeType
 import types.OpaqueTypes.*
 import cats.effect.kernel.Resource
 
-/** The MessagingUtil object provides utility functions to interact with the
-  * RabbitMQ broker.
+/** Provides utility functions to interact with the RabbitMQ broker.
   */
 case object MessagingUtil:
-  /** The brokerConnection function creates a connection to the RabbitMQ broker.
+  /** Creates a connection to the RabbitMQ broker.
     *
     * @param host
-    *   the RabbitMQ host
+    *   The RabbitMQ host
     * @param port
-    *   the RabbitMQ port
+    *   The RabbitMQ port
     * @param username
-    *   the RabbitMQ username
+    *   The RabbitMQ username
     * @param password
-    *   the RabbitMQ password
+    *   The RabbitMQ password
     *
     * @return
-    *   a Resource monad with the RabbitMQ connection
+    *   A Resource monad with the RabbitMQ connection
     */
   def brokerConnection(
       host: String,
@@ -51,14 +50,13 @@ case object MessagingUtil:
       IO.delay(connection.close())
     )
 
-  /** The channelFromConnection function creates a channel to the defined
-    * RabbitMQ connection.
+  /** Creates a channel to the defined RabbitMQ connection.
     *
     * @param connection
-    *   the RabbitMQ connection
+    *   The RabbitMQ connection
     *
     * @return
-    *   a Resource monad with the RabbitMQ channel
+    *   A Resource monad with the RabbitMQ channel
     */
   def channelFromConnection(
       connection: Connection
@@ -67,24 +65,23 @@ case object MessagingUtil:
       IO.delay(channel.close())
     )
 
-  /** The createExchange function creates an exchange on the defined RabbitMQ
-    * channel.
+  /** Creates an exchange on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param exchangeName
-    *   the name of the exchange
+    *   The name of the exchange
     * @param exchangeType
-    *   the type of the exchange
+    *   The type of the exchange
     * @param durable
-    *   the durability of the exchange
+    *   The durability of the exchange
     * @param autoDelete
-    *   the auto-deletion of the exchange
+    *   The auto-deletion of the exchange
     * @param internal
-    *   the internal flag of the exchange
+    *   The internal flag of the exchange
     *
     * @return
-    *   an IO monad with the operation result of creating the exchange
+    *   An IO monad with the operation result of creating the exchange
     */
   def createExchange(
       channel: Channel,
@@ -105,18 +102,17 @@ case object MessagingUtil:
       )
     )
 
-  /** The deleteExchange function deletes an exchange on the defined RabbitMQ
-    * channel.
+  /** Deletes an exchange on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param exchangeName
-    *   the name of the exchange
+    *   The name of the exchange
     * @param ifUnused
-    *   the ifUnused flag
+    *   The ifUnused flag
     *
     * @return
-    *   an IO monad with the operation result of deleting the exchange
+    *   An IO monad with the operation result of deleting the exchange
     */
   def deleteExchange(
       channel: Channel,
@@ -130,21 +126,21 @@ case object MessagingUtil:
       )
     )
 
-  /** The createQueue function creates a queue on the defined RabbitMQ channel.
+  /** Creates a queue on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param queueName
-    *   the name of the queue
+    *   The name of the queue
     * @param durable
-    *   the durability of the queue
+    *   The durability of the queue
     * @param exclusive
-    *   the exclusivity of the queue
+    *   The exclusivity of the queue
     * @param autoDelete
-    *   the auto-deletion of the queue
+    *   The auto-deletion of the queue
     *
     * @return
-    *   an IO monad with the operation result of creating the queue
+    *   An IO monad with the operation result of creating the queue
     */
   def createQueue(
       channel: Channel,
@@ -163,19 +159,19 @@ case object MessagingUtil:
       )
     )
 
-  /** The deleteQueue function deletes a queue on the defined RabbitMQ channel.
+  /** Deletes a queue on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param queueName
-    *   the name of the queue
+    *   The name of the queue
     * @param ifUsed
-    *   the ifUsed flag
+    *   The ifUsed flag
     * @param ifEmpty
-    *   the ifEmpty flag
+    *   The ifEmpty flag
     *
     * @return
-    *   an IO monad with the operation result of deleting the queue
+    *   An IO monad with the operation result of deleting the queue
     */
   def deleteQueue(
       channel: Channel,
@@ -191,20 +187,19 @@ case object MessagingUtil:
       )
     )
 
-  /** The bindQueueWithExchange function binds a queue to an exchange on the
-    * defined RabbitMQ channel.
+  /** Binds a queue to an exchange on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param queueName
-    *   the name of the queue
+    *   The name of the queue
     * @param exchangeName
-    *   the name of the exchange
+    *   The name of the exchange
     * @param routingKey
-    *   the routing key
+    *   The routing key
     *
     * @return
-    *   an IO monad with the operation result of binding the queue to the
+    *   An IO monad with the operation result of binding the queue to the
     *   exchange
     */
   def bindQueueWithExchange(
@@ -221,20 +216,19 @@ case object MessagingUtil:
       )
     )
 
-  /** The bindExchangeWithExchange function binds an exchange to another
-    * exchange on the defined RabbitMQ channel.
+  /** Binds an exchange to another exchange on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param sourceExchangeName
-    *   the name of the source exchange
+    *   The name of the source exchange
     * @param destinationExchangeName
-    *   the name of the destination exchange
+    *   The name of the destination exchange
     * @param routingKey
-    *   the routing key
+    *   The routing key
     *
     * @return
-    *   an IO monad with the operation result of binding the exchange to the
+    *   An IO monad with the operation result of binding the exchange to the
     *   other exchange
     */
   def bindExchangeWithExchange(
@@ -251,20 +245,19 @@ case object MessagingUtil:
       )
     )
 
-  /** The defineQos function sets the quality of service on the defined RabbitMQ
-    * channel.
+  /** Sets the quality of service on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param prefetchSize
-    *   the prefetch size
+    *   The prefetch size
     * @param prefetchCount
-    *   the prefetch count
+    *   The prefetch count
     * @param global
-    *   the global flag
+    *   The global flag
     *
     * @return
-    *   an IO monad with the operation result of setting the quality of service
+    *   An IO monad with the operation result of setting the quality of service
     */
   def defineQos(
       channel: Channel,
@@ -274,41 +267,39 @@ case object MessagingUtil:
   ): IO[Unit] =
     IO.delay(channel.basicQos(prefetchSize, prefetchCount, global))
 
-  /** The definePublisherConfirms function enables publisher confirms on the
-    * defined RabbitMQ channel.
+  /** Enables publisher confirms on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     *
     * @return
-    *   an IO monad with the operation result of enabling publisher confirms
+    *   An IO monad with the operation result of enabling publisher confirms
     */
 
   def definePublisherConfirms(channel: Channel): IO[Confirm.SelectOk] =
     IO.delay(channel.confirmSelect())
 
-  /** The publishMessage function sends a message to an exchange on the defined
-    * RabbitMQ channel.
+  /** Sends a message to an exchange on the defined RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param exchangeName
-    *   the name of the exchange
+    *   The name of the exchange
     * @param routingKey
-    *   the routing key
+    *   The routing key
     * @param messageBytes
-    *   the message bytes
+    *   The message bytes
     * @param properties
-    *   the message properties
+    *   The message properties
     *
     * @return
-    *   an IO monad with the operation result of sending the message
+    *   An IO monad with the operation result of sending the message
     */
   def publishMessage(
       channel: Channel,
       exchangeName: ExchangeName,
       routingKey: RoutingKey,
-      messageBytes: Array[Byte],
+      messageBytes: Seq[Byte],
       properties: BasicProperties = null
   ): IO[Unit] =
     IO.delay(
@@ -316,7 +307,7 @@ case object MessagingUtil:
         exchangeName.value,
         routingKey.value,
         properties,
-        messageBytes
+        messageBytes.toArray
       )
     )
 
@@ -324,16 +315,16 @@ case object MessagingUtil:
     * RabbitMQ channel.
     *
     * @param channel
-    *   the RabbitMQ channel
+    *   The RabbitMQ channel
     * @param queueName
-    *   the name of the queue
+    *   The name of the queue
     * @param autoAck
-    *   the auto-acknowledgement of the message
+    *   The auto-acknowledgement of the message
     * @param callback
-    *   the message callback
+    *   The message callback
     *
     * @return
-    *   an IO monad with the operation result of consuming the messages
+    *   An IO monad with the operation result of consuming the messages
     */
   def consumeMessages(
       channel: Channel,

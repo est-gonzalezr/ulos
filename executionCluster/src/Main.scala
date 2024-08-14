@@ -17,29 +17,23 @@ val DefaultProcessingConsumerQuantity = 5
 
 @main
 def main: Unit =
-  (for
+  initializeProgram
+    .handleErrorWith(Console[IO].printStackTrace)
+    .foreverM
+    .unsafeRunSync()
+
+def initializeProgram: IO[Unit] =
+  for
     envVars <- brokerEnvironmentVariables
     host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
     port <- IO.fromOption(envVars.get("port"))(Exception("port not found"))
     user <- IO.fromOption(envVars.get("user"))(Exception("user not found"))
     pass <- IO.fromOption(envVars.get("pass"))(Exception("pass not found"))
     portInt <- IO.fromOption(port.toIntOption)(Exception("port not an int"))
-    _ <- initializeProgram(host, portInt, user, pass)
-  yield ())
-    .handleErrorWith(Console[IO].printStackTrace)
-    .foreverM
-    .unsafeRunSync()
-
-def initializeProgram(
-    host: String,
-    port: Int,
-    user: String,
-    pass: String
-): IO[Unit] =
-  brokerConnection(host, port, user, pass).use(connection =>
-    for _ <- createQueueConsumers(connection, DefaultProcessingConsumerQuantity)
-    yield ()
-  )
+    _ <- brokerConnection(host, portInt, user, pass).use(connection =>
+      createQueueConsumers(connection, DefaultProcessingConsumerQuantity).void
+    )
+  yield ()
 
 def createQueueConsumers(
     connection: Connection,
@@ -55,7 +49,7 @@ def queueConsumerProgram(connection: Connection): IO[Unit] =
       val exchangeName = ExchangeName("global_processing_exchange")
       val publishFunction =
         publishMessage(channel, exchangeName, _, _)
-      val consumer = QueueConsumer(
+      val consumer = ExecutionConsumer(
         channel,
         successRoutingKey,
         errorRoutingKey,

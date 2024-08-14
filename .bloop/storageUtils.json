@@ -36,7 +36,8 @@
                 "-unchecked",
                 "-Wunused:all",
                 "-Wnonunit-statement",
-                "-Wvalue-discard"
+                "-Wvalue-discard",
+                "-Werror"
             ],
             "jars": [
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/3.4.2/scala3-compiler_3-3.4.2.jar",

@@ -1,16 +1,14 @@
 import cats.effect.IO
 import cats.effect.std.Console
 
-/** The ConsoleUtil object provides utility functions to interact with the
-  * console.
+/** Provides utility functions to interact with the console.
   */
 case object ConsoleUtil:
 
-  /** The newExchangeInput function prompts the user for input to create a new
-    * exchange.
+  /** Prompts the user for input to create a new exchange.
     *
     * @return
-    *   an IO monad containing a Map of the exchange's properties
+    *   An IO monad containing a Map of the exchange's properties
     */
   def newExchangeInput: IO[Map[String, String]] =
     for
@@ -32,11 +30,10 @@ case object ConsoleUtil:
       "internal" -> internal
     )
 
-  /** The newQueueInput function prompts the user for input to create a new
-    * queue.
+  /** Prompts the user for input to create a new queue.
     *
     * @return
-    *   an IO monad containing a Map of the queue's properties
+    *   An IO monad containing a Map of the queue's properties
     */
   def newQueueInput: IO[Map[String, String]] =
     for
@@ -61,11 +58,10 @@ case object ConsoleUtil:
       "routingKey" -> routingKey
     )
 
-  /** The exchangeDeleteInput function prompts the user for input to delete an
-    * exchange.
+  /** Prompts the user for input to delete an exchange.
     *
     * @return
-    *   an IO monad containing the name of the exchange to delete
+    *   An IO monad containing the name of the exchange to delete
     */
   def exchangeDeleteInput: IO[String] =
     for
@@ -73,8 +69,7 @@ case object ConsoleUtil:
       exchangeName <- Console[IO].readLine
     yield exchangeName
 
-  /** The queueDeleteInput function prompts the user for input to delete a
-    * queue.
+  /** Prompts the user for input to delete a queue.
     *
     * @return
     *   an IO monad containing the name of the queue to delete
@@ -85,11 +80,10 @@ case object ConsoleUtil:
       queueName <- Console[IO].readLine
     yield queueName
 
-  /** The options function contains a list of tuples with the options available
-    * to the user.
+  /** Contains a list of tuples with the options available to the user.
     *
     * @return
-    *   a list of tuples with the options available to the user
+    *   A list of tuples with the options available to the user
     */
   def options: List[(Int, String)] =
     List(

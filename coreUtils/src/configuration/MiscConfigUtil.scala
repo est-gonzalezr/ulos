@@ -8,16 +8,15 @@ import cats.effect.IO
 
 import ExternalResources.environmentVariableMap
 
-/** The MiscConfigUtil object provides utility functions that are not
-  * necessarily related to the message broker configuration but are used in the
-  * configuration process.
+/** Provides utility functions that are not necessarily related to the message
+  * broker configuration but are used in the configuration process.
   */
 case object MiscConfigUtil:
-  /** The brokerEnvironmentVariables function reads the environment variables
-    * required to configure the message broker and returns them as a map.
+  /** Reads the environment variables required to configure the message broker
+    * and returns them as a map.
     *
     * @return
-    *   an IO monad with the environment variables as a map
+    *   An IO monad with the environment variables as a map
     */
   def brokerEnvironmentVariables: IO[Map[String, String]] =
     environmentVariableMap.use(envMap =>
@@ -42,11 +41,11 @@ case object MiscConfigUtil:
       )
     )
 
-  /** The ftoEnvironmentVariables function reads the environment variables
-    * required to configure the FTP server and returns them as a map.
+  /** Reads the environment variables required to configure the FTP server and
+    * returns them as a map.
     *
     * @return
-    *   an IO monad with the environment variables as a map
+    *   An IO monad with the environment variables as a map
     */
   def ftpEnvironmentVariables: IO[Map[String, String]] =
     environmentVariableMap.use(envMap =>

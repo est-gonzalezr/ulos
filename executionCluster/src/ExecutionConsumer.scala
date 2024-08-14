@@ -5,11 +5,11 @@ import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import types.OpaqueTypes.RoutingKey
 
-case class QueueConsumer(
+case class ExecutionConsumer(
     channel: Channel,
     successRoutingKey: RoutingKey,
     errorRoutingKey: RoutingKey,
-    publishFunction: (RoutingKey, Array[Byte]) => IO[Unit]
+    publishFunction: (RoutingKey, Seq[Byte]) => IO[Unit]
 ) extends DefaultConsumer(channel):
   override def handleDelivery(
       consumerTag: String,
@@ -21,3 +21,6 @@ case class QueueConsumer(
     println(s" [x] Received '$message' by consumer with tag $consumerTag")
     channel.basicAck(envelope.getDeliveryTag, false)
     println(s" [x] Acknowledged message with tag ${envelope.getDeliveryTag}")
+
+  def decodeMessage(body: Seq[Byte]): String =
+    body.map(_.toChar).mkString

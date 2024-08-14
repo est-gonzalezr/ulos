@@ -4,76 +4,75 @@
 
 package types
 
-/** The OpaqueTypes object provides the opaque types for the messaging system
-  * elements. This is a way to provide a type-safe way to handle the different
-  * elements of the messaging system without exposing the actual type of the
-  * elements. This makes the code more robust and less error-prone.
+/** Provides the opaque types for the messaging system elements. This is a way
+  * to provide a type-safe way to handle the different elements of the messaging
+  * system without exposing the actual type of the elements. This makes the code
+  * more robust and less error-prone.
   */
 case object OpaqueTypes:
 
-  /** The RoutingKey type represents the routing key for the messaging system.
+  /** Represents the routing key for the messaging system.
     */
   opaque type RoutingKey = String
   object RoutingKey:
-    /** The apply method creates a new RoutingKey.
+    /** Creates a new RoutingKey.
       *
       * @param value
-      *   the value to use
+      *   The value to use
       * @return
-      *   a new RoutingKey
+      *   A new RoutingKey
       */
     def apply(value: String): RoutingKey = value
 
-    /** The value method returns the value of the RoutingKey.
+    /** Returns the value of the RoutingKey.
       *
       * @param rk
-      *   the RoutingKey
+      *   The RoutingKey
       * @return
-      *   the value
+      *   The value
       */
     extension (rk: RoutingKey) def value: String = rk
 
-  /** The ExchangeName type represents the exchange name for the messaging
-    * system.
+  /** Represents the exchange name for the messaging system.
     */
   opaque type ExchangeName = String
   object ExchangeName:
-    /** The apply method creates a new ExchangeName.
+    /** Creates a new ExchangeName.
       *
       * @param value
-      *   the value to use
+      *   The value to use
       * @return
-      *   a new ExchangeName
+      *   A new ExchangeName
       */
     def apply(value: String): ExchangeName = value
 
-    /** The value method returns the value of the ExchangeName.
+    /** Returns the value of the ExchangeName.
       *
       * @param en
-      *   the ExchangeName
+      *   The ExchangeName
       * @return
-      *   the value
+      *   The value
       */
     extension (en: ExchangeName) def value: String = en
 
-  /** The QueueName type represents the queue name for the messaging system.
+  /** Represents the queue name for the messaging system.
     */
   opaque type QueueName = String
   object QueueName:
-    /** The apply method creates a new QueueName.
+    /** Creates a new QueueName.
       *
       * @param value
-      *   the value to use
+      *   The value to use
       * @return
-      *   a new QueueName
+      *   A new QueueName
       */
     def apply(value: String): QueueName = value
 
-    /** The value method returns the value of the QueueName.
+    /** Returns the value of the QueueName.
       *
       * @param qn
-      *   the QueueName
+      *   The QueueName
       * @return
-      *   the value
+      *   The value
       */
     extension (qn: QueueName) def value: String = qn

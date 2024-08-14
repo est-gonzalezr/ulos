@@ -1,11 +1,11 @@
 {
     "version": "1.4.0",
     "project": {
-        "name": "globalProcessing",
-        "directory": "/Users/estebangonzalezruales/Downloads/ulos/globalProcessing",
+        "name": "executionCluster",
+        "directory": "/Users/estebangonzalezruales/Downloads/ulos/executionCluster",
         "workspaceDir": "/Users/estebangonzalezruales/Downloads/ulos",
         "sources": [
-            "/Users/estebangonzalezruales/Downloads/ulos/globalProcessing/src"
+            "/Users/estebangonzalezruales/Downloads/ulos/executionCluster/src"
         ],
         "dependencies": [
             "coreUtils",
@@ -46,12 +46,12 @@
             "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
             "/Users/estebangonzalezruales/Downloads/ulos/storageUtils/compile-resources",
             "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/storageUtils/classes",
-            "/Users/estebangonzalezruales/Downloads/ulos/globalProcessing/compile-resources"
+            "/Users/estebangonzalezruales/Downloads/ulos/executionCluster/compile-resources"
         ],
-        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/globalProcessing",
-        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/globalProcessing/classes",
+        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/executionCluster",
+        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/executionCluster/classes",
         "resources": [
-            "/Users/estebangonzalezruales/Downloads/ulos/globalProcessing/compile-resources"
+            "/Users/estebangonzalezruales/Downloads/ulos/executionCluster/compile-resources"
         ],
         "scala": {
             "organization": "org.scala-lang",
@@ -99,7 +99,7 @@
                 
             ],
             "classpath": [
-                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/globalProcessing/classes",
+                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/executionCluster/classes",
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/storageUtils/classes",
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2.jar",
@@ -134,8 +134,8 @@
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0.jar"
             ],
             "resources": [
-                "/Users/estebangonzalezruales/Downloads/ulos/globalProcessing/compile-resources",
-                "/Users/estebangonzalezruales/Downloads/ulos/globalProcessing/resources"
+                "/Users/estebangonzalezruales/Downloads/ulos/executionCluster/compile-resources",
+                "/Users/estebangonzalezruales/Downloads/ulos/executionCluster/resources"
             ]
         },
         "resolution": {

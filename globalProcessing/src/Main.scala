@@ -32,12 +32,11 @@ import scala.util.Try
 def main(args: String*): Unit =
   connectionHandler.unsafeRunSync()
 
-/** The connectionHandler function is the entry point of the program. It is
-  * responsible for establishing a connection with the broker and handling any
-  * exceptions that may occur.
+/** Entry point of the program. It is responsible for establishing a connection
+  * with the broker and handling any exceptions that may occur.
   *
   * @return
-  *   an IO monad that represents the connection handler.
+  *   An IO monad that represents the connection handler
   */
 def connectionHandler: IO[Nothing] =
   (
@@ -54,14 +53,13 @@ def connectionHandler: IO[Nothing] =
     yield ()
   ).handleErrorWith(Console[IO].printStackTrace).foreverM
 
-/** The channelHandler function is responsible for handling the channel that is
-  * created from the connection. It is responsible for handling any exceptions
-  * that may occur.
+/** Responsible for handling the channel that is created from the connection. It
+  * is responsible for handling any exceptions that may occur.
   *
   * @param connection
-  *   the connection that the channel is created from.
+  *   The connection that the channel is created from
   * @return
-  *   an IO monad that represents the channel handler.
+  *   An IO monad that represents the channel handler
   */
 def channelHandler(connection: Connection): IO[Nothing] =
   channelFromConnection(connection)
@@ -69,14 +67,13 @@ def channelHandler(connection: Connection): IO[Nothing] =
     .handleErrorWith(Console[IO].printStackTrace)
     .foreverM
 
-/** The mainProgramLoop function is the main loop of the program. It is
-  * responsible for displaying the options to the user and executing the
-  * selected option.
+/** Main loop of the program. It is responsible for displaying the options to
+  * the user and executing the selected option.
   *
   * @param channel
-  *   the channel that the program is using.
+  *   The channel that the program is using
   * @return
-  *   an IO monad that represents the main loop of the program.
+  *   An IO monad that represents the main loop of the program
   */
 def mainProgramLoop(
     channel: Channel
@@ -94,14 +91,14 @@ def mainProgramLoop(
     yield ()
   ).foreverM
 
-/** The executeInput function is responsible for executing the selected option.
+/** Responsible for executing the selected option.
   *
   * @param channel
-  *   the channel that the program is using.
+  *   The channel that the program is using
   * @param input
-  *   the selected option.
+  *   The selected option
   * @return
-  *   an IO monad that represents the execution of the selected option.
+  *   An IO monad that represents the execution of the selected option
   */
 def executeInput(
     channel: Channel,
@@ -156,13 +153,12 @@ def executeInput(
 
     case _ => IO.unit
 
-/** The newExchange function is responsible for creating a new exchange from the
-  * user input.
+/** Responsible for creating a new exchange from the user input.
   *
   * @param args
-  *   the arguments that the user has entered.
+  *   The arguments that the user has entered
   * @return
-  *   a Try monad that represents the creation of a new exchange.
+  *   A Try monad that represents the creation of a new exchange
   */
 def newExchange(args: Map[String, String]): Try[BrokerExchange] =
   for
@@ -181,13 +177,12 @@ def newExchange(args: Map[String, String]): Try[BrokerExchange] =
     internal
   )
 
-/** The newQueue function is responsible for creating a new queue from the user
-  * input.
+/** Responsible for creating a new queue from the user input.
   *
   * @param args
-  *   the arguments that the user has entered.
+  *   The arguments that the user has entered
   * @return
-  *   a Try monad that represents the creation of a new queue.
+  *   A Try monad that represents the creation of a new queue
   */
 def newQueue(args: Map[String, String]): Try[BrokerQueue] =
   for
