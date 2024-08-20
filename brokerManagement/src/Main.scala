@@ -11,7 +11,7 @@ import cats.syntax.traverse.toTraverseOps
 import com.rabbitmq.client.AMQP.Exchange
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
-import configuration.MiscConfigUtil.brokerEnvironmentVariables
+import configuration.MiscConfigUtil.brokerEnvVars
 import messaging.MessagingUtil.bindQueueWithExchange
 import messaging.MessagingUtil.brokerConnection
 import messaging.MessagingUtil.channelFromConnection
@@ -41,7 +41,7 @@ def main(args: String*): Unit =
 def connectionHandler: IO[Nothing] =
   (
     for
-      envVars <- brokerEnvironmentVariables
+      envVars <- brokerEnvVars
       host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
       port <- IO.fromOption(envVars.get("port"))(Exception("port not found"))
       user <- IO.fromOption(envVars.get("user"))(Exception("user not found"))

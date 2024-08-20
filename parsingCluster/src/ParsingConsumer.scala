@@ -7,7 +7,7 @@ import types.ProcessingConsumer
 import types.StateTypes.*
 import types.TaskInfo
 
-case class ExecutionConsumer(
+case class ParsingConsumer(
     channel: Channel,
     successRoutingKey: RoutingKey,
     databaseRoutingKey: RoutingKey,
@@ -20,6 +20,8 @@ case class ExecutionConsumer(
       properties: BasicProperties,
       body: Array[Byte]
   ): Unit =
+    // println(s" [x] Received '$message' by consumer with tag $consumerTag")
+    // println(s" [x] Acknowledged message with tag ${envelope.getDeliveryTag}")
 
     val possibleTask = deserializeMessage(body.toSeq)
 
@@ -28,7 +30,7 @@ case class ExecutionConsumer(
         println(s" [x] Error deserializing message: $error")
         channel.basicNack(envelope.getDeliveryTag, false, true)
       case Right(taskInfo) =>
-        println(s" [x] Executing message")
+        println(s" [x] Parsing message")
         processMessage(taskInfo).state match
           case "this will not happen for now" => ()
           case _                              => handleNextStep(taskInfo)

@@ -12,10 +12,10 @@
         ],
         "classpath": [
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-net/commons-net/3.10.0/commons-net-3.10.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.5.4/cats-effect_3-3.5.4.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.6-0142603/cats-effect-kernel_3-3.6-0142603.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.6-0142603/cats-effect-std_3-3.6-0142603.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.5.4/cats-effect-kernel_3-3.5.4.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.5.4/cats-effect-std_3-3.5.4.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.12/scala-library-2.13.12.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_3/2.9.0/cats-core_3-2.9.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0.jar",
@@ -74,10 +74,10 @@
             "classpath": [
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/storageUtils/classes",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-net/commons-net/3.10.0/commons-net-3.10.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.5.4/cats-effect_3-3.5.4.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.6-0142603/cats-effect-kernel_3-3.6-0142603.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.6-0142603/cats-effect-std_3-3.6-0142603.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.5.4/cats-effect-kernel_3-3.5.4.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.5.4/cats-effect-std_3-3.5.4.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.12/scala-library-2.13.12.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_3/2.9.0/cats-core_3-2.9.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0.jar"
@@ -107,17 +107,17 @@
                 },
                 {
                     "organization": "org.typelevel",
-                    "name": "cats-effect-kernel_3",
-                    "version": "3.6-0142603",
+                    "name": "cats-effect_3",
+                    "version": "3.5.4",
                     "artifacts": [
                         {
-                            "name": "cats-effect-kernel_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.6-0142603/cats-effect-kernel_3-3.6-0142603.jar"
+                            "name": "cats-effect_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.5.4/cats-effect_3-3.5.4.jar"
                         },
                         {
-                            "name": "cats-effect-kernel_3",
+                            "name": "cats-effect_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.6-0142603/cats-effect-kernel_3-3.6-0142603-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.5.4/cats-effect_3-3.5.4-sources.jar"
                         }
                     ]
                 },
@@ -134,6 +134,22 @@
                             "name": "cats-core_3",
                             "classifier": "sources",
                             "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_3/2.9.0/cats-core_3-2.9.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "cats-effect-kernel_3",
+                    "version": "3.5.4",
+                    "artifacts": [
+                        {
+                            "name": "cats-effect-kernel_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.5.4/cats-effect-kernel_3-3.5.4.jar"
+                        },
+                        {
+                            "name": "cats-effect-kernel_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.5.4/cats-effect-kernel_3-3.5.4-sources.jar"
                         }
                     ]
                 },
@@ -155,17 +171,17 @@
                 },
                 {
                     "organization": "org.typelevel",
-                    "name": "cats-effect_3",
-                    "version": "3.6-0142603",
+                    "name": "cats-kernel_3",
+                    "version": "2.9.0",
                     "artifacts": [
                         {
-                            "name": "cats-effect_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603.jar"
+                            "name": "cats-kernel_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0.jar"
                         },
                         {
-                            "name": "cats-effect_3",
+                            "name": "cats-kernel_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0-sources.jar"
                         }
                     ]
                 },
@@ -188,32 +204,16 @@
                 {
                     "organization": "org.typelevel",
                     "name": "cats-effect-std_3",
-                    "version": "3.6-0142603",
+                    "version": "3.5.4",
                     "artifacts": [
                         {
                             "name": "cats-effect-std_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.6-0142603/cats-effect-std_3-3.6-0142603.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.5.4/cats-effect-std_3-3.5.4.jar"
                         },
                         {
                             "name": "cats-effect-std_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.6-0142603/cats-effect-std_3-3.6-0142603-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.typelevel",
-                    "name": "cats-kernel_3",
-                    "version": "2.9.0",
-                    "artifacts": [
-                        {
-                            "name": "cats-kernel_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0.jar"
-                        },
-                        {
-                            "name": "cats-kernel_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.5.4/cats-effect-std_3-3.5.4-sources.jar"
                         }
                     ]
                 }

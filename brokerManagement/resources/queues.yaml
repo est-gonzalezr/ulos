@@ -26,3 +26,31 @@ electrical_grid:
     exclusive: false
     autoDelete: false
     routingKey: grid.processing
+parsing_queue:
+    queueName: parsing_queue
+    exchangeName: global_processing_exchange
+    durable: true
+    exclusive: false
+    autoDelete: false
+    routingKey: parsing
+execution_testing_queue:
+    queueName: execution_testing_queue
+    exchangeName: global_processing_exchange
+    durable: true
+    exclusive: false
+    autoDelete: false
+    routingKey: execution
+finalization_testing_queue:
+    queueName: finalization_testing_queue
+    exchangeName: global_processing_exchange
+    durable: true
+    exclusive: false
+    autoDelete: false
+    routingKey: user
+database_queue:
+    queueName: database_queue
+    exchangeName: global_processing_exchange
+    durable: true
+    exclusive: false
+    autoDelete: false
+    routingKey: database

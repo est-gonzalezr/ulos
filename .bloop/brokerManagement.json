@@ -1,11 +1,11 @@
 {
     "version": "1.4.0",
     "project": {
-        "name": "parsingCluster",
-        "directory": "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster",
+        "name": "brokerManagement",
+        "directory": "/Users/estebangonzalezruales/Downloads/ulos/brokerManagement",
         "workspaceDir": "/Users/estebangonzalezruales/Downloads/ulos",
         "sources": [
-            "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/src"
+            "/Users/estebangonzalezruales/Downloads/ulos/brokerManagement/src"
         ],
         "dependencies": [
             "coreUtils",
@@ -47,12 +47,12 @@
             "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
             "/Users/estebangonzalezruales/Downloads/ulos/storageUtils/compile-resources",
             "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/storageUtils/classes",
-            "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/compile-resources"
+            "/Users/estebangonzalezruales/Downloads/ulos/brokerManagement/compile-resources"
         ],
-        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/parsingCluster",
-        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/parsingCluster/classes",
+        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/brokerManagement",
+        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/brokerManagement/classes",
         "resources": [
-            "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/compile-resources"
+            "/Users/estebangonzalezruales/Downloads/ulos/brokerManagement/compile-resources"
         ],
         "scala": {
             "organization": "org.scala-lang",
@@ -100,7 +100,7 @@
                 
             ],
             "classpath": [
-                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/parsingCluster/classes",
+                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/brokerManagement/classes",
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/storageUtils/classes",
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2.jar",
@@ -136,8 +136,8 @@
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.9.0/cats-kernel_3-2.9.0.jar"
             ],
             "resources": [
-                "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/compile-resources",
-                "/Users/estebangonzalezruales/Downloads/ulos/parsingCluster/resources"
+                "/Users/estebangonzalezruales/Downloads/ulos/brokerManagement/compile-resources",
+                "/Users/estebangonzalezruales/Downloads/ulos/brokerManagement/resources"
             ]
         },
         "resolution": {

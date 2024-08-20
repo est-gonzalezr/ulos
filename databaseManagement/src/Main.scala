@@ -2,21 +2,15 @@ import cats.effect.IO
 import cats.effect.std.Console
 import cats.effect.unsafe.implicits.global
 import cats.syntax.parallel.catsSyntaxParallelSequence1
-import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import configuration.MiscConfigUtil.brokerEnvVars
-import configuration.MiscConfigUtil.consumptionQueueEnvVar
-import configuration.MiscConfigUtil.primaryExchangeEnvVar
-import configuration.MiscConfigUtil.routingKeysEnvVars
+import messaging.MessagingUtil
 import messaging.MessagingUtil.brokerConnection
 import messaging.MessagingUtil.channelFromConnection
 import messaging.MessagingUtil.consumeMessages
-import messaging.MessagingUtil.publishMessage
-import types.OpaqueTypes.ExchangeName
 import types.OpaqueTypes.QueueName
-import types.OpaqueTypes.RoutingKey
 
-val DefaultProcessingConsumerQuantity = 5
+val DefaultProcessingConsumerQuantity = 1
 
 @main
 def main: Unit =
@@ -42,48 +36,22 @@ def createQueueConsumers(
     connection: Connection,
     quantity: Int
 ): IO[List[Unit]] =
-  List
-    .fill(quantity)(
-      queueConsumerProgram(connection)
-        .handleErrorWith(Console[IO].printStackTrace)
-        .foreverM
-    )
-    .parSequence()
+  List.fill(quantity)(queueConsumerProgram(connection)).parSequence()
 
 def queueConsumerProgram(connection: Connection): IO[Unit] =
   channelFromConnection(connection)
     .use(channel =>
+      val consumer = DatabaseConsumer(channel)
+
       for
-        consumer <- createConsumer(channel)
-        queue <- consumptionQueueEnvVar
         _ <- consumeMessages(
           channel,
-          QueueName(queue),
+          QueueName("database_queue"),
           false,
           consumer
         )
         _ <- IO.delay(Thread.sleep(60000)).foreverM
       yield ()
     )
-
-def createConsumer(channel: Channel): IO[ExecutionConsumer] =
-  for
-    routingKeysEnvVars <- routingKeysEnvVars
-    publishingRoutingKey <- IO.fromOption(
-      routingKeysEnvVars.get("publishing_routing_key")
-    )(Exception("publishing_routing_key not found"))
-    databaseRoutingKey <- IO.fromOption(
-      routingKeysEnvVars.get("database_routing_key")
-    )(Exception("database_routing_key not found"))
-    primaryExchange <- primaryExchangeEnvVar
-  yield ExecutionConsumer(
-    channel,
-    RoutingKey(publishingRoutingKey),
-    RoutingKey(databaseRoutingKey),
-    publishMessage(
-      channel,
-      ExchangeName(primaryExchange),
-      _,
-      _
-    )
-  )
+    .handleErrorWith(Console[IO].printStackTrace)
+    .foreverM

@@ -47,7 +47,7 @@ case object InitialBrokerConfigUtil:
     */
   def getBrokerExchangeConfiguration: IO[Map[String, YamlExchange]] =
     stringFromFilepath(
-      os.pwd / "globalProcessing" / "resources" / "exchanges.yaml"
+      os.pwd / "brokerManagement" / "resources" / "exchanges.yaml"
     ).use(text =>
       IO.fromOption(text.as[Map[String, YamlExchange]].toOption)(
         Exception("Exchange file not found")
@@ -61,7 +61,7 @@ case object InitialBrokerConfigUtil:
     */
   def getBrokerQueueConfiguration: IO[Map[String, YamlQueue]] =
     stringFromFilepath(
-      os.pwd / "globalProcessing" / "resources" / "queues.yaml"
+      os.pwd / "brokerManagement" / "resources" / "queues.yaml"
     ).use(text =>
       IO.fromOption(text.as[Map[String, YamlQueue]].toOption)(
         Exception("Queues file not found")

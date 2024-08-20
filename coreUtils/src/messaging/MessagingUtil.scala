@@ -279,38 +279,6 @@ case object MessagingUtil:
   def definePublisherConfirms(channel: Channel): IO[Confirm.SelectOk] =
     IO.delay(channel.confirmSelect())
 
-  /** Sends a message to an exchange on the defined RabbitMQ channel.
-    *
-    * @param channel
-    *   The RabbitMQ channel
-    * @param exchangeName
-    *   The name of the exchange
-    * @param routingKey
-    *   The routing key
-    * @param messageBytes
-    *   The message bytes
-    * @param properties
-    *   The message properties
-    *
-    * @return
-    *   An IO monad with the operation result of sending the message
-    */
-  def publishMessage(
-      channel: Channel,
-      exchangeName: ExchangeName,
-      routingKey: RoutingKey,
-      messageBytes: Seq[Byte],
-      properties: BasicProperties = null
-  ): IO[Unit] =
-    IO.delay(
-      channel.basicPublish(
-        exchangeName.value,
-        routingKey.value,
-        properties,
-        messageBytes.toArray
-      )
-    )
-
   /** The consumeMessages function consumes messages from a queue on the defined
     * RabbitMQ channel.
     *
@@ -338,4 +306,34 @@ case object MessagingUtil:
         autoAck,
         consumer
       )
+    )
+
+  /** Sends a message to an exchange on the defined RabbitMQ channel.
+    *
+    * @param channel
+    *   The RabbitMQ channel
+    * @param exchangeName
+    *   The name of the exchange
+    * @param routingKey
+    *   The routing key
+    * @param messageBytes
+    *   The message bytes
+    * @param properties
+    *   The message properties
+    *
+    * @return
+    *   An IO monad with the operation result of sending the message
+    */
+  def publishMessage(
+      channel: Channel,
+      exchangeName: ExchangeName,
+      routingKey: RoutingKey,
+      messageBytes: Seq[Byte],
+      properties: BasicProperties = null
+  ): Unit =
+    channel.basicPublish(
+      exchangeName.value,
+      routingKey.value,
+      properties,
+      messageBytes.toArray
     )

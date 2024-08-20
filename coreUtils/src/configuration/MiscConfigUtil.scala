@@ -18,7 +18,7 @@ case object MiscConfigUtil:
     * @return
     *   An IO monad with the environment variables as a map
     */
-  def brokerEnvironmentVariables: IO[Map[String, String]] =
+  def brokerEnvVars: IO[Map[String, String]] =
     environmentVariableMap.use(envMap =>
       for
         rabbitmqHost <- IO.fromOption(envMap.get("RABBITMQ_HOST"))(
@@ -47,7 +47,7 @@ case object MiscConfigUtil:
     * @return
     *   An IO monad with the environment variables as a map
     */
-  def ftpEnvironmentVariables: IO[Map[String, String]] =
+  def ftpEnvVars: IO[Map[String, String]] =
     environmentVariableMap.use(envMap =>
       for
         ftpHost <- IO.fromOption(envMap.get("FTP_HOST"))(
@@ -68,4 +68,55 @@ case object MiscConfigUtil:
         "user" -> ftpUser,
         "pass" -> ftpPass
       )
+    )
+
+  /** Reads the environment variables required to configure the consumption
+    * queue
+    *
+    * @return
+    *   An IO monad with the consumption queue as a string
+    */
+  def consumptionQueueEnvVar: IO[String] =
+    environmentVariableMap.use(envMap =>
+      for consumptionQueue <- IO.fromOption(envMap.get("CONSUMPTION_QUEUE"))(
+          Exception("CONSUMPTION_QUEUE not found in environment variables")
+        )
+      yield consumptionQueue
+    )
+
+  /** Reads the environment variables required to configure the routing keys and
+    * returns them as a map.
+    *
+    * @return
+    *   An IO monad with the environment variables as a map
+    */
+  def routingKeysEnvVars: IO[Map[String, String]] =
+    environmentVariableMap.use(envMap =>
+      for
+        publishingRoutingKey <- IO.fromOption(
+          envMap.get("PUBLISHING_ROUTING_KEY")
+        )(
+          Exception("PUBLISHING_ROUTING_KEY not found in environment variables")
+        )
+        databaseRoutingKey <- IO.fromOption(envMap.get("DATABASE_ROUTING_KEY"))(
+          Exception("DATABASE_ROUTING_KEY not found in environment variables")
+        )
+      yield Map(
+        "publishing_routing_key" -> publishingRoutingKey,
+        "database_routing_key" -> databaseRoutingKey
+      )
+    )
+
+  /** Reads the environment variables required to configure the primary exchange
+    * and returns it as a string.
+    *
+    * @return
+    *   An IO monad with the primary exchange as a string
+    */
+  def primaryExchangeEnvVar: IO[String] =
+    environmentVariableMap.use(envMap =>
+      for primaryExchange <- IO.fromOption(envMap.get("PRIMARY_EXCHANGE"))(
+          Exception("PRIMARY_EXCHANGE not found in environment variables")
+        )
+      yield primaryExchange
     )

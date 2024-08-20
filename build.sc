@@ -1,14 +1,14 @@
 import mill._
 import mill.scalalib._
 
-val scalaToolkit = ivy"org.scala-lang::toolkit::0.4.0"
-val catsEffect = ivy"org.typelevel::cats-effect::3.6-0142603"
+val scalaToolkit = ivy"org.scala-lang::toolkit::0.5.0"
+val catsEffect = ivy"org.typelevel::cats-effect::3.5.4"
 val fs2 = ivy"co.fs2::fs2-core::3.1.6"
-val munit = ivy"org.scalameta::munit::1.0.0-M11"
+val munit = ivy"org.scalameta::munit::1.0.1"
 val scalaYaml = ivy"org.virtuslab::scala-yaml::0.3.0"
 val amqpClient = ivy"com.rabbitmq:amqp-client:5.21.0"
 val apacheCommonsNet = ivy"commons-net:commons-net:3.10.0"
-val skunk = ivy"org.tpolecat::skunk-core::1.1.0-M3"
+val skunk = ivy"org.tpolecat::skunk-core::0.6.4"
 
 trait ProjectConfigs extends ScalaModule {
   def scalaVersion = "3.4.2"
@@ -49,7 +49,7 @@ object storageUtils extends ProjectConfigs {
   )
 }
 
-object globalProcessing extends ProjectConfigs {
+object brokerManagement extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils, storageUtils)
 }
 

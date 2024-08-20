@@ -2,16 +2,12 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
-import types.OpaqueTypes.RoutingKey
 import types.ProcessingConsumer
 import types.StateTypes.*
 import types.TaskInfo
 
-case class ExecutionConsumer(
-    channel: Channel,
-    successRoutingKey: RoutingKey,
-    databaseRoutingKey: RoutingKey,
-    publishFunction: (RoutingKey, Seq[Byte]) => Unit
+case class DatabaseConsumer(
+    channel: Channel
 ) extends DefaultConsumer(channel),
       ProcessingConsumer:
   override def handleDelivery(
@@ -28,12 +24,8 @@ case class ExecutionConsumer(
         println(s" [x] Error deserializing message: $error")
         channel.basicNack(envelope.getDeliveryTag, false, true)
       case Right(taskInfo) =>
-        println(s" [x] Executing message")
-        processMessage(taskInfo).state match
-          case "this will not happen for now" => ()
-          case _                              => handleNextStep(taskInfo)
-        println(s" [x] Sending new state to database")
-        sendNewStateToDb(taskInfo)
+        println(s" [x] Saving to database")
+        val _ = processMessage(taskInfo).state
         channel.basicAck(envelope.getDeliveryTag, false)
 
   def processMessage(taskInfo: TaskInfo): TaskInfo =
@@ -48,11 +40,3 @@ case class ExecutionConsumer(
     // if parsing success, update state to ParsingSuccess
     // return updated taskInfo
     taskInfo
-
-  def handleNextStep(taskInfo: TaskInfo): Unit =
-    publishFunction(successRoutingKey, serializeMessage(taskInfo))
-
-  def handleError(taskInfo: TaskInfo): Unit = ???
-
-  def sendNewStateToDb(taskInfo: TaskInfo): Unit =
-    publishFunction(databaseRoutingKey, serializeMessage(taskInfo))

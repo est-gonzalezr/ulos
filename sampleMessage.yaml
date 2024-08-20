@@ -1,0 +1,8 @@
+taskId: String
+taskOwnerId: String
+storageTaskPath: String,
+storageResultPath: Option[String],
+isParsed: false
+isExecuted: false
+state: String,
+message: String

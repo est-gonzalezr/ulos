@@ -66,7 +66,7 @@ def queueConsumerProgram(connection: Connection): IO[Unit] =
       yield ()
     )
 
-def createConsumer(channel: Channel): IO[ExecutionConsumer] =
+def createConsumer(channel: Channel): IO[ParsingConsumer] =
   for
     routingKeysEnvVars <- routingKeysEnvVars
     publishingRoutingKey <- IO.fromOption(
@@ -76,7 +76,7 @@ def createConsumer(channel: Channel): IO[ExecutionConsumer] =
       routingKeysEnvVars.get("database_routing_key")
     )(Exception("database_routing_key not found"))
     primaryExchange <- primaryExchangeEnvVar
-  yield ExecutionConsumer(
+  yield ParsingConsumer(
     channel,
     RoutingKey(publishingRoutingKey),
     RoutingKey(databaseRoutingKey),

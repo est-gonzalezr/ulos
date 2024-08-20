@@ -11,51 +11,52 @@
             "coreUtils"
         ],
         "classpath": [
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/1.1.0-M3/skunk-core_3-1.1.0-M3.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/0.6.4/skunk-core_3-0.6.4.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.0-M11/munit_3-1.0.0-M11.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.4.0/toolkit_3-0.4.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.1/munit_3-1.0.1.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.5.0/toolkit_3-0.5.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.5.4/cats-effect_3-3.5.4.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.3.0/scala-yaml_3-0.3.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/rabbitmq/amqp-client/5.21.0/amqp-client-5.21.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-core_3/3.9.4/fs2-core_3-3.9.4.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-io_3/3.9.4/fs2-io_3-3.9.4.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-core_3/3.10.2/fs2-core_3-3.10.2.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-io_3/3.10.2/fs2-io_3-3.10.2.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-bits_3/1.1.38/scodec-bits_3-1.1.38.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-core_3/2.2.2/scodec-core_3-2.2.2.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-cats_3/1.2.0/scodec-cats_3-1.2.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/otel4s-core-trace_3/0.4.0/otel4s-core-trace_3-0.4.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/natchez-core_3/0.3.5/natchez-core_3-0.3.5.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/sourcepos_3/1.1.0/sourcepos_3-1.1.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/twiddles-core_3/0.7.2/twiddles-core_3-0.7.2.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-collection-compat_3/2.11.0/scala-collection-compat_3-2.11.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/twiddles-core_3/0.6.2/twiddles-core_3-0.6.2.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/scram/client/2.1/client-2.1.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.12/scala-library-2.13.12.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.0-M11/junit-interface-1.0.0-M11.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.1/junit-interface-1.0.1.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit-diff_3/1.0.1/munit-diff_3-1.0.1.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/core_3/4.0.0-M14/core_3-4.0.0-M14.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/upickle_3/4.0.0-M14/upickle_3-4.0.0-M14.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/3.3.0/upickle_3-3.3.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.10.0/os-lib_3-0.10.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.6-0142603/cats-effect-kernel_3-3.6-0142603.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.6-0142603/cats-effect-std_3-3.6-0142603.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/core_3/4.0.0-M16/core_3-4.0.0-M16.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/upickle_3/4.0.0-M16/upickle_3-4.0.0-M16.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/3.3.1/upickle_3-3.3.1.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.10.3/os-lib_3-0.10.3.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.5.4/cats-effect-kernel_3-3.5.4.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.5.4/cats-effect-std_3-3.5.4.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/comcast/ip4s-core_3/3.4.0/ip4s-core_3-3.4.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/otel4s-core-common_3/0.4.0/otel4s-core-common_3-0.4.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/comcast/ip4s-core_3/3.5.0/ip4s-core_3-3.5.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/case-insensitive_3/1.4.0/case-insensitive_3-1.4.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/scram/common/2.1/common-2.1.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/model/core_3/1.7.10/core_3-1.7.10.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/core_3/1.3.18/core_3-1.3.18.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/ws_3/1.3.18/ws_3-1.3.18.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/json-common_3/4.0.0-M14/json-common_3-4.0.0-M14.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.0/ujson_3-3.3.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/3.3.0/upack_3-3.3.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/3.3.0/upickle-implicits_3-3.3.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.0/geny_3-1.1.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/core_3/1.3.19/core_3-1.3.19.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/ws_3/1.3.19/ws_3-1.3.19.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/json-common_3/4.0.0-M16/json-common_3-4.0.0-M16.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.1/ujson_3-3.3.1.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/3.3.1/upack_3-3.3.1.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/3.3.1/upickle-implicits_3-3.3.1.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.1/geny_3-1.1.1.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/literally_3/1.1.0/literally_3-1.1.0.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-mtl_3/1.4.0/cats-mtl_3-1.4.0.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/stringprep/saslprep/1.1/saslprep-1.1.jar",
-            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/3.3.0/upickle-core_3-3.3.0.jar",
+            "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/3.3.1/upickle-core_3-3.3.1.jar",
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/stringprep/stringprep/1.1/stringprep-1.1.jar",
             "/Users/estebangonzalezruales/Downloads/ulos/coreUtils/compile-resources",
             "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
@@ -114,51 +115,52 @@
             "classpath": [
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/databaseManagement/classes",
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/1.1.0-M3/skunk-core_3-1.1.0-M3.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/0.6.4/skunk-core_3-0.6.4.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.0-M11/munit_3-1.0.0-M11.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.4.0/toolkit_3-0.4.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.1/munit_3-1.0.1.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.5.0/toolkit_3-0.5.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.5.4/cats-effect_3-3.5.4.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.3.0/scala-yaml_3-0.3.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/rabbitmq/amqp-client/5.21.0/amqp-client-5.21.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_3/2.10.0/cats-core_3-2.10.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-core_3/3.9.4/fs2-core_3-3.9.4.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-io_3/3.9.4/fs2-io_3-3.9.4.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-core_3/3.10.2/fs2-core_3-3.10.2.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-io_3/3.10.2/fs2-io_3-3.10.2.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-bits_3/1.1.38/scodec-bits_3-1.1.38.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-core_3/2.2.2/scodec-core_3-2.2.2.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-cats_3/1.2.0/scodec-cats_3-1.2.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/otel4s-core-trace_3/0.4.0/otel4s-core-trace_3-0.4.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/natchez-core_3/0.3.5/natchez-core_3-0.3.5.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/sourcepos_3/1.1.0/sourcepos_3-1.1.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/twiddles-core_3/0.7.2/twiddles-core_3-0.7.2.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-collection-compat_3/2.11.0/scala-collection-compat_3-2.11.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/twiddles-core_3/0.6.2/twiddles-core_3-0.6.2.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/scram/client/2.1/client-2.1.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.12/scala-library-2.13.12.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.0-M11/junit-interface-1.0.0-M11.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.1/junit-interface-1.0.1.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit-diff_3/1.0.1/munit-diff_3-1.0.1.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/core_3/4.0.0-M14/core_3-4.0.0-M14.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/upickle_3/4.0.0-M14/upickle_3-4.0.0-M14.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/3.3.0/upickle_3-3.3.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.10.0/os-lib_3-0.10.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.6-0142603/cats-effect-kernel_3-3.6-0142603.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.6-0142603/cats-effect-std_3-3.6-0142603.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/core_3/4.0.0-M16/core_3-4.0.0-M16.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/upickle_3/4.0.0-M16/upickle_3-4.0.0-M16.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/3.3.1/upickle_3-3.3.1.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.10.3/os-lib_3-0.10.3.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.5.4/cats-effect-kernel_3-3.5.4.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.5.4/cats-effect-std_3-3.5.4.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/comcast/ip4s-core_3/3.4.0/ip4s-core_3-3.4.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/otel4s-core-common_3/0.4.0/otel4s-core-common_3-0.4.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/comcast/ip4s-core_3/3.5.0/ip4s-core_3-3.5.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/case-insensitive_3/1.4.0/case-insensitive_3-1.4.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/scram/common/2.1/common-2.1.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/model/core_3/1.7.10/core_3-1.7.10.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/core_3/1.3.18/core_3-1.3.18.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/ws_3/1.3.18/ws_3-1.3.18.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/json-common_3/4.0.0-M14/json-common_3-4.0.0-M14.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.0/ujson_3-3.3.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/3.3.0/upack_3-3.3.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/3.3.0/upickle-implicits_3-3.3.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.0/geny_3-1.1.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/core_3/1.3.19/core_3-1.3.19.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/ws_3/1.3.19/ws_3-1.3.19.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/json-common_3/4.0.0-M16/json-common_3-4.0.0-M16.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.1/ujson_3-3.3.1.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/3.3.1/upack_3-3.3.1.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/3.3.1/upickle-implicits_3-3.3.1.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.1/geny_3-1.1.1.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/literally_3/1.1.0/literally_3-1.1.0.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-mtl_3/1.4.0/cats-mtl_3-1.4.0.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/stringprep/saslprep/1.1/saslprep-1.1.jar",
-                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/3.3.0/upickle-core_3-3.3.0.jar",
+                "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/3.3.1/upickle-core_3-3.3.1.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/stringprep/stringprep/1.1/stringprep-1.1.jar"
             ],
             "resources": [
@@ -169,50 +171,18 @@
         "resolution": {
             "modules": [
                 {
-                    "organization": "com.lihaoyi",
-                    "name": "upickle-core_3",
-                    "version": "3.3.0",
+                    "organization": "com.softwaremill.sttp.shared",
+                    "name": "ws_3",
+                    "version": "1.3.19",
                     "artifacts": [
                         {
-                            "name": "upickle-core_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/3.3.0/upickle-core_3-3.3.0.jar"
+                            "name": "ws_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/ws_3/1.3.19/ws_3-1.3.19.jar"
                         },
                         {
-                            "name": "upickle-core_3",
+                            "name": "ws_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/3.3.0/upickle-core_3-3.3.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "junit",
-                    "name": "junit",
-                    "version": "4.13.2",
-                    "artifacts": [
-                        {
-                            "name": "junit",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar"
-                        },
-                        {
-                            "name": "junit",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.scalameta",
-                    "name": "junit-interface",
-                    "version": "1.0.0-M11",
-                    "artifacts": [
-                        {
-                            "name": "junit-interface",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.0-M11/junit-interface-1.0.0-M11.jar"
-                        },
-                        {
-                            "name": "junit-interface",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.0-M11/junit-interface-1.0.0-M11-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/ws_3/1.3.19/ws_3-1.3.19-sources.jar"
                         }
                     ]
                 },
@@ -233,162 +203,34 @@
                     ]
                 },
                 {
-                    "organization": "org.scalameta",
-                    "name": "munit_3",
-                    "version": "1.0.0-M11",
+                    "organization": "org.scala-lang.modules",
+                    "name": "scala-collection-compat_3",
+                    "version": "2.11.0",
                     "artifacts": [
                         {
-                            "name": "munit_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.0-M11/munit_3-1.0.0-M11.jar"
+                            "name": "scala-collection-compat_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-collection-compat_3/2.11.0/scala-collection-compat_3-2.11.0.jar"
                         },
                         {
-                            "name": "munit_3",
+                            "name": "scala-collection-compat_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.0-M11/munit_3-1.0.0-M11-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "com.softwaremill.sttp.client4",
-                    "name": "upickle_3",
-                    "version": "4.0.0-M14",
-                    "artifacts": [
-                        {
-                            "name": "upickle_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/upickle_3/4.0.0-M14/upickle_3-4.0.0-M14.jar"
-                        },
-                        {
-                            "name": "upickle_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/upickle_3/4.0.0-M14/upickle_3-4.0.0-M14-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.scodec",
-                    "name": "scodec-bits_3",
-                    "version": "1.1.38",
-                    "artifacts": [
-                        {
-                            "name": "scodec-bits_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-bits_3/1.1.38/scodec-bits_3-1.1.38.jar"
-                        },
-                        {
-                            "name": "scodec-bits_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-bits_3/1.1.38/scodec-bits_3-1.1.38-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-collection-compat_3/2.11.0/scala-collection-compat_3-2.11.0-sources.jar"
                         }
                     ]
                 },
                 {
                     "organization": "org.typelevel",
-                    "name": "twiddles-core_3",
-                    "version": "0.7.2",
+                    "name": "cats-effect_3",
+                    "version": "3.5.4",
                     "artifacts": [
                         {
-                            "name": "twiddles-core_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/twiddles-core_3/0.7.2/twiddles-core_3-0.7.2.jar"
+                            "name": "cats-effect_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.5.4/cats-effect_3-3.5.4.jar"
                         },
                         {
-                            "name": "twiddles-core_3",
+                            "name": "cats-effect_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/twiddles-core_3/0.7.2/twiddles-core_3-0.7.2-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "com.lihaoyi",
-                    "name": "ujson_3",
-                    "version": "3.3.0",
-                    "artifacts": [
-                        {
-                            "name": "ujson_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.0/ujson_3-3.3.0.jar"
-                        },
-                        {
-                            "name": "ujson_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.0/ujson_3-3.3.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.scala-lang",
-                    "name": "toolkit_3",
-                    "version": "0.4.0",
-                    "artifacts": [
-                        {
-                            "name": "toolkit_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.4.0/toolkit_3-0.4.0.jar"
-                        },
-                        {
-                            "name": "toolkit_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.4.0/toolkit_3-0.4.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "co.fs2",
-                    "name": "fs2-io_3",
-                    "version": "3.9.4",
-                    "artifacts": [
-                        {
-                            "name": "fs2-io_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-io_3/3.9.4/fs2-io_3-3.9.4.jar"
-                        },
-                        {
-                            "name": "fs2-io_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-io_3/3.9.4/fs2-io_3-3.9.4-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "com.softwaremill.sttp.client4",
-                    "name": "json-common_3",
-                    "version": "4.0.0-M14",
-                    "artifacts": [
-                        {
-                            "name": "json-common_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/json-common_3/4.0.0-M14/json-common_3-4.0.0-M14.jar"
-                        },
-                        {
-                            "name": "json-common_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/json-common_3/4.0.0-M14/json-common_3-4.0.0-M14-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "com.softwaremill.sttp.shared",
-                    "name": "ws_3",
-                    "version": "1.3.18",
-                    "artifacts": [
-                        {
-                            "name": "ws_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/ws_3/1.3.18/ws_3-1.3.18.jar"
-                        },
-                        {
-                            "name": "ws_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/ws_3/1.3.18/ws_3-1.3.18-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.typelevel",
-                    "name": "otel4s-core-common_3",
-                    "version": "0.4.0",
-                    "artifacts": [
-                        {
-                            "name": "otel4s-core-common_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/otel4s-core-common_3/0.4.0/otel4s-core-common_3-0.4.0.jar"
-                        },
-                        {
-                            "name": "otel4s-core-common_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/otel4s-core-common_3/0.4.0/otel4s-core-common_3-0.4.0-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.5.4/cats-effect_3-3.5.4-sources.jar"
                         }
                     ]
                 },
@@ -409,50 +251,130 @@
                     ]
                 },
                 {
-                    "organization": "org.tpolecat",
-                    "name": "skunk-core_3",
-                    "version": "1.1.0-M3",
-                    "artifacts": [
-                        {
-                            "name": "skunk-core_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/1.1.0-M3/skunk-core_3-1.1.0-M3.jar"
-                        },
-                        {
-                            "name": "skunk-core_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/1.1.0-M3/skunk-core_3-1.1.0-M3-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "com.softwaremill.sttp.client4",
+                    "organization": "com.softwaremill.sttp.shared",
                     "name": "core_3",
-                    "version": "4.0.0-M14",
+                    "version": "1.3.19",
                     "artifacts": [
                         {
                             "name": "core_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/core_3/4.0.0-M14/core_3-4.0.0-M14.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/core_3/1.3.19/core_3-1.3.19.jar"
                         },
                         {
                             "name": "core_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/core_3/4.0.0-M14/core_3-4.0.0-M14-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/core_3/1.3.19/core_3-1.3.19-sources.jar"
                         }
                     ]
                 },
                 {
                     "organization": "org.typelevel",
-                    "name": "cats-effect-kernel_3",
-                    "version": "3.6-0142603",
+                    "name": "twiddles-core_3",
+                    "version": "0.6.2",
                     "artifacts": [
                         {
-                            "name": "cats-effect-kernel_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.6-0142603/cats-effect-kernel_3-3.6-0142603.jar"
+                            "name": "twiddles-core_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/twiddles-core_3/0.6.2/twiddles-core_3-0.6.2.jar"
                         },
                         {
-                            "name": "cats-effect-kernel_3",
+                            "name": "twiddles-core_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.6-0142603/cats-effect-kernel_3-3.6-0142603-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/twiddles-core_3/0.6.2/twiddles-core_3-0.6.2-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scalameta",
+                    "name": "munit-diff_3",
+                    "version": "1.0.1",
+                    "artifacts": [
+                        {
+                            "name": "munit-diff_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit-diff_3/1.0.1/munit-diff_3-1.0.1.jar"
+                        },
+                        {
+                            "name": "munit-diff_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit-diff_3/1.0.1/munit-diff_3-1.0.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "cats-kernel_3",
+                    "version": "2.10.0",
+                    "artifacts": [
+                        {
+                            "name": "cats-kernel_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0.jar"
+                        },
+                        {
+                            "name": "cats-kernel_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "junit",
+                    "name": "junit",
+                    "version": "4.13.2",
+                    "artifacts": [
+                        {
+                            "name": "junit",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar"
+                        },
+                        {
+                            "name": "junit",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.softwaremill.sttp.client4",
+                    "name": "json-common_3",
+                    "version": "4.0.0-M16",
+                    "artifacts": [
+                        {
+                            "name": "json-common_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/json-common_3/4.0.0-M16/json-common_3-4.0.0-M16.jar"
+                        },
+                        {
+                            "name": "json-common_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/json-common_3/4.0.0-M16/json-common_3-4.0.0-M16-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "co.fs2",
+                    "name": "fs2-core_3",
+                    "version": "3.10.2",
+                    "artifacts": [
+                        {
+                            "name": "fs2-core_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-core_3/3.10.2/fs2-core_3-3.10.2.jar"
+                        },
+                        {
+                            "name": "fs2-core_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-core_3/3.10.2/fs2-core_3-3.10.2-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.tpolecat",
+                    "name": "natchez-core_3",
+                    "version": "0.3.5",
+                    "artifacts": [
+                        {
+                            "name": "natchez-core_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/natchez-core_3/0.3.5/natchez-core_3-0.3.5.jar"
+                        },
+                        {
+                            "name": "natchez-core_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/natchez-core_3/0.3.5/natchez-core_3-0.3.5-sources.jar"
                         }
                     ]
                 },
@@ -489,6 +411,102 @@
                     ]
                 },
                 {
+                    "organization": "com.softwaremill.sttp.client4",
+                    "name": "core_3",
+                    "version": "4.0.0-M16",
+                    "artifacts": [
+                        {
+                            "name": "core_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/core_3/4.0.0-M16/core_3-4.0.0-M16.jar"
+                        },
+                        {
+                            "name": "core_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/core_3/4.0.0-M16/core_3-4.0.0-M16-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scodec",
+                    "name": "scodec-bits_3",
+                    "version": "1.1.38",
+                    "artifacts": [
+                        {
+                            "name": "scodec-bits_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-bits_3/1.1.38/scodec-bits_3-1.1.38.jar"
+                        },
+                        {
+                            "name": "scodec-bits_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-bits_3/1.1.38/scodec-bits_3-1.1.38-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scalameta",
+                    "name": "junit-interface",
+                    "version": "1.0.1",
+                    "artifacts": [
+                        {
+                            "name": "junit-interface",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.1/junit-interface-1.0.1.jar"
+                        },
+                        {
+                            "name": "junit-interface",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.1/junit-interface-1.0.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "case-insensitive_3",
+                    "version": "1.4.0",
+                    "artifacts": [
+                        {
+                            "name": "case-insensitive_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/case-insensitive_3/1.4.0/case-insensitive_3-1.4.0.jar"
+                        },
+                        {
+                            "name": "case-insensitive_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/case-insensitive_3/1.4.0/case-insensitive_3-1.4.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "upickle-core_3",
+                    "version": "3.3.1",
+                    "artifacts": [
+                        {
+                            "name": "upickle-core_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/3.3.1/upickle-core_3-3.3.1.jar"
+                        },
+                        {
+                            "name": "upickle-core_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/3.3.1/upickle-core_3-3.3.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "co.fs2",
+                    "name": "fs2-io_3",
+                    "version": "3.10.2",
+                    "artifacts": [
+                        {
+                            "name": "fs2-io_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-io_3/3.10.2/fs2-io_3-3.10.2.jar"
+                        },
+                        {
+                            "name": "fs2-io_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-io_3/3.10.2/fs2-io_3-3.10.2-sources.jar"
+                        }
+                    ]
+                },
+                {
                     "organization": "com.rabbitmq",
                     "name": "amqp-client",
                     "version": "5.21.0",
@@ -505,50 +523,34 @@
                     ]
                 },
                 {
-                    "organization": "com.softwaremill.sttp.shared",
-                    "name": "core_3",
-                    "version": "1.3.18",
-                    "artifacts": [
-                        {
-                            "name": "core_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/core_3/1.3.18/core_3-1.3.18.jar"
-                        },
-                        {
-                            "name": "core_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/shared/core_3/1.3.18/core_3-1.3.18-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "com.comcast",
-                    "name": "ip4s-core_3",
-                    "version": "3.4.0",
-                    "artifacts": [
-                        {
-                            "name": "ip4s-core_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/comcast/ip4s-core_3/3.4.0/ip4s-core_3-3.4.0.jar"
-                        },
-                        {
-                            "name": "ip4s-core_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/comcast/ip4s-core_3/3.4.0/ip4s-core_3-3.4.0-sources.jar"
-                        }
-                    ]
-                },
-                {
                     "organization": "com.lihaoyi",
                     "name": "upack_3",
-                    "version": "3.3.0",
+                    "version": "3.3.1",
                     "artifacts": [
                         {
                             "name": "upack_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/3.3.0/upack_3-3.3.0.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/3.3.1/upack_3-3.3.1.jar"
                         },
                         {
                             "name": "upack_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/3.3.0/upack_3-3.3.0-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/3.3.1/upack_3-3.3.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.typelevel",
+                    "name": "cats-effect-kernel_3",
+                    "version": "3.5.4",
+                    "artifacts": [
+                        {
+                            "name": "cats-effect-kernel_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.5.4/cats-effect-kernel_3-3.5.4.jar"
+                        },
+                        {
+                            "name": "cats-effect-kernel_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_3/3.5.4/cats-effect-kernel_3-3.5.4-sources.jar"
                         }
                     ]
                 },
@@ -569,22 +571,6 @@
                     ]
                 },
                 {
-                    "organization": "com.lihaoyi",
-                    "name": "geny_3",
-                    "version": "1.1.0",
-                    "artifacts": [
-                        {
-                            "name": "geny_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.0/geny_3-1.1.0.jar"
-                        },
-                        {
-                            "name": "geny_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.0/geny_3-1.1.0-sources.jar"
-                        }
-                    ]
-                },
-                {
                     "organization": "org.scala-lang",
                     "name": "scala3-library_3",
                     "version": "3.4.2",
@@ -597,6 +583,22 @@
                             "name": "scala3-library_3",
                             "classifier": "sources",
                             "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.tpolecat",
+                    "name": "skunk-core_3",
+                    "version": "0.6.4",
+                    "artifacts": [
+                        {
+                            "name": "skunk-core_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/0.6.4/skunk-core_3-0.6.4.jar"
+                        },
+                        {
+                            "name": "skunk-core_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/0.6.4/skunk-core_3-0.6.4-sources.jar"
                         }
                     ]
                 },
@@ -618,33 +620,17 @@
                 },
                 {
                     "organization": "com.lihaoyi",
-                    "name": "os-lib_3",
-                    "version": "0.10.0",
+                    "name": "upickle-implicits_3",
+                    "version": "3.3.1",
                     "artifacts": [
                         {
-                            "name": "os-lib_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.10.0/os-lib_3-0.10.0.jar"
+                            "name": "upickle-implicits_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/3.3.1/upickle-implicits_3-3.3.1.jar"
                         },
                         {
-                            "name": "os-lib_3",
+                            "name": "upickle-implicits_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.10.0/os-lib_3-0.10.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.typelevel",
-                    "name": "cats-effect_3",
-                    "version": "3.6-0142603",
-                    "artifacts": [
-                        {
-                            "name": "cats-effect_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603.jar"
-                        },
-                        {
-                            "name": "cats-effect_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_3/3.6-0142603/cats-effect_3-3.6-0142603-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/3.3.1/upickle-implicits_3-3.3.1-sources.jar"
                         }
                     ]
                 },
@@ -681,18 +667,18 @@
                     ]
                 },
                 {
-                    "organization": "org.typelevel",
-                    "name": "cats-effect-std_3",
-                    "version": "3.6-0142603",
+                    "organization": "com.lihaoyi",
+                    "name": "ujson_3",
+                    "version": "3.3.1",
                     "artifacts": [
                         {
-                            "name": "cats-effect-std_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.6-0142603/cats-effect-std_3-3.6-0142603.jar"
+                            "name": "ujson_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.1/ujson_3-3.3.1.jar"
                         },
                         {
-                            "name": "cats-effect-std_3",
+                            "name": "ujson_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.6-0142603/cats-effect-std_3-3.6-0142603-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/3.3.1/ujson_3-3.3.1-sources.jar"
                         }
                     ]
                 },
@@ -713,34 +699,18 @@
                     ]
                 },
                 {
-                    "organization": "com.lihaoyi",
-                    "name": "upickle_3",
-                    "version": "3.3.0",
+                    "organization": "org.scalameta",
+                    "name": "munit_3",
+                    "version": "1.0.1",
                     "artifacts": [
                         {
-                            "name": "upickle_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/3.3.0/upickle_3-3.3.0.jar"
+                            "name": "munit_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.1/munit_3-1.0.1.jar"
                         },
                         {
-                            "name": "upickle_3",
+                            "name": "munit_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/3.3.0/upickle_3-3.3.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "org.typelevel",
-                    "name": "cats-mtl_3",
-                    "version": "1.4.0",
-                    "artifacts": [
-                        {
-                            "name": "cats-mtl_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-mtl_3/1.4.0/cats-mtl_3-1.4.0.jar"
-                        },
-                        {
-                            "name": "cats-mtl_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-mtl_3/1.4.0/cats-mtl_3-1.4.0-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.1/munit_3-1.0.1-sources.jar"
                         }
                     ]
                 },
@@ -757,6 +727,70 @@
                             "name": "scala-yaml_3",
                             "classifier": "sources",
                             "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/virtuslab/scala-yaml_3/0.3.0/scala-yaml_3-0.3.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-lang",
+                    "name": "toolkit_3",
+                    "version": "0.5.0",
+                    "artifacts": [
+                        {
+                            "name": "toolkit_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.5.0/toolkit_3-0.5.0.jar"
+                        },
+                        {
+                            "name": "toolkit_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/toolkit_3/0.5.0/toolkit_3-0.5.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "upickle_3",
+                    "version": "3.3.1",
+                    "artifacts": [
+                        {
+                            "name": "upickle_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/3.3.1/upickle_3-3.3.1.jar"
+                        },
+                        {
+                            "name": "upickle_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/3.3.1/upickle_3-3.3.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "geny_3",
+                    "version": "1.1.1",
+                    "artifacts": [
+                        {
+                            "name": "geny_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.1/geny_3-1.1.1.jar"
+                        },
+                        {
+                            "name": "geny_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.1/geny_3-1.1.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.comcast",
+                    "name": "ip4s-core_3",
+                    "version": "3.5.0",
+                    "artifacts": [
+                        {
+                            "name": "ip4s-core_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/comcast/ip4s-core_3/3.5.0/ip4s-core_3-3.5.0.jar"
+                        },
+                        {
+                            "name": "ip4s-core_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/comcast/ip4s-core_3/3.5.0/ip4s-core_3-3.5.0-sources.jar"
                         }
                     ]
                 },
@@ -793,6 +827,22 @@
                     ]
                 },
                 {
+                    "organization": "com.softwaremill.sttp.client4",
+                    "name": "upickle_3",
+                    "version": "4.0.0-M16",
+                    "artifacts": [
+                        {
+                            "name": "upickle_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/upickle_3/4.0.0-M16/upickle_3-4.0.0-M16.jar"
+                        },
+                        {
+                            "name": "upickle_3",
+                            "classifier": "sources",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/softwaremill/sttp/client4/upickle_3/4.0.0-M16/upickle_3-4.0.0-M16-sources.jar"
+                        }
+                    ]
+                },
+                {
                     "organization": "org.scodec",
                     "name": "scodec-core_3",
                     "version": "2.2.2",
@@ -809,18 +859,18 @@
                     ]
                 },
                 {
-                    "organization": "org.typelevel",
-                    "name": "otel4s-core-trace_3",
-                    "version": "0.4.0",
+                    "organization": "com.lihaoyi",
+                    "name": "os-lib_3",
+                    "version": "0.10.3",
                     "artifacts": [
                         {
-                            "name": "otel4s-core-trace_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/otel4s-core-trace_3/0.4.0/otel4s-core-trace_3-0.4.0.jar"
+                            "name": "os-lib_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.10.3/os-lib_3-0.10.3.jar"
                         },
                         {
-                            "name": "otel4s-core-trace_3",
+                            "name": "os-lib_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/otel4s-core-trace_3/0.4.0/otel4s-core-trace_3-0.4.0-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.10.3/os-lib_3-0.10.3-sources.jar"
                         }
                     ]
                 },
@@ -842,49 +892,17 @@
                 },
                 {
                     "organization": "org.typelevel",
-                    "name": "cats-kernel_3",
-                    "version": "2.10.0",
+                    "name": "cats-effect-std_3",
+                    "version": "3.5.4",
                     "artifacts": [
                         {
-                            "name": "cats-kernel_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0.jar"
+                            "name": "cats-effect-std_3",
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.5.4/cats-effect-std_3-3.5.4.jar"
                         },
                         {
-                            "name": "cats-kernel_3",
+                            "name": "cats-effect-std_3",
                             "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_3/2.10.0/cats-kernel_3-2.10.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "com.lihaoyi",
-                    "name": "upickle-implicits_3",
-                    "version": "3.3.0",
-                    "artifacts": [
-                        {
-                            "name": "upickle-implicits_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/3.3.0/upickle-implicits_3-3.3.0.jar"
-                        },
-                        {
-                            "name": "upickle-implicits_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/3.3.0/upickle-implicits_3-3.3.0-sources.jar"
-                        }
-                    ]
-                },
-                {
-                    "organization": "co.fs2",
-                    "name": "fs2-core_3",
-                    "version": "3.9.4",
-                    "artifacts": [
-                        {
-                            "name": "fs2-core_3",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-core_3/3.9.4/fs2-core_3-3.9.4.jar"
-                        },
-                        {
-                            "name": "fs2-core_3",
-                            "classifier": "sources",
-                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/co/fs2/fs2-core_3/3.9.4/fs2-core_3-3.9.4-sources.jar"
+                            "path": "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_3/3.5.4/cats-effect-std_3-3.5.4-sources.jar"
                         }
                     ]
                 },
