@@ -70,20 +70,6 @@ case object MiscConfigUtil:
       )
     )
 
-  /** Reads the environment variables required to configure the consumption
-    * queue
-    *
-    * @return
-    *   An IO monad with the consumption queue as a string
-    */
-  def consumptionQueueEnvVar: IO[String] =
-    environmentVariableMap.use(envMap =>
-      for consumptionQueue <- IO.fromOption(envMap.get("CONSUMPTION_QUEUE"))(
-          Exception("CONSUMPTION_QUEUE not found in environment variables")
-        )
-      yield consumptionQueue
-    )
-
   /** Reads the environment variables required to configure the routing keys and
     * returns them as a map.
     *
@@ -107,6 +93,20 @@ case object MiscConfigUtil:
       )
     )
 
+  /** Reads the environment variables required to configure the consumption
+    * queue
+    *
+    * @return
+    *   An IO monad with the consumption queue as a string
+    */
+  def consumptionQueueEnvVar: IO[String] =
+    environmentVariableMap.use(envMap =>
+      for consumptionQueue <- IO.fromOption(envMap.get("CONSUMPTION_QUEUE"))(
+          Exception("CONSUMPTION_QUEUE not found in environment variables")
+        )
+      yield consumptionQueue
+    )
+
   /** Reads the environment variables required to configure the primary exchange
     * and returns it as a string.
     *
@@ -120,3 +120,4 @@ case object MiscConfigUtil:
         )
       yield primaryExchange
     )
+end MiscConfigUtil

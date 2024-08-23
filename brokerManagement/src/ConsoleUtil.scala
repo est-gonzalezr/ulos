@@ -93,3 +93,4 @@ case object ConsoleUtil:
       4 -> "Delete an exchange from the broker",
       5 -> "Delete a queue from the broker"
     )
+end ConsoleUtil

@@ -1,11 +1,11 @@
 {
     "version": "1.4.0",
     "project": {
-        "name": "databaseManagement",
-        "directory": "/Users/estebangonzalezruales/Downloads/ulos/databaseManagement",
+        "name": "databaseCluster",
+        "directory": "/Users/estebangonzalezruales/Downloads/ulos/databaseCluster",
         "workspaceDir": "/Users/estebangonzalezruales/Downloads/ulos",
         "sources": [
-            "/Users/estebangonzalezruales/Downloads/ulos/databaseManagement/src"
+            "/Users/estebangonzalezruales/Downloads/ulos/databaseCluster/src"
         ],
         "dependencies": [
             "coreUtils"
@@ -60,12 +60,12 @@
             "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/stringprep/stringprep/1.1/stringprep-1.1.jar",
             "/Users/estebangonzalezruales/Downloads/ulos/coreUtils/compile-resources",
             "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
-            "/Users/estebangonzalezruales/Downloads/ulos/databaseManagement/compile-resources"
+            "/Users/estebangonzalezruales/Downloads/ulos/databaseCluster/compile-resources"
         ],
-        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/databaseManagement",
-        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/databaseManagement/classes",
+        "out": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/databaseCluster",
+        "classesDir": "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/databaseCluster/classes",
         "resources": [
-            "/Users/estebangonzalezruales/Downloads/ulos/databaseManagement/compile-resources"
+            "/Users/estebangonzalezruales/Downloads/ulos/databaseCluster/compile-resources"
         ],
         "scala": {
             "organization": "org.scala-lang",
@@ -75,10 +75,11 @@
                 "-explain",
                 "-deprecation",
                 "-unchecked",
-                "-Wunused:all",
                 "-Wnonunit-statement",
                 "-Wvalue-discard",
-                "-Werror"
+                "-Werror",
+                "-new-syntax",
+                "-rewrite"
             ],
             "jars": [
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/3.4.2/scala3-compiler_3-3.4.2.jar",
@@ -113,7 +114,7 @@
                 
             ],
             "classpath": [
-                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/databaseManagement/classes",
+                "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/databaseCluster/classes",
                 "/Users/estebangonzalezruales/Downloads/ulos/.bloop/out/coreUtils/classes",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tpolecat/skunk-core_3/0.6.4/skunk-core_3-0.6.4.jar",
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.4.2/scala3-library_3-3.4.2.jar",
@@ -164,8 +165,8 @@
                 "/Users/estebangonzalezruales/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ongres/stringprep/stringprep/1.1/stringprep-1.1.jar"
             ],
             "resources": [
-                "/Users/estebangonzalezruales/Downloads/ulos/databaseManagement/compile-resources",
-                "/Users/estebangonzalezruales/Downloads/ulos/databaseManagement/resources"
+                "/Users/estebangonzalezruales/Downloads/ulos/databaseCluster/compile-resources",
+                "/Users/estebangonzalezruales/Downloads/ulos/databaseCluster/resources"
             ]
         },
         "resolution": {

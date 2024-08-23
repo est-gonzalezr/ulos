@@ -103,3 +103,4 @@ case class FtpStorage(host: String, port: Int, user: String, pass: String)
     Resource.make(IO.delay(client.retrieveFileStream(path)))(stream =>
       IO.delay(stream.close())
     )
+end FtpStorage

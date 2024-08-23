@@ -48,3 +48,4 @@ trait ProcessingConsumer:
     *   The TaskInfo object after processing
     */
   def processMessage(taskInfo: TaskInfo): TaskInfo
+end ProcessingConsumer

@@ -32,6 +32,7 @@ case object OpaqueTypes:
       *   The value
       */
     extension (rk: RoutingKey) def value: String = rk
+  end RoutingKey
 
   /** Represents the exchange name for the messaging system.
     */
@@ -54,6 +55,7 @@ case object OpaqueTypes:
       *   The value
       */
     extension (en: ExchangeName) def value: String = en
+  end ExchangeName
 
   /** Represents the queue name for the messaging system.
     */
@@ -76,3 +78,5 @@ case object OpaqueTypes:
       *   The value
       */
     extension (qn: QueueName) def value: String = qn
+  end QueueName
+end OpaqueTypes

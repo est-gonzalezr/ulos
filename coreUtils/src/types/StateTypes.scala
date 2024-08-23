@@ -10,3 +10,4 @@ enum StateTypes(val value: String):
   case ExecutionFailure extends StateTypes("ExecutionFailure")
   case ExecutionSuccess extends StateTypes("ExecutionSuccess")
   case Error extends StateTypes("Error")
+end StateTypes

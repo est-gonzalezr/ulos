@@ -38,3 +38,4 @@ trait Storage:
     *   an IO monad with a boolean indicating if the file was deleted
     */
   def deleteFile(path: String): IO[Boolean]
+end Storage

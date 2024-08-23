@@ -13,6 +13,7 @@ import cats.effect.std.Console
   val numbersWithWait = numbers.zipLeft(seconds)
 
   readAndAverage(0, 0).foreverM.unsafeRunSync()
+end main
 
 def readAndAverage(sum: Int, count: Int): IO[Unit] =
   for
@@ -91,6 +92,8 @@ def program: IO[A] =
     _ <- IO.sleep(5.seconds)
     _ <- p.a.flatMap(x => IO(println(x)))
   yield p
+  end for
+end program
 
 // numbersWithWait
 //   .take(6)

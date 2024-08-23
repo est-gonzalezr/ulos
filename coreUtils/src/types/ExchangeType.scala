@@ -14,3 +14,4 @@ enum ExchangeType(val strValue: String):
   case Fanout extends ExchangeType("fanout")
   case Topic extends ExchangeType("topic")
   case Headers extends ExchangeType("headers")
+end ExchangeType

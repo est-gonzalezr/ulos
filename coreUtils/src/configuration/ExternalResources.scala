@@ -52,3 +52,4 @@ case object ExternalResources:
     */
   def linesFromFilepath(absPath: Path): Resource[IO, Seq[String]] =
     Resource.make(IO.delay(os.read.lines(absPath)))(_ => IO.unit)
+end ExternalResources

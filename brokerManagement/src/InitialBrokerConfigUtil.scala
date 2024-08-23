@@ -87,6 +87,7 @@ case object InitialBrokerConfigUtil:
       yield configureBrokerExchange(channel, exchange)
 
     ops.sequence
+  end configureBrokerExchanges
 
   /** Configures an exchange in the message broker.
     *
@@ -138,6 +139,7 @@ case object InitialBrokerConfigUtil:
       yield configureBrokerQueue(channel, queue)
 
     ops.sequence
+  end configureBrokerQueues
 
   /** Configures a queue in the message broker.
     *
@@ -171,3 +173,6 @@ case object InitialBrokerConfigUtil:
         RoutingKey(queue.routingKey)
       )
     yield ()
+    end for
+  end configureBrokerQueue
+end InitialBrokerConfigUtil

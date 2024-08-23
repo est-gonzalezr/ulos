@@ -12,24 +12,20 @@ val skunk = ivy"org.tpolecat::skunk-core::0.6.4"
 
 trait ProjectConfigs extends ScalaModule {
   def scalaVersion = "3.4.2"
-
-  // def env = Map(
-  //   "RABBITMQ_HOST" -> "localhost",
-  //   "RABBITMQ_PORT" -> "1234",
-  //   "RABBITMQ_USERNAME" -> "guest",
-  //   "RABBITMQ_PASSWORD" -> "guest"
-  // )
-
   def scalacOptions = Seq(
     // "-verbose",
     "-explain",
     "-deprecation",
     "-unchecked",
-    "-Wunused:all",
+    // "-Wunused:all",
     "-Wnonunit-statement",
     "-Wvalue-discard",
-    "-Werror"
+    "-Werror",
+    "-new-syntax",
+    "-rewrite"
   )
+
+  def scalaDocOptions = Seq("-siteroot", "mydocs", "-no-link-warnings")
 }
 
 object coreUtils extends ProjectConfigs {
@@ -51,20 +47,54 @@ object storageUtils extends ProjectConfigs {
 
 object brokerManagement extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils, storageUtils)
+  def forkEnv = Map(
+    "RABBITMQ_HOST" -> "localhost",
+    "RABBITMQ_PORT" -> "7001",
+    "RABBITMQ_USER" -> "guest",
+    "RABBITMQ_PASS" -> "guest"
+  )
 }
 
-object executionCluster extends ProjectConfigs {
-  def moduleDeps = Seq(coreUtils, storageUtils)
+object databaseCluster extends ProjectConfigs {
+  def moduleDeps = Seq(coreUtils)
+  def ivyDeps = Agg(
+    skunk
+  )
+  def forkEnv = Map(
+    "RABBITMQ_HOST" -> "localhost",
+    "RABBITMQ_PORT" -> "7001",
+    "RABBITMQ_USER" -> "guest",
+    "RABBITMQ_PASS" -> "guest",
+    "PRIMARY_EXCHANGE" -> "processing_exchange",
+    "CONSUMPTION_QUEUE" -> "database_queue"
+  )
 }
 
 object parsingCluster extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils, storageUtils)
+  def forkEnv = Map(
+    "RABBITMQ_HOST" -> "localhost",
+    "RABBITMQ_PORT" -> "7001",
+    "RABBITMQ_USER" -> "guest",
+    "RABBITMQ_PASS" -> "guest",
+    "PRIMARY_EXCHANGE" -> "processing_exchange",
+    "CONSUMPTION_QUEUE" -> "parsing_queue",
+    "PUBLISHING_ROUTING_KEY" -> "task.execution",
+    "DATABASE_ROUTING_KEY" -> "database.task.update"
+  )
 }
 
-object databaseManagement extends ProjectConfigs {
-  def moduleDeps = Seq(coreUtils)
-  def ivyDeps = Agg(
-    skunk
+object executionCluster extends ProjectConfigs {
+  def moduleDeps = Seq(coreUtils, storageUtils)
+  def forkEnv = Map(
+    "RABBITMQ_HOST" -> "localhost",
+    "RABBITMQ_PORT" -> "7001",
+    "RABBITMQ_USER" -> "guest",
+    "RABBITMQ_PASS" -> "guest",
+    "PRIMARY_EXCHANGE" -> "processing_exchange",
+    "CONSUMPTION_QUEUE" -> "execution_testing_queue",
+    "PUBLISHING_ROUTING_KEY" -> "user.notification",
+    "DATABASE_ROUTING_KEY" -> "database.task.update"
   )
 }
 

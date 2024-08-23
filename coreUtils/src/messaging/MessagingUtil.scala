@@ -49,6 +49,7 @@ case object MessagingUtil:
     Resource.make(IO.delay(factory.newConnection()))(connection =>
       IO.delay(connection.close())
     )
+  end brokerConnection
 
   /** Creates a channel to the defined RabbitMQ connection.
     *
@@ -337,3 +338,4 @@ case object MessagingUtil:
       properties,
       messageBytes.toArray
     )
+end MessagingUtil
