@@ -49,7 +49,7 @@ object brokerManagement extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils, storageUtils)
   def forkEnv = Map(
     "RABBITMQ_HOST" -> "localhost",
-    "RABBITMQ_PORT" -> "7001",
+    "RABBITMQ_PORT" -> "5672",
     "RABBITMQ_USER" -> "guest",
     "RABBITMQ_PASS" -> "guest"
   )
@@ -62,7 +62,7 @@ object databaseCluster extends ProjectConfigs {
   )
   def forkEnv = Map(
     "RABBITMQ_HOST" -> "localhost",
-    "RABBITMQ_PORT" -> "7001",
+    "RABBITMQ_PORT" -> "5672",
     "RABBITMQ_USER" -> "guest",
     "RABBITMQ_PASS" -> "guest",
     "PRIMARY_EXCHANGE" -> "processing_exchange",
@@ -74,7 +74,7 @@ object parsingCluster extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils, storageUtils)
   def forkEnv = Map(
     "RABBITMQ_HOST" -> "localhost",
-    "RABBITMQ_PORT" -> "7001",
+    "RABBITMQ_PORT" -> "5672",
     "RABBITMQ_USER" -> "guest",
     "RABBITMQ_PASS" -> "guest",
     "PRIMARY_EXCHANGE" -> "processing_exchange",
@@ -88,7 +88,7 @@ object executionCluster extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils, storageUtils)
   def forkEnv = Map(
     "RABBITMQ_HOST" -> "localhost",
-    "RABBITMQ_PORT" -> "7001",
+    "RABBITMQ_PORT" -> "5672",
     "RABBITMQ_USER" -> "guest",
     "RABBITMQ_PASS" -> "guest",
     "PRIMARY_EXCHANGE" -> "processing_exchange",
