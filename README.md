@@ -2,7 +2,7 @@
 
 ## Temporary instructions to run the system
 
-In your system you will have to have installed `scala`, `mill`, `python3` and `docker.
+In your system you will have to have installed `scala`, `mill`, `python3` and `docker`.
 
 Create RabbitMQ container:
 
