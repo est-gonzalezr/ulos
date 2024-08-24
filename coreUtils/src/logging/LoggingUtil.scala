@@ -6,7 +6,7 @@
 package logging
 
 import types.LogLevel
-import types.TerminalLoggingColor.*
+import types.LoggingColor.*
 
 /** Utility object to print logs to the terminal */
 case object LoggingUtil:
@@ -27,11 +27,12 @@ case object LoggingUtil:
     val timestamp = java.time.Instant.now().toString
 
     val color = logLevel match
-      case LogLevel.INFO  => Green.value
-      case LogLevel.DEBUG => Cyan.value
-      case LogLevel.WARN  => Yellow.value
-      case LogLevel.ERROR => Red.value
-      case LogLevel.FATAL => Magenta.value
+      case LogLevel.INFO    => Cyan.value
+      case LogLevel.DEBUG   => Blue.value
+      case LogLevel.WARN    => Yellow.value
+      case LogLevel.ERROR   => Red.value
+      case LogLevel.FATAL   => Magenta.value
+      case LogLevel.SUCCESS => Green.value
 
     println(
       s"[$timestamp] [${color}$logLevel${Reset.value}] [${module.getName}] $message"
