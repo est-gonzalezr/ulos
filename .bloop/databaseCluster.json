@@ -75,6 +75,7 @@
                 "-explain",
                 "-deprecation",
                 "-unchecked",
+                "-Wunused:all",
                 "-Wnonunit-statement",
                 "-Wvalue-discard",
                 "-Werror",

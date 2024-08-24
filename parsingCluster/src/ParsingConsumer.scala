@@ -2,8 +2,8 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
-import logging.LoggingUtil.terminalLog
-import types.LogLevel
+import logging.LoggingUtil.terminalLogError
+import logging.LoggingUtil.terminalLogInfo
 import types.OpaqueTypes.RoutingKey
 import types.ProcessingConsumer
 import types.StateTypes.*
@@ -18,8 +18,8 @@ case class ParsingConsumer(
       ProcessingConsumer:
 
   val classType = classOf[ParsingConsumer]
-  val logInfo = terminalLog(classType)(LogLevel.INFO)
-  val logError = terminalLog(classType)(LogLevel.ERROR)
+  val logInfo = terminalLogInfo(classType)
+  val logError = terminalLogError(classType)
   override def handleDelivery(
       consumerTag: String,
       envelope: Envelope,

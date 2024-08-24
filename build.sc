@@ -17,7 +17,7 @@ trait ProjectConfigs extends ScalaModule {
     "-explain",
     "-deprecation",
     "-unchecked",
-    // "-Wunused:all",
+    "-Wunused:all",
     "-Wnonunit-statement",
     "-Wvalue-discard",
     "-Werror",

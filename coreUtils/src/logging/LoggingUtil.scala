@@ -14,16 +14,16 @@ case object LoggingUtil:
     *
     * @tparam T
     *   The type of the object which class is being used to log the message
-    * @param module
-    *   The class of the object that is logging the message
     * @param logLevel
     *   The level of the log
+    * @param module
+    *   The class of the object that is logging the message
     * @param message
     *   The message to be logged
     */
-  def terminalLog[T](
-      module: Class[T]
-  )(logLevel: LogLevel)(message: String): Unit =
+  private def terminalLog[T](logLevel: LogLevel)(module: Class[T])(
+      message: String
+  ): Unit =
     val timestamp = java.time.Instant.now().toString
 
     val color = logLevel match
@@ -38,4 +38,23 @@ case object LoggingUtil:
       s"[$timestamp] [${color}$logLevel${Reset.value}] [${module.getName}] $message"
     )
   end terminalLog
+
+  def terminalLogInfo[T](module: Class[T])(message: String): Unit =
+    terminalLog(LogLevel.INFO)(module)(message)
+
+  def terminalLogDebug[T](module: Class[T])(message: String): Unit =
+    terminalLog(LogLevel.DEBUG)(module)(message)
+
+  def terminalLogWarn[T](module: Class[T])(message: String): Unit =
+    terminalLog(LogLevel.WARN)(module)(message)
+
+  def terminalLogError[T](module: Class[T])(message: String): Unit =
+    terminalLog(LogLevel.ERROR)(module)(message)
+
+  def terminalLogFatal[T](module: Class[T])(message: String): Unit =
+    terminalLog(LogLevel.FATAL)(module)(message)
+
+  def terminalLogSuccess[T](module: Class[T])(message: String): Unit =
+    terminalLog(LogLevel.SUCCESS)(module)(message)
+
 end LoggingUtil
