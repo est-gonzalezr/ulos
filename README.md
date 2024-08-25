@@ -7,7 +7,7 @@ In your system you will have to have installed `scala`, `mill`, `python3` and `d
 Create RabbitMQ container:
 
 ```zsh
-docker run -d --rm --net rabbits --hostname rabbit_1 --name rabbit_1 -p 15672:15672 -p 5672:5672 -e RABBITMQ_ERLANG_COOKIE=ERLANGCOOKIE rabbitmq:management
+docker run -d --rm --hostname rabbit_1 --name rabbit_1 -p 15672:15672 -p 5672:5672 -e RABBITMQ_ERLANG_COOKIE=ERLANGCOOKIE rabbitmq:management
 ```
 
 In ULOS root folder run
