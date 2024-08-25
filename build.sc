@@ -11,7 +11,7 @@ val apacheCommonsNet = ivy"commons-net:commons-net:3.10.0"
 val skunk = ivy"org.tpolecat::skunk-core::0.6.4"
 
 trait ProjectConfigs extends ScalaModule {
-  def scalaVersion = "3.4.2"
+  def scalaVersion = "3.5.0"
   def scalacOptions = Seq(
     // "-verbose",
     "-explain",
