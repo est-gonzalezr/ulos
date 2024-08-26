@@ -1,12 +1,30 @@
-import cats.effect.IO
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
-import startup.ConsumerProgram
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
 import com.rabbitmq.client.Channel
+import startup.ConsumerProgram
 
 val DefaultProcessingConsumerQuantity = 1
 
-object DatabaseCluster extends ConsumerProgram:
-  @main def main = mainProgram(5)
+object DatabaseCluster extends ConsumerProgram, IOApp:
+
+  /** The entry point of the program.
+    *
+    * @param args
+    *   The arguments passed to the program
+    * @return
+    *   An IO monad that represents the entry point of the program
+    */
+  def run(args: List[String]): IO[ExitCode] =
+    val consumerAmount = args.headOption
+      .flatMap(_.toIntOption)
+      .getOrElse(DefaultProcessingConsumerQuantity)
+    mainProgramHandler(consumerAmount).as(ExitCode.Success)
+  end run
 
   override def createConsumer(channel: Channel): IO[DatabaseConsumer] =
     IO(DatabaseConsumer(channel))

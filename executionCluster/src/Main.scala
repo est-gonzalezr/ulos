@@ -1,4 +1,10 @@
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
+import cats.effect.ExitCode
 import cats.effect.IO
+import cats.effect.IOApp
 import com.rabbitmq.client.Channel
 import configuration.MiscConfigUtil.primaryExchangeEnvVar
 import configuration.MiscConfigUtil.routingKeysEnvVars
@@ -7,8 +13,23 @@ import startup.ConsumerProgram
 import types.OpaqueTypes.ExchangeName
 import types.OpaqueTypes.RoutingKey
 
-object ExecutionCluster extends ConsumerProgram:
-  @main def main = mainProgram(5)
+val DefaultProcessingConsumerQuantity = 5
+
+object ExecutionCluster extends ConsumerProgram, IOApp:
+
+  /** The entry point of the program.
+    *
+    * @param args
+    *   The arguments passed to the program
+    * @return
+    *   An IO monad that represents the entry point of the program
+    */
+  def run(args: List[String]): IO[ExitCode] =
+    val consumerAmount = args.headOption
+      .flatMap(_.toIntOption)
+      .getOrElse(DefaultProcessingConsumerQuantity)
+    mainProgramHandler(consumerAmount).as(ExitCode.Success)
+  end run
 
   override def createConsumer(channel: Channel): IO[ExecutionConsumer] =
     for
@@ -31,3 +52,4 @@ object ExecutionCluster extends ConsumerProgram:
         _
       )
     )
+end ExecutionCluster

@@ -6,7 +6,6 @@ package startup
 
 import cats.effect.IO
 import cats.effect.std.Console
-import cats.effect.unsafe.implicits.global
 import cats.syntax.parallel.catsSyntaxParallelSequence1
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
@@ -18,26 +17,43 @@ import messaging.MessagingUtil.channelFromConnection
 import messaging.MessagingUtil.consumeMessages
 import types.OpaqueTypes.QueueName
 
+import scala.concurrent.duration.*
+
 val DefaultProcessingConsumerQuantity = 5
 
 /** Represents a program that consumes messages from a message broker.
   */
 trait ConsumerProgram:
 
-  /** The main program that consumes messages from a message broker.
+  /** The entry point representation of the program. It is responsible for
+    * starting the main program and handling any exceptions that may occur.
+    *
+    * @param args
+    *   The arguments passed to the program
+    *
+    * @return
+    *   An IO monad that represents the entry point of the program
+    */
+  def mainProgramHandler(consumerAmount: Int): IO[Nothing] =
+    mainProgram(consumerAmount)
+      .handleErrorWith(Console[IO].printStackTrace)
+      .foreverM
+
+  /** The main program that defines starts and consumes messages from a message
+    * broker.
     *
     * @param consumerAmount
     *   The amount of consumers that will be created to consume messages
+    *
+    * @return
+    *   An IO monad that represents the main program
     */
-  def mainProgram(consumerAmount: Int): Unit =
+  def mainProgram(consumerAmount: Int): IO[Unit] =
     initializeProgram(
       Option(consumerAmount)
         .filter(_ > 0)
         .getOrElse(DefaultProcessingConsumerQuantity)
     )
-      .handleErrorWith(Console[IO].printStackTrace)
-      .foreverM
-      .unsafeRunSync()
 
   /** Initializes the program by reading the environment variables required to
     * configure the message broker and creating the consumers.
@@ -77,11 +93,23 @@ trait ConsumerProgram:
   ): IO[List[Unit]] =
     List
       .fill(quantity)(
-        queueConsumerProgram(connection)
-          .handleErrorWith(Console[IO].printStackTrace)
-          .foreverM
+        queueConsumerProgramHandler(connection)
       )
       .parSequence()
+
+  /** The handler for the program that consumes messages from a message broker.
+    * It is responsible for handling any exceptions that may occur.
+    *
+    * @param connection
+    *   The connection to the message broker
+    *
+    * @return
+    *   An IO monad that represents the handler for the program
+    */
+  def queueConsumerProgramHandler(connection: Connection): IO[Nothing] =
+    queueConsumerProgram(connection)
+      .handleErrorWith(Console[IO].printStackTrace)
+      .foreverM
 
   /** The program that consumes messages from a message broker.
     *
@@ -100,10 +128,10 @@ trait ConsumerProgram:
           _ <- consumeMessages(
             channel,
             QueueName(queue),
-            false,
-            consumer
+            consumer,
+            false
           )
-          _ <- IO.delay(Thread.sleep(60000)).foreverM
+          _ <- IO.sleep(60.second).foreverM
         yield ()
       )
 

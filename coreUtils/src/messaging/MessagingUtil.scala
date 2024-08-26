@@ -298,8 +298,8 @@ case object MessagingUtil:
   def consumeMessages(
       channel: Channel,
       queueName: QueueName,
-      autoAck: Boolean = true,
-      consumer: Consumer
+      consumer: Consumer,
+      autoAck: Boolean = true
   ): IO[String] =
     IO.delay(
       channel.basicConsume(

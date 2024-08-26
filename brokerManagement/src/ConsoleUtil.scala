@@ -1,3 +1,7 @@
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
 import cats.effect.IO
 import cats.effect.std.Console
 

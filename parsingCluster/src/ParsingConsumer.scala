@@ -1,3 +1,9 @@
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.DefaultConsumer
@@ -26,32 +32,60 @@ case class ParsingConsumer(
       properties: BasicProperties,
       body: Array[Byte]
   ): Unit =
-    logInfo(
-      s"Message received. ConsumerTag: $consumerTag. DeliveryTag: ${envelope.getDeliveryTag}"
-    )
 
-    val possibleTask = deserializeMessage(body.toSeq)
+    val processingIO = for
+      _ <- logInfo(
+        s"Message received. ConsumerTag: $consumerTag. DeliveryTag: ${envelope.getDeliveryTag}"
+      )
+      possibleTask = deserializeMessage(body.toSeq)
+      _ <- possibleTask match
+        case Left(error) =>
+          logError(s"Deserialization error: $error")
+            >> IO.delay(channel.basicNack(envelope.getDeliveryTag, false, true))
 
-    possibleTask match
-      case Left(error) =>
-        logError(s"Deserialization error: $error")
-        channel.basicNack(envelope.getDeliveryTag, false, true)
-      case Right(taskInfo) =>
-        logInfo(s"Deserialization success")
+        case Right(taskInfo) =>
+          logInfo(s"Deserialization success")
+            >> IO {
+              val updatedTaskInfo = processMessage(taskInfo)
+              updatedTaskInfo.state match
+                case "this will not happen for now" => ()
+                case _                              => handleNextStep(taskInfo)
+              end match
 
-        val updatedTaskInfo = processMessage(taskInfo)
-        updatedTaskInfo.state match
-          case "this will not happen for now" => ()
-          case _                              => handleNextStep(taskInfo)
-        end match
+              sendNewStateToDb(updatedTaskInfo)
+            }
+            >> logInfo("Updated task state sent to database")
+            >> IO.delay(channel.basicAck(envelope.getDeliveryTag, false))
+            >> logInfo("Acknowledgment sent to broker")
+    yield ()
 
-        sendNewStateToDb(updatedTaskInfo)
-        logInfo("Updated task state sent to database")
-
-        channel.basicAck(envelope.getDeliveryTag, false)
-        logInfo("Acknowledgment sent to broker")
-    end match
+    processingIO.unsafeRunAndForget()
   end handleDelivery
+
+  // logInfo(
+  //   s"Message received. ConsumerTag: $consumerTag. DeliveryTag: ${envelope.getDeliveryTag}"
+  // )
+
+  // val possibleTask = deserializeMessage(body.toSeq)
+
+  // possibleTask match
+  //   case Left(error) =>
+  //     logError(s"Deserialization error: $error")
+  //     channel.basicNack(envelope.getDeliveryTag, false, true)
+  //   case Right(taskInfo) =>
+  //     logInfo(s"Deserialization success")
+
+  //     val updatedTaskInfo = processMessage(taskInfo)
+  //     updatedTaskInfo.state match
+  //       case "this will not happen for now" => ()
+  //       case _                              => handleNextStep(taskInfo)
+  //     end match
+
+  //     sendNewStateToDb(updatedTaskInfo)
+  //     logInfo("Updated task state sent to database")
+
+  //     channel.basicAck(envelope.getDeliveryTag, false)
+  //     logInfo("Acknowledgment sent to broker")
 
   override def processMessage(taskInfo: TaskInfo): TaskInfo =
     // try to get file from ftp server

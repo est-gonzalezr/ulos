@@ -98,10 +98,23 @@ object executionCluster extends ProjectConfigs {
   )
 }
 
-// object testingGround extends ProjectConfigs {
-//   def ivyDeps = Agg(
-//     // fs2, cats-effect
-//     ivy"org.typelevel::cats-effect::3.6-0142603",
-//     ivy"co.fs2::fs2-core::3.1.6"
-//   )
-// }
+object testingGround extends ProjectConfigs {
+  def moduleDeps = Seq(coreUtils, storageUtils)
+  def ivyDeps = Agg(
+    // fs2, cats-effect
+    ivy"org.typelevel::cats-effect::3.6-0142603",
+    ivy"co.fs2::fs2-core::3.1.6",
+    amqpClient
+  )
+
+  def forkEnv = Map(
+    "RABBITMQ_HOST" -> "localhost",
+    "RABBITMQ_PORT" -> "5672",
+    "RABBITMQ_USER" -> "guest",
+    "RABBITMQ_PASS" -> "guest",
+    "PRIMARY_EXCHANGE" -> "processing_exchange",
+    "CONSUMPTION_QUEUE" -> "execution_testing_queue",
+    "PUBLISHING_ROUTING_KEY" -> "user.notification",
+    "DATABASE_ROUTING_KEY" -> "database.task.update"
+  )
+}

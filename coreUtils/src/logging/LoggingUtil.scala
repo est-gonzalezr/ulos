@@ -1,10 +1,11 @@
 /** @author
-  *
-  * Esteban Gonzalez Ruales
+  *   Esteban Gonzalez Ruales
   */
 
 package logging
 
+import cats.effect.IO
+import cats.effect.std.Console
 import types.LogLevel
 import types.LoggingColor.*
 
@@ -20,10 +21,14 @@ case object LoggingUtil:
     *   The class of the object that is logging the message
     * @param message
     *   The message to be logged
+    *
+    * @return
+    *   An IO monad that represents the action of printing the message to the
+    *   terminal
     */
   private def terminalLog[T](logLevel: LogLevel)(module: Class[T])(
       message: String
-  ): Unit =
+  ): IO[Unit] =
     val timestamp = java.time.Instant.now().toString
 
     val color = logLevel match
@@ -34,27 +39,27 @@ case object LoggingUtil:
       case LogLevel.FATAL   => Magenta.value
       case LogLevel.SUCCESS => Green.value
 
-    println(
+    Console[IO].println(
       s"[$timestamp] [${color}$logLevel${Reset.value}] [${module.getName}] $message"
     )
   end terminalLog
 
-  def terminalLogInfo[T](module: Class[T])(message: String): Unit =
+  def terminalLogInfo[T](module: Class[T])(message: String): IO[Unit] =
     terminalLog(LogLevel.INFO)(module)(message)
 
-  def terminalLogDebug[T](module: Class[T])(message: String): Unit =
+  def terminalLogDebug[T](module: Class[T])(message: String): IO[Unit] =
     terminalLog(LogLevel.DEBUG)(module)(message)
 
-  def terminalLogWarn[T](module: Class[T])(message: String): Unit =
+  def terminalLogWarn[T](module: Class[T])(message: String): IO[Unit] =
     terminalLog(LogLevel.WARN)(module)(message)
 
-  def terminalLogError[T](module: Class[T])(message: String): Unit =
+  def terminalLogError[T](module: Class[T])(message: String): IO[Unit] =
     terminalLog(LogLevel.ERROR)(module)(message)
 
-  def terminalLogFatal[T](module: Class[T])(message: String): Unit =
+  def terminalLogFatal[T](module: Class[T])(message: String): IO[Unit] =
     terminalLog(LogLevel.FATAL)(module)(message)
 
-  def terminalLogSuccess[T](module: Class[T])(message: String): Unit =
+  def terminalLogSuccess[T](module: Class[T])(message: String): IO[Unit] =
     terminalLog(LogLevel.SUCCESS)(module)(message)
 
 end LoggingUtil
