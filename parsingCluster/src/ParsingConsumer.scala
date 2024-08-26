@@ -62,31 +62,6 @@ case class ParsingConsumer(
     processingIO.unsafeRunAndForget()
   end handleDelivery
 
-  // logInfo(
-  //   s"Message received. ConsumerTag: $consumerTag. DeliveryTag: ${envelope.getDeliveryTag}"
-  // )
-
-  // val possibleTask = deserializeMessage(body.toSeq)
-
-  // possibleTask match
-  //   case Left(error) =>
-  //     logError(s"Deserialization error: $error")
-  //     channel.basicNack(envelope.getDeliveryTag, false, true)
-  //   case Right(taskInfo) =>
-  //     logInfo(s"Deserialization success")
-
-  //     val updatedTaskInfo = processMessage(taskInfo)
-  //     updatedTaskInfo.state match
-  //       case "this will not happen for now" => ()
-  //       case _                              => handleNextStep(taskInfo)
-  //     end match
-
-  //     sendNewStateToDb(updatedTaskInfo)
-  //     logInfo("Updated task state sent to database")
-
-  //     channel.basicAck(envelope.getDeliveryTag, false)
-  //     logInfo("Acknowledgment sent to broker")
-
   override def processMessage(taskInfo: TaskInfo): TaskInfo =
     // try to get file from ftp server
     // if internal error, update state to to InternalServerError

@@ -48,23 +48,6 @@ case class DatabaseConsumer(
     yield ()
 
     processingIO.unsafeRunAndForget()
-
-    // logInfo(
-    //   s"Message received. ConsumerTag: $consumerTag. DeliveryTag: ${envelope.getDeliveryTag}"
-    // )
-
-    // val possibleTask = deserializeMessage(body.toSeq)
-    // possibleTask match
-    //   case Left(error) =>
-    //     logError(s"Deserialization error: $error")
-    //     channel.basicNack(envelope.getDeliveryTag, false, true)
-    //   case Right(taskInfo) =>
-    //     logInfo(s"Deserialization success")
-
-    //     val _ = processMessage(taskInfo).state
-    //     channel.basicAck(envelope.getDeliveryTag, false)
-    //     logInfo("Acknowledgment sent to broker")
-    // end match
   end handleDelivery
 
   override def processMessage(taskInfo: TaskInfo): TaskInfo =
