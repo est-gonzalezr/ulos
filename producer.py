@@ -15,3 +15,23 @@ with open("sampleMessage.yaml", "r") as f:
 channel.basic_publish(exchange='processing_exchange', routing_key='task.parsing', body=data)
 
 print(" [x] Sent Message'")
+
+
+# from time import sleep
+
+# def printd(text, delay=.5):
+#     print(end=text)
+#     n_dots = 0
+
+#     while True:
+#         if n_dots == 3:
+#             print(end='\b\b\b', flush=True)
+#             print(end='   ',    flush=True)
+#             print(end='\b\b\b', flush=True)
+#             n_dots = 0
+#         else:
+#             print(end='.', flush=True)
+#             n_dots += 1
+#         sleep(delay)
+
+# printd("Hello World", delay=.5)

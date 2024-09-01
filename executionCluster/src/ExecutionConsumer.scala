@@ -36,19 +36,25 @@ case class ExecutionConsumer(
     val logSuccess = logConsumerSuccess(consumerTag, deliveryTag)
 
     val processingIO = for
-      _ <- logInfo(
-        s"Message received"
-      )
+      _ <- logInfo("Message received")
+      _ <- logInfo("Attempting to deserialize message...")
       taskInfo <- IO.fromEither(deserializeMessage(body.toSeq))
-      _ <- logInfo("Deserialization success")
+      _ <- logInfo("Message deserialization successfull")
+      _ <- logInfo("Attempting to download message content from FTP server...")
+      _ <- IO.sleep(1.second)
+      _ <- logInfo("Message content downloaded")
+      _ <- logInfo("Attempting to parse message contents...")
       updatedTaskInfo <- processMessage(taskInfo)
-      _ <- logInfo("Parsing job completed")
-      _ <- sendToFinzalization(updatedTaskInfo)
-      _ <- logInfo("Task sent to execution")
+      _ <- logInfo("Message content parsed")
+      _ <- logInfo("Attempting to send task to finalization...")
+      _ <- sendToFinalization(updatedTaskInfo)
+      _ <- logInfo("Task sent to finalization")
+      _ <- logInfo("Attempting to send updated task state to database...")
       _ <- sendNewStateToDb(updatedTaskInfo)
       _ <- logInfo("Updated task state sent to database")
+      _ <- logInfo("Attempting to acknowledge message...")
       _ <- IO.delay(channel.basicAck(envelope.getDeliveryTag, false))
-      _ <- logInfo("Acknowledgment sent to broker")
+      _ <- logInfo("Message acknowledged")
       _ <- logSuccess("Task processing completed")
     yield ()
 
@@ -79,7 +85,7 @@ case class ExecutionConsumer(
     for _ <- IO.sleep(15.second)
     yield taskInfo
 
-  def sendToFinzalization(taskInfo: TaskInfo): IO[Unit] =
+  def sendToFinalization(taskInfo: TaskInfo): IO[Unit] =
     IO.delay(publishFunction(successRoutingKey, serializeMessage(taskInfo)))
 
   def sendNewStateToDb(taskInfo: TaskInfo): IO[Unit] =

@@ -32,14 +32,16 @@ case class DatabaseConsumer(
     val logSuccess = logConsumerSuccess(consumerTag, deliveryTag)
 
     val processingIO = for
-      _ <- logInfo(
-        "Message received"
-      )
+      _ <- logInfo("Message received")
+      _ <- logInfo("Attempting to deserialize message...")
       taskInfo <- IO.fromEither(deserializeMessage(body.toSeq))
+      _ <- logInfo("Message deserialization successfull")
+      _ <- logInfo("Attempting to save task state to database...")
       _ <- saveTaskInfoToDatabase(taskInfo)
-      _ <- logInfo("Updated task state saved to database")
+      _ <- logInfo("Task state saved to database")
+      _ <- logInfo("Attempting to acknowledge message...")
       _ <- IO.delay(channel.basicAck(envelope.getDeliveryTag, false))
-      _ <- logInfo("Acknowledgment sent to broker")
+      _ <- logInfo("Message acknowledged")
       _ <- logSuccess("Task processing completed")
     yield ()
 
