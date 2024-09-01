@@ -6,6 +6,7 @@ import cats.effect.ExitCode
 import cats.effect.IO
 import cats.effect.IOApp
 import com.rabbitmq.client.Channel
+import com.rabbitmq.client.DefaultConsumer
 import startup.ConsumerProgram
 
 val DefaultProcessingConsumerQuantity = 1
@@ -26,6 +27,8 @@ object DatabaseCluster extends ConsumerProgram, IOApp:
     mainProgramHandler(consumerAmount).as(ExitCode.Success)
   end run
 
-  override def createConsumer(channel: Channel): IO[DatabaseConsumer] =
-    IO(DatabaseConsumer(channel))
+  override def createConsumer(
+      channel: Channel
+  ): IO[DefaultConsumer] =
+    IO.delay(DatabaseConsumer(channel))
 end DatabaseCluster

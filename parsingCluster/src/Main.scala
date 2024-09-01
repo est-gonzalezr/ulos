@@ -6,6 +6,7 @@ import cats.effect.ExitCode
 import cats.effect.IO
 import cats.effect.IOApp
 import com.rabbitmq.client.Channel
+import com.rabbitmq.client.DefaultConsumer
 import configuration.MiscConfigUtil.primaryExchangeEnvVar
 import configuration.MiscConfigUtil.routingKeysEnvVars
 import messaging.MessagingUtil.publishMessage
@@ -31,7 +32,7 @@ object ParsingCluster extends ConsumerProgram, IOApp:
     mainProgramHandler(consumerAmount).as(ExitCode.Success)
   end run
 
-  override def createConsumer(channel: Channel): IO[ParsingConsumer] =
+  override def createConsumer(channel: Channel): IO[DefaultConsumer] =
     for
       routingKeysEnvVars <- routingKeysEnvVars
       publishingRoutingKey <- IO.fromOption(

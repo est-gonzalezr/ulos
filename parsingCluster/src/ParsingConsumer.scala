@@ -8,11 +8,9 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
-import logging.LoggingUtil.terminalLogError
-import logging.LoggingUtil.terminalLogInfo
+import org.virtuslab.yaml.YamlError
 import types.OpaqueTypes.RoutingKey
 import types.ProcessingConsumer
-import types.StateTypes.*
 import types.TaskInfo
 
 case class ParsingConsumer(
@@ -23,9 +21,6 @@ case class ParsingConsumer(
 ) extends DefaultConsumer(channel),
       ProcessingConsumer:
 
-  val classType = classOf[ParsingConsumer]
-  val logInfo = terminalLogInfo(classType)
-  val logError = terminalLogError(classType)
   override def handleDelivery(
       consumerTag: String,
       envelope: Envelope,
@@ -33,36 +28,40 @@ case class ParsingConsumer(
       body: Array[Byte]
   ): Unit =
 
+    val deliveryTag = envelope.getDeliveryTag
+    val logInfo = logConsumerInfo(consumerTag, deliveryTag)
+    val logError = logConsumerError(consumerTag, deliveryTag)
+    val logSuccess = logConsumerSuccess(consumerTag, deliveryTag)
+
     val processingIO = for
       _ <- logInfo(
-        s"Message received. ConsumerTag: $consumerTag. DeliveryTag: ${envelope.getDeliveryTag}"
+        s"Message received"
       )
-      possibleTask = deserializeMessage(body.toSeq)
-      _ <- possibleTask match
-        case Left(error) =>
-          logError(s"Deserialization error: $error")
-            >> IO.delay(channel.basicNack(envelope.getDeliveryTag, false, true))
-
-        case Right(taskInfo) =>
-          logInfo(s"Deserialization success")
-            >> IO {
-              val updatedTaskInfo = processMessage(taskInfo)
-              updatedTaskInfo.state match
-                case "this will not happen for now" => ()
-                case _                              => handleNextStep(taskInfo)
-              end match
-
-              sendNewStateToDb(updatedTaskInfo)
-            }
-            >> logInfo("Updated task state sent to database")
-            >> IO.delay(channel.basicAck(envelope.getDeliveryTag, false))
-            >> logInfo("Acknowledgment sent to broker")
+      taskInfo <- IO.fromEither(deserializeMessage(body.toSeq))
+      _ <- logInfo("Deserialization success")
+      updatedTaskInfo <- processMessage(taskInfo)
+      _ <- logInfo("Parsing job completed")
+      _ <- sendToExecution(updatedTaskInfo)
+      _ <- logInfo("Task sent to execution")
+      _ <- sendNewStateToDb(updatedTaskInfo)
+      _ <- logInfo("Updated task state sent to database")
+      _ <- IO.delay(channel.basicAck(envelope.getDeliveryTag, false))
+      _ <- logInfo("Acknowledgment sent to broker")
+      _ <- logSuccess("Task processing completed")
     yield ()
 
-    processingIO.unsafeRunAndForget()
+    val processingIOHandler = processingIO.handleErrorWith {
+      case error: YamlError =>
+        logError(s"Deserialization error: $error")
+          >> IO.delay(channel.basicNack(envelope.getDeliveryTag, false, true))
+      case _ =>
+        IO.delay(channel.basicNack(envelope.getDeliveryTag, false, true))
+    }
+
+    processingIOHandler.unsafeRunAndForget()
   end handleDelivery
 
-  override def processMessage(taskInfo: TaskInfo): TaskInfo =
+  def processMessage(taskInfo: TaskInfo): IO[TaskInfo] =
     // try to get file from ftp server
     // if internal error, update state to to InternalServerError
     // if file not found, update state to FileNotFound
@@ -73,13 +72,11 @@ case class ParsingConsumer(
     // if parsing error, update state to ParsingError
     // if parsing success, update state to ParsingSuccess
     // return updated taskInfo
-    taskInfo
+    IO.pure(taskInfo)
 
-  def handleNextStep(taskInfo: TaskInfo): Unit =
-    publishFunction(successRoutingKey, serializeMessage(taskInfo))
+  def sendToExecution(taskInfo: TaskInfo): IO[Unit] =
+    IO.delay(publishFunction(successRoutingKey, serializeMessage(taskInfo)))
 
-  def handleError(taskInfo: TaskInfo): Unit = ???
-
-  def sendNewStateToDb(taskInfo: TaskInfo): Unit =
-    publishFunction(databaseRoutingKey, serializeMessage(taskInfo))
+  def sendNewStateToDb(taskInfo: TaskInfo): IO[Unit] =
+    IO.delay(publishFunction(databaseRoutingKey, serializeMessage(taskInfo)))
 end ParsingConsumer

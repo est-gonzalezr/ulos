@@ -8,20 +8,18 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
-import logging.LoggingUtil.terminalLogError
-import logging.LoggingUtil.terminalLogInfo
+import org.virtuslab.yaml.YamlError
 import types.ProcessingConsumer
 import types.StateTypes.*
 import types.TaskInfo
+
+import scala.concurrent.duration.*
 
 case class DatabaseConsumer(
     channel: Channel
 ) extends DefaultConsumer(channel),
       ProcessingConsumer:
 
-  val classType = classOf[DatabaseConsumer]
-  val logInfo = terminalLogInfo(classType)
-  val logError = terminalLogError(classType)
   override def handleDelivery(
       consumerTag: String,
       envelope: Envelope,
@@ -29,37 +27,36 @@ case class DatabaseConsumer(
       body: Array[Byte]
   ): Unit =
 
+    val deliveryTag = envelope.getDeliveryTag
+    val logInfo = logConsumerInfo(consumerTag, deliveryTag)
+    val logError = logConsumerError(consumerTag, deliveryTag)
+    val logSuccess = logConsumerSuccess(consumerTag, deliveryTag)
+
     val processingIO = for
       _ <- logInfo(
-        s"Message received. ConsumerTag: $consumerTag. DeliveryTag: ${envelope.getDeliveryTag}"
+        "Message received"
       )
-      possibleTask = deserializeMessage(body.toSeq)
-      _ <- possibleTask match
-        case Left(error) =>
-          logError(s"Deserialization error: $error")
-            >> IO.delay(channel.basicNack(envelope.getDeliveryTag, false, true))
-        case Right(taskInfo) =>
-          logInfo(s"Deserialization success")
-            >> IO {
-              val _ = processMessage(taskInfo).state
-              channel.basicAck(envelope.getDeliveryTag, false)
-            }
-            >> logInfo("Acknowledgment sent to broker")
+      taskInfo <- IO.fromEither(deserializeMessage(body.toSeq))
+      _ <- saveTaskInfoToDatabase(taskInfo)
+      _ <- logInfo("Updated task state saved to database")
+      _ <- IO.delay(channel.basicAck(envelope.getDeliveryTag, false))
+      _ <- logInfo("Acknowledgment sent to broker")
+      _ <- logSuccess("Task processing completed")
     yield ()
 
-    processingIO.unsafeRunAndForget()
+    val processingIOHandler = processingIO.handleErrorWith {
+      case error: YamlError =>
+        logError(s"Deserialization error: $error")
+          >> IO.delay(channel.basicNack(envelope.getDeliveryTag, false, true))
+      case _ =>
+        IO.delay(channel.basicNack(envelope.getDeliveryTag, false, true))
+    }
+
+    processingIOHandler.unsafeRunAndForget()
   end handleDelivery
 
-  override def processMessage(taskInfo: TaskInfo): TaskInfo =
-    // try to get file from ftp server
-    // if internal error, update state to to InternalServerError
-    // if file not found, update state to FileNotFound
-    // if file found try to deserialize it
-    // if deserialization error, update state to DeserializationError
-    // if deserialization success, update state to DeserializationSuccess
-    // if deserialization success, try to parse the file
-    // if parsing error, update state to ParsingError
-    // if parsing success, update state to ParsingSuccess
-    // return updated taskInfo
-    taskInfo
+  def saveTaskInfoToDatabase(taskInfo: TaskInfo): IO[Unit] =
+    for _ <- IO.sleep(1.second)
+    yield ()
+
 end DatabaseConsumer

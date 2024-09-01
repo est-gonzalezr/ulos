@@ -17,88 +17,92 @@
 // import startup.ConsumerProgram
 // import com.rabbitmq.client.Connection
 // import configuration.MiscConfigUtil.brokerEnvVars
+// import scala.concurrent.duration.*
 
 // val DefaultProcessingConsumerQuantity = 5
 // val queueName = QueueName("parsing_queue")
 
-// // object TestingCluster extends IOApp:
-// //   def run(args: List[String]): IO[ExitCode] =
-// //     val consumerAmount = args.headOption
-// //       .flatMap(_.toIntOption)
-// //       .getOrElse(DefaultProcessingConsumerQuantity)
-// //     mainProgramHandler(consumerAmount).as(ExitCode.Success)
-// //   end run
+// object TestingCluster extends IOApp:
+//   def run(args: List[String]): IO[ExitCode] =
+//     val consumerAmount = args.headOption
+//       .flatMap(_.toIntOption)
+//       .getOrElse(DefaultProcessingConsumerQuantity)
+//     mainProgramHandler(consumerAmount).as(ExitCode.Success)
+//   end run
 
-// //   def createConsumer(channel: Channel): IO[DefaultConsumer] =
-// //     val consumer = new DefaultConsumer(channel) {
-// //       override def handleDelivery(
-// //           consumerTag: String,
-// //           envelope: Envelope,
-// //           properties: AMQP.BasicProperties,
-// //           body: Array[Byte]
-// //       ): Unit =
-// //         val message = new String(body, "UTF-8")
-// //         println(s"Received '$message'")
-// //       end handleDelivery
-// //     }
-// //     IO.pure(consumer)
-// //   end createConsumer
+//   def createConsumer(channel: Channel): IO[DefaultConsumer] =
+//     val consumer = new DefaultConsumer(channel) {
+//       override def handleDelivery(
+//           consumerTag: String,
+//           envelope: Envelope,
+//           properties: AMQP.BasicProperties,
+//           body: Array[Byte]
+//       ): Unit =
+//         val message = new String(body, "UTF-8")
+//         println(s"Received '$message'")
+//       end handleDelivery
+//     }
+//     IO.pure(consumer)
+//   end createConsumer
 
-// //   def mainProgramHandler(consumerAmount: Int): IO[Nothing] =
-// //     mainProgram(consumerAmount)
-// //       .handleErrorWith(Console[IO].printStackTrace)
-// //       .foreverM
+//   def mainProgramHandler(consumerAmount: Int): IO[Nothing] =
+//     mainProgram(consumerAmount)
+//       .handleErrorWith(Console[IO].printStackTrace)
+//       .foreverM
 
-// //   def mainProgram(consumerAmount: Int): IO[Unit] =
-// //     initializeProgram(
-// //       Option(consumerAmount)
-// //         .filter(_ > 0)
-// //         .getOrElse(DefaultProcessingConsumerQuantity)
-// //     )
+//   def mainProgram(consumerAmount: Int): IO[Unit] =
+//     initializeProgram(
+//       Option(consumerAmount)
+//         .filter(_ > 0)
+//         .getOrElse(DefaultProcessingConsumerQuantity)
+//     )
 
-// //   def initializeProgram(consumerAmount: Int): IO[Unit] =
-// //     for
-// //       envVars <- brokerEnvVars
-// //       host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
-// //       port <- IO.fromOption(envVars.get("port"))(Exception("port not found"))
-// //       user <- IO.fromOption(envVars.get("user"))(Exception("user not found"))
-// //       pass <- IO.fromOption(envVars.get("pass"))(Exception("pass not found"))
-// //       portInt <- IO.fromOption(port.toIntOption)(Exception("port not an int"))
-// //       _ <- brokerConnection(host, portInt, user, pass).use(connection =>
-// //         createQueueConsumers(connection, consumerAmount).void
-// //       )
-// //     yield ()
+//   def initializeProgram(consumerAmount: Int): IO[Unit] =
+//     for
+//       envVars <- brokerEnvVars
+//       host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
+//       port <- IO.fromOption(envVars.get("port"))(Exception("port not found"))
+//       user <- IO.fromOption(envVars.get("user"))(Exception("user not found"))
+//       pass <- IO.fromOption(envVars.get("pass"))(Exception("pass not found"))
+//       portInt <- IO.fromOption(port.toIntOption)(Exception("port not an int"))
+//       _ <- brokerConnection(host, portInt, user, pass).use(connection =>
+//         createQueueConsumers(connection, consumerAmount).void
+//       )
+//     yield ()
 
-// //   def queueConsumerProgramHandler(connection: Connection): IO[Nothing] =
-// //     queueConsumerProgram(connection)
-// //       .handleErrorWith(Console[IO].printStackTrace)
-// //       .foreverM
+//   def queueConsumerProgramHandler(connection: Connection): IO[Nothing] =
+//     queueConsumerProgram(connection)
+//       .handleErrorWith(Console[IO].printStackTrace)
+//       .foreverM
 
-// //   def createQueueConsumers(
-// //       connection: Connection,
-// //       quantity: Int
-// //   ): IO[List[Unit]] =
-// //     List
-// //       .fill(quantity)(
-// //         queueConsumerProgramHandler(connection)
-// //       )
-// //       .parSequence()
+//   def createQueueConsumers(
+//       connection: Connection,
+//       quantity: Int
+//   ): IO[List[Unit]] =
+//     List
+//       .fill(quantity)(
+//         queueConsumerProgramHandler(connection)
+//       )
+//       .parSequence()
 
-// //   def queueConsumerProgram(connection: Connection): IO[Unit] =
-// //     channelFromConnection(connection)
-// //       .use(channel =>
-// //         for
-// //           consumer <- createConsumer(channel)
-// //           _ <- consumeMessages(
-// //             channel,
-// //             queueName,
-// //             consumer,
-// //             false
-// //           )
-// //           _ <- IO.delay(Thread.sleep(60000)).foreverM
-// //         yield ()
-// //       )
-// // end TestingCluster
+//   def queueConsumerProgram(connection: Connection): IO[Unit] =
+//     channelFromConnection(connection)
+//       .use(channel =>
+//         for
+//           _ <- Console[IO].println("Creating consumer")
+//           consumer <- createConsumer(channel)
+//           _ <- consumeMessages(
+//             channel,
+//             queueName,
+//             consumer,
+//             false
+//           )
+//           _ <- IO.never
+//         yield ()
+//         end for
+//       )
+//   end queueConsumerProgram
+// end TestingCluster
 
 // // @main def main(args: String*): Unit =
 // //   // val factory = new ConnectionFactory()

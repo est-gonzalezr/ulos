@@ -18,6 +18,7 @@ import messaging.MessagingUtil.consumeMessages
 import types.OpaqueTypes.QueueName
 
 import scala.concurrent.duration.*
+import messaging.MessagingUtil.defineQos
 
 val DefaultProcessingConsumerQuantity = 5
 
@@ -48,7 +49,7 @@ trait ConsumerProgram:
     * @return
     *   An IO monad that represents the main program
     */
-  def mainProgram(consumerAmount: Int): IO[Unit] =
+  private def mainProgram(consumerAmount: Int): IO[Unit] =
     initializeProgram(
       Option(consumerAmount)
         .filter(_ > 0)
@@ -64,7 +65,7 @@ trait ConsumerProgram:
     * @return
     *   An IO monad with that represents the initialization of the program
     */
-  def initializeProgram(consumerAmount: Int): IO[Unit] =
+  private def initializeProgram(consumerAmount: Int): IO[Unit] =
     for
       envVars <- brokerEnvVars
       host <- IO.fromOption(envVars.get("host"))(Exception("host not found"))
@@ -87,7 +88,7 @@ trait ConsumerProgram:
     * @return
     *   An IO monad with the consumers created
     */
-  def createQueueConsumers(
+  private def createQueueConsumers(
       connection: Connection,
       quantity: Int
   ): IO[List[Unit]] =
@@ -106,7 +107,7 @@ trait ConsumerProgram:
     * @return
     *   An IO monad that represents the handler for the program
     */
-  def queueConsumerProgramHandler(connection: Connection): IO[Nothing] =
+  private def queueConsumerProgramHandler(connection: Connection): IO[Nothing] =
     queueConsumerProgram(connection)
       .handleErrorWith(Console[IO].printStackTrace)
       .foreverM
@@ -119,10 +120,11 @@ trait ConsumerProgram:
     * @return
     *   An IO monad with the program that consumes messages
     */
-  def queueConsumerProgram(connection: Connection): IO[Unit] =
+  private def queueConsumerProgram(connection: Connection): IO[Unit] =
     channelFromConnection(connection)
       .use(channel =>
         for
+          _ <- defineQos(channel, prefetchCount = 1, global = true)
           consumer <- createConsumer(channel)
           queue <- consumptionQueueEnvVar
           _ <- consumeMessages(
@@ -131,7 +133,7 @@ trait ConsumerProgram:
             consumer,
             false
           )
-          _ <- IO.sleep(60.second).foreverM
+          _ <- IO.never
         yield ()
       )
 
@@ -143,5 +145,7 @@ trait ConsumerProgram:
     * @return
     *   An IO monad with the consumer created
     */
-  def createConsumer(channel: Channel): IO[DefaultConsumer]
+  def createConsumer(
+      channel: Channel
+  ): IO[DefaultConsumer]
 end ConsumerProgram

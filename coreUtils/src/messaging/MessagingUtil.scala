@@ -263,7 +263,7 @@ case object MessagingUtil:
   def defineQos(
       channel: Channel,
       prefetchSize: Int = 0,
-      prefetchCount: Int = 0,
+      prefetchCount: Int = 1,
       global: Boolean = false
   ): IO[Unit] =
     IO.delay(channel.basicQos(prefetchSize, prefetchCount, global))
