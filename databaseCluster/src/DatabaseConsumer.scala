@@ -10,7 +10,6 @@ import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import org.virtuslab.yaml.YamlError
 import types.ProcessingConsumer
-import types.StateTypes.*
 import types.TaskInfo
 
 import scala.concurrent.duration.*
@@ -56,7 +55,8 @@ case class DatabaseConsumer(
   end handleDelivery
 
   def saveTaskInfoToDatabase(taskInfo: TaskInfo): IO[Unit] =
-    for _ <- IO.sleep(1.second)
+    // for now we just simulate the database operation
+    for _ <- IO.sleep(5.second)
     yield ()
 
 end DatabaseConsumer

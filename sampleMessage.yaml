@@ -1,8 +1,8 @@
-taskId: String
-taskOwnerId: String
-storageTaskPath: String,
-storageResultPath: Option[String],
+taskId: 1
+taskOwnerId: sonow49-345
+storageTaskPath: /home/sonow49-345/Task1
+storageResultPath: /home/sonow49-345/Task1/Result
 isParsed: false
 isExecuted: false
-state: String,
-message: String
+state: somestate,
+message: somemessage

@@ -13,6 +13,8 @@ import types.OpaqueTypes.RoutingKey
 import types.ProcessingConsumer
 import types.TaskInfo
 
+import scala.concurrent.duration.*
+
 case class ParsingConsumer(
     channel: Channel,
     successRoutingKey: RoutingKey,
@@ -72,7 +74,10 @@ case class ParsingConsumer(
     // if parsing error, update state to ParsingError
     // if parsing success, update state to ParsingSuccess
     // return updated taskInfo
-    IO.pure(taskInfo)
+
+    // for now we just simulate the parsing operation
+    for _ <- IO.sleep(10.second)
+    yield taskInfo
 
   def sendToExecution(taskInfo: TaskInfo): IO[Unit] =
     IO.delay(publishFunction(successRoutingKey, serializeMessage(taskInfo)))

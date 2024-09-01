@@ -11,8 +11,9 @@ import com.rabbitmq.client.Envelope
 import org.virtuslab.yaml.YamlError
 import types.OpaqueTypes.RoutingKey
 import types.ProcessingConsumer
-import types.StateTypes.*
 import types.TaskInfo
+
+import scala.concurrent.duration.*
 
 case class ExecutionConsumer(
     channel: Channel,
@@ -73,7 +74,10 @@ case class ExecutionConsumer(
     // if parsing error, update state to ParsingError
     // if parsing success, update state to ParsingSuccess
     // return updated taskInfo
-    IO.pure(taskInfo)
+
+    // for now we just simulate the execution operation
+    for _ <- IO.sleep(15.second)
+    yield taskInfo
 
   def sendToFinzalization(taskInfo: TaskInfo): IO[Unit] =
     IO.delay(publishFunction(successRoutingKey, serializeMessage(taskInfo)))
