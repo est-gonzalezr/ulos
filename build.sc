@@ -1,5 +1,10 @@
+import coursier.Repository
 import mill._
 import mill.scalalib._
+import mill.define.ModuleRef
+import coursier.maven.MavenRepository
+
+val AkkaVersion = "2.9.6"
 
 val scalaToolkit = ivy"org.scala-lang::toolkit::0.5.0"
 val catsEffect = ivy"org.typelevel::cats-effect::3.5.4"
@@ -9,6 +14,15 @@ val scalaYaml = ivy"org.virtuslab::scala-yaml::0.3.0"
 val amqpClient = ivy"com.rabbitmq:amqp-client:5.21.0"
 val apacheCommonsNet = ivy"commons-net:commons-net:3.10.0"
 val skunk = ivy"org.tpolecat::skunk-core::0.6.4"
+val akka = ivy"com.typesafe.akka::akka-actor-typed::$AkkaVersion"
+val akkaTestKit = ivy"com.typesafe.akka::akka-actor-testkit-typed::$AkkaVersion"
+val logback = ivy"ch.qos.logback:logback-classic:1.5.8"
+val scalaLogging = ivy"com.typesafe.scala-logging::scala-logging::3.9.4"
+val zio = ivy"dev.zio::zio::2.1.9"
+
+val akkaRepository = Seq(
+  MavenRepository("https://repo.akka.io/maven")
+)
 
 trait ProjectConfigs extends ScalaModule {
   def scalaVersion = "3.5.0"
@@ -26,15 +40,21 @@ trait ProjectConfigs extends ScalaModule {
   )
 
   def scalaDocOptions = Seq("-siteroot", "mydocs", "-no-link-warnings")
+  def repositoriesTask: Task[Seq[Repository]] = T.task {
+    super.repositoriesTask() ++ akkaRepository
+  }
 }
 
 object coreUtils extends ProjectConfigs {
-  def ivyDeps = Agg(
+  def ivyDeps: Target[Agg[Dep]] = Agg(
     munit,
     scalaToolkit,
+    zio,
     catsEffect,
     scalaYaml,
-    amqpClient
+    amqpClient,
+    logback,
+    scalaLogging
   )
 }
 
@@ -101,10 +121,11 @@ object executionCluster extends ProjectConfigs {
 object testingGround extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils, storageUtils)
   def ivyDeps = Agg(
-    // fs2, cats-effect
-    ivy"org.typelevel::cats-effect::3.6-0142603",
-    ivy"co.fs2::fs2-core::3.1.6",
-    amqpClient
+    fs2,
+    catsEffect,
+    amqpClient,
+    akka,
+    akkaTestKit
   )
 
   def forkEnv = Map(
