@@ -5,6 +5,7 @@
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import akka.pattern.StatusReply
 
 /** This actor is responsible for parsing the messages that come from the
   * Message Queue. It is a stateless actor that is instantiated everytime a
@@ -15,11 +16,11 @@ object MqMessageParser:
   sealed trait Command
   final case class DeserializeMessage(
       bytes: Seq[Byte],
-      ref: ActorRef[DeserializationResponse]
+      ref: ActorRef[StatusReply[DeserializationResponse]]
   ) extends Command
   final case class SerializeMessage(
       taskInfo: String,
-      ref: ActorRef[SerializationResponse]
+      ref: ActorRef[StatusReply[SerializationResponse]]
   ) extends Command
 
   // Response protocol
@@ -49,21 +50,19 @@ object MqMessageParser:
           context.log.info(
             "Message received from MQ Manager, deserializing..."
           )
-          val msgEither = deserializedMessage(bytes)
-
-          val response = msgEither match
+          deserializedMessage(bytes) match
             case Right(msg) =>
               context.log.info(
                 "Message deserialized, sending to MQ Manager"
               )
-              MessageDeserialized(msg)
+              ref ! StatusReply.Success(MessageDeserialized(msg))
             case Left(_) =>
               context.log.error(
                 "Deserialization failed, sending response to MQ Manager"
               )
-              DeserializationFailed
+              ref ! StatusReply.Error(DeserializationFailed)
+          end match
 
-          ref ! response
           Behaviors.same
 
         case SerializeMessage(taskInfo, ref) =>
