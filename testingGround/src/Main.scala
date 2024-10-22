@@ -10,13 +10,6 @@ import scala.util.{Success, Failure}
 @main def main(): Unit =
   println("Hello, world!")
 
-  val guardian = ActorSystem(ProcessingManager(0, 5), "processing-manager")
-  guardian ! ProcessingManager.Process("Cypress", "path")
-  guardian ! ProcessingManager.Process("Cypress", "path")
-  guardian ! ProcessingManager.Process("Cypress", "path")
-  guardian ! ProcessingManager.Process("Cypress", "path")
-  guardian ! ProcessingManager.Process("Cypress", "path")
-  guardian ! ProcessingManager.Process("Cypress", "path")
-  guardian ! ProcessingManager.Process("Cypress", "path")
-  guardian.terminate()
+  val guardian = ActorSystem(Orchestrator(), "task-orchestrator")
+  // guardian.terminate()
 end main

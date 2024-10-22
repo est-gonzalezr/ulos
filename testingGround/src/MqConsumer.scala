@@ -33,7 +33,7 @@ object MqConsumer:
 
       Behaviors.receive { (context, message) =>
         ref ! MqManager.ProcessMqMessage(
-          "this is a message".toSeq.map(_.toByte)
+          "this is a message".map(_.toByte).toSeq
         )
         Behaviors.same
       }

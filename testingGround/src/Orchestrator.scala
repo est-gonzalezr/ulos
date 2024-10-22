@@ -8,49 +8,47 @@ import akka.util.Timeout
 import scala.concurrent.duration.*
 import scala.util.{Success, Failure}
 
-object TaskOrchestrator:
+object Orchestrator:
   sealed trait Command
-  case object IncreaseProcessors
-  case object DecreaseProcessors
+  case object IncreaseProcessors extends Command
+  case object DecreaseProcessors extends Command
   final case class ProcessTask(str: String) extends Command
   private final case class DownloadTask(str: String) extends Command
   private final case class ExecuteTask(str: String) extends Command
   final case class ReportProcessed(str: String) extends Command
 
+  // private type CommandOrResponse = Command | ExecutionManager.Response
+
   implicit val timeout: Timeout = Timeout(10.seconds)
 
-  def apply(): Behavior[Command] = orchestrating(5)
+  def apply(): Behavior[Command] = orchestrating
 
-  def orchestrating(
-      maxProcessors: Int = 5
-  ): Behavior[Command] =
+  def orchestrating: Behavior[Command] =
     Behaviors.setup { context =>
       val processingManager =
         context.spawn(
-          ProcessingManager(maxProcessors, context.self),
+          ExecutionManager(5, context.self),
           "processing-manager"
         )
 
-      val mqManager = context.spawn(MqManager(), "mq-manager")
+      val ftpManager = context.spawn(FtpManager(5, context.self), "ftp-manager")
+
+      val mqManager = context.spawn(MqManager(context.self), "mq-manager")
 
       Behaviors.receiveMessage { message =>
         message match
           case IncreaseProcessors =>
-            context.log.info(
-              s"Increasing max processors from $maxProcessors to ${maxProcessors + 1}"
-            )
-            orchestrating(maxProcessors + 1)
+            processingManager ! ExecutionManager.IncreaseProcessors
+            Behaviors.same
 
           case DecreaseProcessors =>
-            if maxProcessors > 1 then
-              context.log.info(
-                s"Decreasing max processors from $maxProcessors to ${maxProcessors - 1}"
-              )
-              orchestrating(maxProcessors - 1)
-            else
-              context.log.warn("Cannot decrease processors below 1")
-              Behaviors.same
+            processingManager ! ExecutionManager.DecreaseProcessors
+            Behaviors.same
+
+          case ExecutionManager.TaskExecuted(str) =>
+            context.log.info(s"Task processed: $str")
+            Behaviors.same
 
       }
-    }
-end TaskOrchestrator
+    }.narrow
+end Orchestrator
