@@ -1,42 +1,46 @@
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Timeout
 
 import scala.concurrent.duration.*
-import scala.util.{Success, Failure}
 
+/** This actor conusmes from the Message Queue and sends the message to the
+  * system.
+  */
 object MqConsumer:
+  // Command protocol
   sealed trait Command
-  case object StartConsuming extends Command
-
-  sealed trait Response
-  case object ConsumingStarted extends Response
+  private final case class DeliverMessage(bytes: Seq[Byte]) extends Command
 
   def apply(ref: ActorRef[MqManager.Command]): Behavior[Command] =
-    consumerStart(ref)
+    consuming(ref)
 
-  def consumerStart(ref: ActorRef[MqManager.Command]): Behavior[Command] =
-    Behaviors.receive { (context, message) =>
-      message match
-        case StartConsuming =>
-          context.log.info("Starting to consume messages")
-          consuming(ref)
-    }
-  end consumerStart
+  private def consuming(ref: ActorRef[MqManager.Command]): Behavior[Command] =
+    Behaviors.setup[Command] { context =>
+      context.log.info("MqConsumer started...")
 
-  def consuming(ref: ActorRef[MqManager.Command]): Behavior[Command] =
-    Behaviors.withTimers { timers =>
-      timers.startTimerWithFixedDelay(StartConsuming, 3.second)
-
-      Behaviors.receive { (context, message) =>
-        ref ! MqManager.ProcessMqMessage(
-          "this is a message".map(_.toByte).toSeq
+      // temporary implementation to send messages to the system
+      Behaviors.withTimers[Command] { timers =>
+        timers.startTimerWithFixedDelay(
+          DeliverMessage("message".map(_.toByte).toSeq),
+          3.second
         )
-        Behaviors.same
+
+        Behaviors.receiveMessage[Command] { message =>
+          message match
+            case DeliverMessage(bytes) =>
+              context.log.info(
+                "Message received from MQ, sending to MQ Manager"
+              )
+              ref ! MqManager.DeserializeMqMessage(bytes)
+              Behaviors.same
+        }
       }
     }
+
   end consuming
 end MqConsumer

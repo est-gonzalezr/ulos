@@ -17,38 +17,62 @@ object Orchestrator:
   private final case class ExecuteTask(str: String) extends Command
   final case class ReportProcessed(str: String) extends Command
 
-  // private type CommandOrResponse = Command | ExecutionManager.Response
+  private type CommandOrResponse = Command | ExecutionManager.Response |
+    FtpManager.Response
 
   implicit val timeout: Timeout = Timeout(10.seconds)
 
   def apply(): Behavior[Command] = orchestrating
 
   def orchestrating: Behavior[Command] =
-    Behaviors.setup { context =>
-      val processingManager =
-        context.spawn(
-          ExecutionManager(5, context.self),
-          "processing-manager"
-        )
+    Behaviors
+      .setup[Any] { context =>
+        context.log.info("Orchestrator started...")
 
-      val ftpManager = context.spawn(FtpManager(5, context.self), "ftp-manager")
+        val executionManager =
+          context.spawn(
+            ExecutionManager(5, context.self),
+            "processing-manager"
+          )
 
-      val mqManager = context.spawn(MqManager(context.self), "mq-manager")
+        val ftpManager =
+          context.spawn(FtpManager(5, context.self), "ftp-manager")
 
-      Behaviors.receiveMessage { message =>
-        message match
-          case IncreaseProcessors =>
-            processingManager ! ExecutionManager.IncreaseProcessors
-            Behaviors.same
+        val mqManager = context.spawn(MqManager(context.self), "mq-manager")
 
-          case DecreaseProcessors =>
-            processingManager ! ExecutionManager.DecreaseProcessors
-            Behaviors.same
+        Behaviors
+          .receiveMessage[Any] { message =>
+            message match
+              case IncreaseProcessors =>
+                executionManager ! ExecutionManager.IncreaseProcessors
+                Behaviors.same
 
-          case ExecutionManager.TaskExecuted(str) =>
-            context.log.info(s"Task processed: $str")
-            Behaviors.same
+              case DecreaseProcessors =>
+                executionManager ! ExecutionManager.DecreaseProcessors
+                Behaviors.same
 
+              case ProcessTask(str) =>
+                context.log.info(s"Processing task: $str from MQ")
+                ftpManager ! FtpManager.DownloadFile(str)
+                Behaviors.same
+
+              case ExecutionManager.TaskExecuted(str) =>
+                context.log.info(s"Task processed: $str")
+                Behaviors.same
+
+              case FtpManager.SuccessfulUpload =>
+                context.log.info("File uploaded successfully")
+                Behaviors.same
+
+              case FtpManager.UnsuccessfulUpload =>
+                context.log.error("File upload failed")
+                Behaviors.same
+
+              case MqManager.ProcessTask(taskType, taskPath) =>
+                context.log.info(s"Received task of type: $taskType")
+                Behaviors.same
+
+          }
       }
-    }.narrow
+      .narrow
 end Orchestrator
