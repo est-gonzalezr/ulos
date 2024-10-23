@@ -52,7 +52,7 @@ case object RabbitMqProvider extends MqProvider:
         body: Array[Byte]
     ): Unit =
       ref ! MqManager.DeserializeMqMessage(
-        RabbitMqPackage(channel, envelope, properties, body)
+        MqMessage(envelope.getDeliveryTag.toString, body.toSeq)
       )
 
     end handleDelivery

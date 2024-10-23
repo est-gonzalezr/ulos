@@ -14,6 +14,7 @@ import akka.util.Timeout
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
+import com.rabbitmq.client.Channel
 
 object MqAcker:
   // Command protocol
@@ -27,7 +28,7 @@ object MqAcker:
       replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
 
-  def apply(): Behavior[Command] = processing
+  def apply(channel: Channel): Behavior[Command] = processing
 
   def processing: Behavior[Command] =
     Behaviors.receive { (context, message) =>

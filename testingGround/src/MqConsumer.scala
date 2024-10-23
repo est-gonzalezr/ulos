@@ -8,55 +8,35 @@ import akka.actor.typed.scaladsl.Behaviors
 
 import scala.concurrent.duration.*
 import akka.actor.typed.scaladsl.ActorContext
+import com.rabbitmq.client.Channel
 
 /** This actor conusmes from the Message Queue and sends the message to the
   * system.
   */
 object MqConsumer:
-  // Command protocol
-  sealed trait Command
-  private final case class DeliverMessage(bytes: Seq[Byte]) extends Command
+  def apply(
+      ref: ActorRef[MqManager.Command],
+      channel: Channel
+  ): Behavior[Nothing] =
+    consuming(ref, channel)
 
-  def apply(ref: ActorRef[MqManager.Command]): Behavior[Nothing] =
-    consuming(ref)
-
-  private def consuming(ref: ActorRef[MqManager.Command]): Behavior[Nothing] =
+  private def consuming(
+      ref: ActorRef[MqManager.Command],
+      channel: Channel
+  ): Behavior[Nothing] =
     Behaviors.setup[Nothing] { context =>
       context.log.info("MqConsumer started...")
 
-      // temporary implementation to send messages to the system
-      // Behaviors.withTimers[Nothing] { timers =>
-      //   timers.startTimerWithFixedDelay(
-      //     DeliverMessage("message".map(_.toByte).toSeq),
-      //     3.second
-      //   )
-
-      //   Behaviors.receiveMessage[Nothing] { message =>
-      //     message match
-      //       case DeliverMessage(bytes) =>
-      //         context.log.info(
-      //           "Message received from MQ, sending to MQ Manager"
-      //         )
-      //         ref ! MqManager.DeserializeMqMessage(bytes)
-      //         Behaviors.same
-      //   }
-      // }
-      val _ = startConsumer(ref)
+      val _ = startConsumer(ref, channel)
       Behaviors.stopped
     }
 
   end consuming
 
   private def startConsumer(
-      ref: ActorRef[MqManager.Command]
+      ref: ActorRef[MqManager.Command],
+      channel: Channel
   ): Unit =
-    val connection = RabbitMqProvider.brokerConnection(
-      "localhost",
-      5672,
-      "guest",
-      "guest"
-    )
-    val channel = RabbitMqProvider.channelFromConnection(connection)
     val consumer = RabbitMqProvider.RabbitMqConsumer(channel, ref)
 
     RabbitMqProvider.consumeMessages(channel, "test", consumer)

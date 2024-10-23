@@ -19,6 +19,7 @@ val akkaTestKit = ivy"com.typesafe.akka::akka-actor-testkit-typed::$AkkaVersion"
 val logback = ivy"ch.qos.logback:logback-classic:1.5.8"
 val scalaLogging = ivy"com.typesafe.scala-logging::scala-logging::3.9.4"
 val zio = ivy"dev.zio::zio::2.1.9"
+val zioJson = ivy"dev.zio::zio-json::0.7.3"
 
 val akkaRepository = Seq(
   MavenRepository("https://repo.akka.io/maven")
@@ -28,7 +29,7 @@ trait ProjectConfigs extends ScalaModule {
   def scalaVersion = "3.5.0"
   def scalacOptions = Seq(
     // "-verbose",
-    "-explain",
+    // "-explain",
     "-deprecation",
     "-unchecked",
     // "-Wunused:all",
@@ -121,11 +122,10 @@ object executionCluster extends ProjectConfigs {
 object testingGround extends ProjectConfigs {
   def moduleDeps = Seq(coreUtils, storageUtils)
   def ivyDeps = Agg(
-    fs2,
-    catsEffect,
     amqpClient,
     akka,
-    akkaTestKit
+    akkaTestKit,
+    zioJson
   )
 
   def forkEnv = Map(
