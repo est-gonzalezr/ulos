@@ -16,25 +16,17 @@ object MqMessageParser:
   sealed trait Command
   final case class DeserializeMessage(
       bytes: Seq[Byte],
-      ref: ActorRef[StatusReply[DeserializationResponse]]
+      ref: ActorRef[StatusReply[MessageDeserialized]]
   ) extends Command
   final case class SerializeMessage(
       taskInfo: String,
-      ref: ActorRef[StatusReply[SerializationResponse]]
+      ref: ActorRef[StatusReply[MessageSerialized]]
   ) extends Command
 
   // Response protocol
   sealed trait Response
-
-  sealed trait DeserializationResponse extends Response
-  final case class MessageDeserialized(taskInfo: String)
-      extends DeserializationResponse
-  case object DeserializationFailed extends DeserializationResponse
-
-  sealed trait SerializationResponse extends Response
-  final case class MessageSerialized(bytes: Seq[Byte])
-      extends SerializationResponse
-  case object SerializationFailed extends SerializationResponse
+  final case class MessageDeserialized(taskInfo: String) extends Response
+  final case class MessageSerialized(bytes: Seq[Byte]) extends Response
 
   def apply(): Behavior[Command] = parsing
 
@@ -51,16 +43,16 @@ object MqMessageParser:
             "Message received from MQ Manager, deserializing..."
           )
           deserializedMessage(bytes) match
-            case Right(msg) =>
+            case Right(taskInfo) =>
               context.log.info(
                 "Message deserialized, sending to MQ Manager"
               )
-              ref ! StatusReply.Success(MessageDeserialized(msg))
-            case Left(_) =>
+              ref ! StatusReply.Success(MessageDeserialized(taskInfo))
+            case Left(error) =>
               context.log.error(
                 "Deserialization failed, sending response to MQ Manager"
               )
-              ref ! StatusReply.Error(DeserializationFailed)
+              ref ! StatusReply.Error(s"Deserialization failed: $error")
           end match
 
           Behaviors.same
@@ -69,21 +61,19 @@ object MqMessageParser:
           context.log.info(
             s"Message received MQ Manager, serializing..."
           )
-          val msgEither = serializedMessage(taskInfo)
-
-          val response = msgEither match
-            case Right(msg) =>
+          serializedMessage(taskInfo) match
+            case Right(bytes) =>
               context.log.info(
                 "Message serialized, sending to MQ"
               )
-              MessageSerialized(msg)
-            case Left(_) =>
+              ref ! StatusReply.Success(MessageSerialized(bytes))
+            case Left(error) =>
               context.log.error(
                 "Serialization failed, sending response to system"
               )
-              SerializationFailed
+              ref ! StatusReply.Error(s"Serialization failed: $error")
+          end match
 
-          ref ! response
           Behaviors.same
     }
 

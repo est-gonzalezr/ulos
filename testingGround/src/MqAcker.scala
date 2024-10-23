@@ -1,28 +1,31 @@
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
+import akka.pattern.StatusReply
 import akka.util.Timeout
 
 import scala.concurrent.duration.*
-import scala.util.{Success, Failure}
+import scala.util.Failure
+import scala.util.Success
 
 object MqAcker:
+  // Command protocol
   sealed trait Command
   final case class SendAck(
       str: String,
-      replyTo: ActorRef[Response]
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
-
   final case class SendNack(
       str: String,
-      replyTo: ActorRef[Response]
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
-
-  sealed trait Response
-  case object Successful extends Response
-  case object Unsuccessful extends Response
 
   def apply(): Behavior[Command] = processing
 
@@ -31,25 +34,51 @@ object MqAcker:
       message match
         case SendAck(str, replyTo) =>
           context.log.info(
-            s"Received task of type: $str"
+            s"Acknowledging task..."
           )
 
-          context.log.info(
-            s"Acknowledging task: $str"
-          )
-          replyTo ! Successful
+          sendAck(str) match
+            case Right(_) =>
+              context.log.info(
+                s"Task acknowledged"
+              )
+
+              replyTo ! StatusReply.Ack
+            case Left(error) =>
+              context.log.error(
+                s"Task could not be acknowledged"
+              )
+
+              replyTo ! StatusReply.Error(
+                s"Task could not be acknowledged: $error"
+              )
+          end match
           Behaviors.stopped
 
         case SendNack(str, replyTo) =>
           context.log.info(
-            s"Received task of type: $str"
+            s"Rejecting task"
           )
 
-          context.log.info(
-            s"Rejecting task: $str"
-          )
-          replyTo ! Unsuccessful
+          sendNack(str) match
+            case Right(_) =>
+              context.log.info(
+                s"Task rejected"
+              )
+              replyTo ! StatusReply.Ack
+            case Left(error) =>
+              context.log.error(
+                s"Task $str could not be rejected"
+              )
+              replyTo ! StatusReply.Error(s"Task could not be rejected: $error")
+          end match
           Behaviors.stopped
     }
   end processing
+
+  def sendAck(str: String): Either[String, String] =
+    Right(s"Task $str acknowledged")
+
+  def sendNack(str: String): Either[String, String] =
+    Right(s"Task $str rejected")
 end MqAcker

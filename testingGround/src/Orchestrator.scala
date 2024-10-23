@@ -67,11 +67,6 @@ object Orchestrator:
               case FtpManager.UnsuccessfulUpload =>
                 context.log.error("File upload failed")
                 Behaviors.same
-
-              case MqManager.ProcessTask(taskType, taskPath) =>
-                context.log.info(s"Received task of type: $taskType")
-                Behaviors.same
-
           }
       }
       .narrow

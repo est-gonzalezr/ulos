@@ -11,6 +11,7 @@ import akka.util.Timeout
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
+import akka.pattern.StatusReply
 
 /** This actor manages the actors that are related to the Message Queue. It acts
   * as the intermediary between the MQ and the system that processes the tasks
@@ -22,7 +23,8 @@ object MqManager:
   final case class DeserializeMqMessage(bytes: Seq[Byte]) extends Command
   final case class SerializeMqMessage(taskInfo: String) extends Command
   final case class DeliverToOrchestrator(taskType: String) extends Command
-  final case class DeliverToMq(bytes: Seq[Byte]) extends Command
+  final case class DeliverToMqAck(bytes: Seq[Byte]) extends Command
+  final case class DeliverToMqNack(bytes: Seq[Byte]) extends Command
   final case class ReportException(exception: Throwable) extends Command
 
   // Implicit timeout for ask pattern
@@ -52,29 +54,17 @@ object MqManager:
             val mqParser =
               context.spawn(MqMessageParser(), s"mq-parser-$activeWorkers")
 
-            context.askWithStatus(
-              mqParser,
-              ref => MqMessageParser.DeserializeMessage(bytes, ref)
-            ) {
-              case Success(MqMessageParser.MessageDeserialized(taskInfo)) =>
-                DeliverToOrchestrator(taskInfo)
-              case Success(MqMessageParser.DeserializationFailed) =>
-                ReportException(Exception("Deserialization failed"))
-              case Failure(_) =>
-                ReportException(Exception("Deserialization failed"))
-            }
-
-            context.ask[
-              MqMessageParser.Command,
-              MqMessageParser.DeserializationResponse
+            context.askWithStatus[
+              MqMessageParser.DeserializeMessage,
+              MqMessageParser.MessageDeserialized
             ](
               mqParser,
               ref => MqMessageParser.DeserializeMessage(bytes, ref)
             ) {
               case Success(MqMessageParser.MessageDeserialized(taskInfo)) =>
                 DeliverToOrchestrator(taskInfo)
-              case Success(MqMessageParser.DeserializationFailed) =>
-                ReportException(Exception("Deserialization failed"))
+              case Failure(StatusReply.ErrorMessage(error)) =>
+                ReportException(Exception(error))
               case Failure(_) =>
                 ReportException(Exception("Deserialization failed"))
             }
@@ -88,15 +78,17 @@ object MqManager:
             val mqParser =
               context.spawn(MqMessageParser(), s"mq-parser-$activeWorkers")
 
-            context.ask[
-              MqMessageParser.Command,
-              MqMessageParser.SerializationResponse
+            context.askWithStatus[
+              MqMessageParser.SerializeMessage,
+              MqMessageParser.MessageSerialized
             ](
               mqParser,
               ref => MqMessageParser.SerializeMessage(taskInfo, ref)
             ) {
               case Success(MqMessageParser.MessageSerialized(bytes)) =>
-                DeliverToMq(bytes)
+                DeliverToMqAck(bytes)
+              case Failure(StatusReply.ErrorMessage(error)) =>
+                ReportException(Exception(error))
               case _ =>
                 ReportException(Exception("Serialization failed"))
             }
@@ -108,19 +100,19 @@ object MqManager:
             ref ! Orchestrator.ProcessTask("cypress")
             processing(ref, activeWorkers - 1)
 
-          case DeliverToMq(bytes) =>
+          case DeliverToMqAck(bytes) =>
             context.log.info("Sending message to MQ")
             // mqConsumer ! MqConsumer.DeliverMessage(bytes)
             processing(ref, activeWorkers - 1)
 
-          case ProcessTask(taskType, taskPath) =>
-            context.log.info("Sending task to Orchestrator")
-            ref ! Orchestrator.ProcessTask("cypress")
-            Behaviors.same
+          case DeliverToMqNack(bytes) =>
+            context.log.info("Sending message to MQ")
+            // mqConsumer ! MqConsumer.DeliverMessage(bytes)
+            processing(ref, activeWorkers - 1)
 
           case ReportException(exception) =>
             // ref ! s"Exception: $exception"
-            Behaviors.same
+            processing(ref, activeWorkers - 1)
       }
     }
   end processing
