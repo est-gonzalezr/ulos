@@ -17,11 +17,13 @@ object ExecutionManager:
   sealed trait Command
   case object IncreaseProcessors extends Command
   case object DecreaseProcessors extends Command
-  final case class ExecuteTask(str: String) extends Command
-  final case class ReportExecutedTask(str: String) extends Command
+  final case class ExecuteTask(task: Task) extends Command
+  final case class ReportExecutedTask(task: Task) extends Command
+  final case class ReportFailedTask(task: Task) extends Command
 
   sealed trait Response
-  final case class TaskExecuted(str: String) extends Response
+  final case class TaskExecuted(task: Task) extends Response
+  final case class TaskFailed(task: Task) extends Response
 
   implicit val timeout: Timeout = 10.seconds
 
@@ -35,7 +37,7 @@ object ExecutionManager:
   def delegateProcessing(
       activeWorkers: Int,
       maxWorkers: Int,
-      ref: ActorRef[Response]
+      ref: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
@@ -55,26 +57,28 @@ object ExecutionManager:
             context.log.warn("Cannot decrease processors below 1")
             Behaviors.same
 
-        case ExecuteTask(str) =>
+        case ExecuteTask(task) =>
           if activeWorkers < maxWorkers then
-            context.log.info(s"Delegating task to executionWorker: $str")
+            context.log.info(
+              s"Delegating task to executionWorker: ${task.taskType}"
+            )
 
             val executionWorker =
-              context.spawn(
-                ExecutionWorker(),
-                s"executionWorker-$activeWorkers"
+              context.spawnAnonymous(
+                ExecutionWorker()
               )
 
-            context.ask(
+            context.askWithStatus[
+              ExecutionWorker.ExecuteTask,
+              ExecutionWorker.TaskExecuted
+            ](
               executionWorker,
-              ref => ExecutionWorker.ExecuteTask(str, ref)
+              ref => ExecutionWorker.ExecuteTask(task, ref)
             ) {
-              case Success(ExecutionWorker.TaskExecuted(str)) =>
-                ReportExecutedTask("Task processed")
-              case Failure(_) =>
-                ReportExecutedTask("Task processing failed")
-              case _ =>
-                ReportExecutedTask("Task processing failed")
+              case Success(ExecutionWorker.TaskExecuted(task)) =>
+                ReportExecutedTask(task)
+              case Failure(throwable) =>
+                ReportFailedTask(task)
             }
 
             delegateProcessing(activeWorkers + 1, maxWorkers, ref)
@@ -82,9 +86,12 @@ object ExecutionManager:
             context.log.info("All processors are busy")
             Behaviors.same
 
-        case ReportExecutedTask(response) =>
-          context.log.info(response)
-          ref ! TaskExecuted(response)
+        case ReportExecutedTask(task) =>
+          ref ! TaskExecuted(task)
+          delegateProcessing(activeWorkers - 1, maxWorkers, ref)
+
+        case ReportFailedTask(task) =>
+          ref ! TaskFailed(task)
           delegateProcessing(activeWorkers - 1, maxWorkers, ref)
     }
 

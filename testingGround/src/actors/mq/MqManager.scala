@@ -25,8 +25,8 @@ object MqManager:
   final case class DeserializeMqMessage(mqMessage: MqMessage) extends Command
   final case class SerializeMqMessage(task: Task) extends Command
   final case class DeliverToOrchestrator(task: Task) extends Command
-  final case class DeliverToMqAck(mqMessage: MqMessage) extends Command
-  final case class DeliverToMqNack(mqMessage: MqMessage) extends Command
+  final case class AcknowledgeMessage(mqMessage: MqMessage) extends Command
+  final case class RejectMessage(mqMessage: MqMessage) extends Command
   final case class ReportMqError(str: String) extends Command
 
   // Implicit timeout for ask pattern
@@ -42,11 +42,17 @@ object MqManager:
       context.log.info("MqManager started...")
 
       val connection = brokerConnecton("localhost", 5672, "guest", "guest")
+      val channel = connection.createChannel
 
       // The actor is responsible for starting all other actors that are realted to the MQ messages processing
       val mqConsumer = context.spawn(
-        MqConsumer(context.self, connection.createChannel),
+        MqConsumer(context.self, channel),
         "mq-consumer"
+      )
+
+      val mqCommunicator = context.spawn(
+        MqCommunicator(channel),
+        "mq-communicator"
       )
 
       def processingMessages(): Behavior[Command] =
@@ -71,9 +77,11 @@ object MqManager:
                 case Success(MqParser.MessageDeserialized(task)) =>
                   DeliverToOrchestrator(task)
                 case Failure(StatusReply.ErrorMessage(error)) =>
-                  ReportMqError(error)
-                case Failure(exception) =>
-                  ReportMqError(exception.toString)
+                  context.log.info(error)
+                  RejectMessage(mqMessage)
+                case Failure(throwable) =>
+                  context.log.error(throwable.toString)
+                  RejectMessage(mqMessage)
               }
 
               processingMessages()
@@ -82,6 +90,7 @@ object MqManager:
               context.log.info(
                 "Received task from Orchestrator, sending serialization task to MQ Message Parser"
               )
+
               val mqParser =
                 context.spawnAnonymous(MqParser())
 
@@ -93,26 +102,26 @@ object MqManager:
                 ref => MqParser.SerializeMessage(task, ref)
               ) {
                 case Success(MqParser.MessageSerialized(mqMessage)) =>
-                  DeliverToMqAck(mqMessage)
+                  AcknowledgeMessage(mqMessage)
                 case Failure(exception) =>
                   ReportMqError(exception.toString)
               }
 
               processingMessages()
 
-            case DeliverToOrchestrator(taskType) =>
+            case DeliverToOrchestrator(task) =>
               context.log.info("Sending task to Orchestrator")
-              ref ! Orchestrator.ProcessTask("cypress")
+              ref ! Orchestrator.ProcessTask(task)
               processingMessages()
 
-            case DeliverToMqAck(bytes) =>
+            case AcknowledgeMessage(mqMessage) =>
               context.log.info("Sending message to MQ")
-              // mqConsumer ! MqConsumer.DeliverMessage(bytes)
+              mqCommunicator ! MqCommunicator.SendAck(mqMessage)
               processingMessages()
 
-            case DeliverToMqNack(bytes) =>
+            case RejectMessage(mqMessage) =>
               context.log.info("Sending message to MQ")
-              // mqConsumer ! MqConsumer.DeliverMessage(bytes)
+              mqCommunicator ! MqCommunicator.SendReject(mqMessage)
               processingMessages()
 
             case ReportMqError(exception) =>

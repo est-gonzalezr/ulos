@@ -12,11 +12,12 @@ object Orchestrator:
   sealed trait Command
   case object IncreaseProcessors extends Command
   case object DecreaseProcessors extends Command
-  final case class ProcessTask(str: String) extends Command
-  private final case class DownloadTask(str: String) extends Command
-  private final case class ExecuteTask(str: String) extends Command
-  final case class ReportProcessed(str: String) extends Command
+  final case class ProcessTask(task: Task) extends Command
+  private final case class DownloadTask(task: Task) extends Command
+  private final case class ExecuteTask(task: Task) extends Command
+  final case class ReportProcessed(task: Task) extends Command
 
+  private val defaultProcessors = 5
   private type CommandOrResponse = Command | ExecutionManager.Response |
     FtpManager.Response
 
@@ -26,22 +27,25 @@ object Orchestrator:
 
   def orchestrating: Behavior[Command] =
     Behaviors
-      .setup[Any] { context =>
+      .setup[Command] { context =>
         context.log.info("Orchestrator started...")
 
         val executionManager =
           context.spawn(
-            ExecutionManager(5, context.self),
+            ExecutionManager(defaultProcessors, context.self),
             "processing-manager"
           )
 
         val ftpManager =
-          context.spawn(FtpManager(5, context.self), "ftp-manager")
+          context.spawn(
+            FtpManager(defaultProcessors, context.self),
+            "ftp-manager"
+          )
 
         val mqManager = context.spawn(MqManager(context.self), "mq-manager")
 
         Behaviors
-          .receiveMessage[Any] { message =>
+          .receiveMessage[CommandOrResponse] { message =>
             message match
               case IncreaseProcessors =>
                 executionManager ! ExecutionManager.IncreaseProcessors

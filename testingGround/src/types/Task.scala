@@ -28,6 +28,7 @@ import zio.json.DeriveJsonEncoder
 case class Task(
     taskId: String,
     taskOwnerId: String,
+    taskType: String,
     storageTaskPath: String,
     parsed: Boolean,
     executed: Boolean,
