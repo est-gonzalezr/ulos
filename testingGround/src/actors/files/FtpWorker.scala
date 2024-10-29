@@ -1,32 +1,34 @@
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+// package actors.files
 
-object FtpWorker:
-  sealed trait Command
-  final case class UploadFile(task: Task, replyTo: ActorRef[Response])
-      extends Command
-  final case class DownloadFile(task: Task, replyTo: ActorRef[Response])
-      extends Command
+// import akka.actor.typed.ActorRef
+// import akka.actor.typed.Behavior
+// import akka.actor.typed.scaladsl.Behaviors
 
-  sealed trait Response
-  final case class FileDownloader(task: Task) extends Response
-  case object FileUploaded extends Response
+// object FtpWorker:
+//   sealed trait Command
+//   final case class UploadFile(task: Task, replyTo: ActorRef[Response])
+//       extends Command
+//   final case class DownloadFile(task: Task, replyTo: ActorRef[Response])
+//       extends Command
 
-  def apply(): Behavior[Command] = processing
+//   sealed trait Response
+//   final case class FileDownloader(task: Task) extends Response
+//   case object FileUploaded extends Response
 
-  def processing: Behavior[Command] =
-    Behaviors.receive { (context, message) =>
-      message match
-        case UploadFile(task, replyTo) =>
-          context.log.info(s"Uploading file: ${task.taskType}")
-          replyTo ! FileUploaded
-          Behaviors.stopped
+//   def apply(): Behavior[Command] = processing
 
-        case DownloadFile(task, replyTo) =>
-          context.log.info(s"Downloading file: ${task.taskType}")
-          replyTo ! FileDownloader(task)
-          Behaviors.stopped
-    }
-  end processing
-end FtpWorker
+//   def processing: Behavior[Command] =
+//     Behaviors.receive { (context, message) =>
+//       message match
+//         case UploadFile(task, replyTo) =>
+//           context.log.info(s"Uploading file: ${task.taskType}")
+//           replyTo ! FileUploaded
+//           Behaviors.stopped
+
+//         case DownloadFile(task, replyTo) =>
+//           context.log.info(s"Downloading file: ${task.taskType}")
+//           replyTo ! FileDownloader(task)
+//           Behaviors.stopped
+//     }
+//   end processing
+// end FtpWorker

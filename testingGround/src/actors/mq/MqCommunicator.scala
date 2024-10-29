@@ -1,3 +1,5 @@
+package actors.mq
+
 /** @author
   *   Esteban Gonzalez Ruales
   */
@@ -16,14 +18,23 @@ import scala.util.Failure
 import scala.util.Success
 import com.rabbitmq.client.Channel
 
+import types.MqMessage
+
 object MqCommunicator:
   // Command protocol
   sealed trait Command
+
+  final case class SendMqMessage(
+      mqMessage: MqMessage,
+      ref: ActorRef[StatusReply[Done]]
+  ) extends Command
   final case class SendAck(
-      mqMessage: MqMessage
+      mqMessage: MqMessage,
+      ref: ActorRef[StatusReply[Done]]
   ) extends Command
   final case class SendReject(
-      mqMessage: MqMessage
+      mqMessage: MqMessage,
+      ref: ActorRef[StatusReply[Done]]
   ) extends Command
 
   def apply(channel: Channel): Behavior[Command] = processing(channel)
@@ -31,21 +42,35 @@ object MqCommunicator:
   def processing(channel: Channel): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
-        case SendAck(mqMessage) =>
+        case SendMqMessage(mqMessage, ref) =>
+          context.log.info(
+            s"Processing message..."
+          )
+
+          sendAck(channel, mqMessage)
+
+          ref ! StatusReply.Ack
+
+        case SendAck(mqMessage, ref) =>
           context.log.info(
             s"Acknowledging task..."
           )
 
           sendAck(channel, mqMessage)
-          Behaviors.stopped
 
-        case SendReject(mqMessage) =>
+          ref ! StatusReply.Ack
+
+        case SendReject(mqMessage, ref) =>
           context.log.info(
             s"Rejecting task"
           )
 
           sendReject(channel, mqMessage)
-          Behaviors.stopped
+
+          ref ! StatusReply.Ack
+      end match
+
+      Behaviors.stopped
     }
   end processing
 

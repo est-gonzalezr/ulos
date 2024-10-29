@@ -1,3 +1,5 @@
+package actors.mq
+
 /** @author
   *   Esteban Gonzalez Ruales
   */
@@ -9,6 +11,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import scala.concurrent.duration.*
 import akka.actor.typed.scaladsl.ActorContext
 import com.rabbitmq.client.Channel
+
+import misc.RabbitMqProvider
 
 /** This actor conusmes from the Message Queue and sends the message to the
   * system.

@@ -1,3 +1,5 @@
+package types
+
 /** @author
   *   Esteban Gonzalez Ruales
   */

@@ -1,3 +1,5 @@
+package actors.mq
+
 /** @author
   *   Esteban Gonzalez Ruales
   */
@@ -15,6 +17,11 @@ import akka.pattern.StatusReply
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 
+import types.MqMessage
+import types.Task
+
+import actors.Orchestrator
+
 /** This actor manages the actors that are related to the Message Queue. It acts
   * as the intermediary between the MQ and the system that processes the tasks
   * that come from the MQ.
@@ -22,12 +29,24 @@ import com.rabbitmq.client.ConnectionFactory
 object MqManager:
   // Command protocol
   sealed trait Command
-  final case class DeserializeMqMessage(mqMessage: MqMessage) extends Command
-  final case class SerializeMqMessage(task: Task) extends Command
-  final case class DeliverToOrchestrator(task: Task) extends Command
-  final case class AcknowledgeMessage(mqMessage: MqMessage) extends Command
-  final case class RejectMessage(mqMessage: MqMessage) extends Command
-  final case class ReportMqError(str: String) extends Command
+
+  // Public command protocol
+  final case class MqProcessTask(mqMessage: MqMessage) extends Command
+  final case class MqAcknowledgeTask(task: Task) extends Command
+  final case class MqRejectTask(task: Task) extends Command
+  case object Shutdown extends Command
+
+  // Internal command protocol
+  private final case class DeserializeMqMessage(mqMessage: MqMessage)
+      extends Command
+  private final case class SerializeTask(task: Task) extends Command
+
+  private final case class AcknowledgeMqMessage(mqMessage: MqMessage)
+      extends Command
+  private final case class RejectMqMessage(mqMessage: MqMessage) extends Command
+
+  private final case class DeliverToOrchestrator(task: Task) extends Command
+  private final case class ReportMqError(str: String) extends Command
 
   // Implicit timeout for ask pattern
   implicit val timeout: Timeout = 10.seconds
@@ -58,76 +77,110 @@ object MqManager:
       def processingMessages(): Behavior[Command] =
         Behaviors.receiveMessage[Command] { message =>
           message match
+
+            /* **********************************************************************
+             * Public commands
+             * ********************************************************************** */
+
+            case MqProcessTask(mqMessage) =>
+              // context.log.info(
+              //   "Received message from MQ, sending deserialization task to MQ Message Parser"
+              // )
+
+              context.self ! DeserializeMqMessage(mqMessage)
+              Behaviors.same
+
+            case MqAcknowledgeTask(task) =>
+              // context.log.info(
+              //   "Received task from Orchestrator, sending serialization task to MQ Message Parser"
+              // )
+
+              context.self ! SerializeTask(task)
+              Behaviors.same
+
+            case MqRejectTask(task) =>
+              // context.log.info(
+              //   "Received task from Orchestrator, sending serialization task to MQ Message Parser"
+              // )
+
+              context.self ! SerializeTask(task)
+              Behaviors.same
+
+            case Shutdown =>
+              context.log.info("Shutting down MqManager")
+              connection.close()
+              Behaviors.stopped
+
+            /* **********************************************************************
+             * Internal commands
+             * ********************************************************************** */
+
             case DeserializeMqMessage(mqMessage) =>
-              context.log.info(
-                "Received message from MQ, sending deserialization task to MQ Message Parser"
-              )
+              // context.log.info(
+              //   "Received message to deserialize, delegating to worker deserializer..."
+              // )
 
-              // the MQ Parser is instantiated everytime a message is received since it is a stateless actor
-              val mqParser =
-                context.spawnAnonymous(MqParser())
+              val deserializer = context.spawnAnonymous(MqMessageDeserializer())
 
               context.askWithStatus[
-                MqParser.DeserializeMessage,
-                MqParser.MessageDeserialized
+                MqMessageDeserializer.DeserializeMessage,
+                MqMessageDeserializer.MessageDeserialized
               ](
-                mqParser,
-                ref => MqParser.DeserializeMessage(mqMessage, ref)
+                deserializer,
+                ref => MqMessageDeserializer.DeserializeMessage(mqMessage, ref)
               ) {
-                case Success(MqParser.MessageDeserialized(task)) =>
+                case Success(MqMessageDeserializer.MessageDeserialized(task)) =>
                   DeliverToOrchestrator(task)
-                case Failure(StatusReply.ErrorMessage(error)) =>
-                  context.log.info(error)
-                  RejectMessage(mqMessage)
-                case Failure(throwable) =>
-                  context.log.error(throwable.toString)
-                  RejectMessage(mqMessage)
+                case Failure(exception) =>
+                  RejectMqMessage(mqMessage)
               }
 
-              processingMessages()
+              Behaviors.same
 
-            case SerializeMqMessage(task) =>
-              context.log.info(
-                "Received task from Orchestrator, sending serialization task to MQ Message Parser"
-              )
+            case SerializeTask(task) =>
+              // context.log.info(
+              //   "Received message to serialize, delegating to worker serializer..."
+              // )
 
-              val mqParser =
-                context.spawnAnonymous(MqParser())
+              val serializer = context.spawnAnonymous(MqMessageSerializer())
 
               context.askWithStatus[
-                MqParser.SerializeMessage,
-                MqParser.MessageSerialized
+                MqMessageSerializer.SerializeMessage,
+                MqMessageSerializer.MessageSerialized
               ](
-                mqParser,
-                ref => MqParser.SerializeMessage(task, ref)
+                serializer,
+                ref => MqMessageSerializer.SerializeMessage(task, ref)
               ) {
-                case Success(MqParser.MessageSerialized(mqMessage)) =>
-                  AcknowledgeMessage(mqMessage)
+                case Success(
+                      MqMessageSerializer.MessageSerialized(mqMessage)
+                    ) =>
+                  AcknowledgeMqMessage(mqMessage)
                 case Failure(exception) =>
-                  ReportMqError(exception.toString)
+                  SerializeTask(task)
               }
 
-              processingMessages()
+              Behaviors.same
+
+            case AcknowledgeMqMessage(mqMessage) =>
+              // context.log.info("Sending message to MQ")
+              mqCommunicator ! MqCommunicator.SendAck(mqMessage)
+              Behaviors.same
+
+            case RejectMqMessage(mqMessage) =>
+              // context.log.info("Sending message to MQ")
+              mqCommunicator ! MqCommunicator.SendReject(mqMessage)
+              Behaviors.same
 
             case DeliverToOrchestrator(task) =>
-              context.log.info("Sending task to Orchestrator")
+              // context.log.info("Sending task to Orchestrator")
               ref ! Orchestrator.ProcessTask(task)
-              processingMessages()
-
-            case AcknowledgeMessage(mqMessage) =>
-              context.log.info("Sending message to MQ")
-              mqCommunicator ! MqCommunicator.SendAck(mqMessage)
-              processingMessages()
-
-            case RejectMessage(mqMessage) =>
-              context.log.info("Sending message to MQ")
-              mqCommunicator ! MqCommunicator.SendReject(mqMessage)
-              processingMessages()
+              Behaviors.same
 
             case ReportMqError(exception) =>
               context.log.error(exception)
-              processingMessages()
+              Behaviors.same
         }
+
       processingMessages()
     }
 

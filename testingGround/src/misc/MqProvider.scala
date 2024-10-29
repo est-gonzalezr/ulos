@@ -1,3 +1,5 @@
+package misc
+
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Envelope
@@ -7,6 +9,9 @@ import com.rabbitmq.client.Consumer
 import akka.actor.typed.ActorRef
 import com.rabbitmq.client.DefaultConsumer
 import akka.actor.typed.scaladsl.ActorContext
+
+import actors.mq.MqManager
+import types.MqMessage
 
 sealed trait MqProvider:
   def startConsumer(): Unit
@@ -51,7 +56,7 @@ case object RabbitMqProvider extends MqProvider:
         properties: BasicProperties,
         body: Array[Byte]
     ): Unit =
-      ref ! MqManager.DeserializeMqMessage(
+      ref ! MqManager.MqProcessTask(
         MqMessage(envelope.getDeliveryTag.toString, body.toSeq)
       )
 
