@@ -13,7 +13,8 @@ object Orchestrator:
   case object IncreaseProcessors extends Command
   case object DecreaseProcessors extends Command
   final case class ProcessTask(task: Task) extends Command
-  private final case class DownloadTask(task: Task) extends Command
+  private final case class DownloadTaskFiles(task: Task) extends Command
+  private final case class UploadTaskFiles(task: Task) extends Command
   private final case class ExecuteTask(task: Task) extends Command
   final case class ReportProcessed(task: Task) extends Command
 
@@ -23,11 +24,11 @@ object Orchestrator:
 
   implicit val timeout: Timeout = Timeout(10.seconds)
 
-  def apply(): Behavior[Command] = orchestrating
+  def apply(): Behavior[Command] = orchestrating()
 
-  def orchestrating: Behavior[Command] =
+  def orchestrating(): Behavior[Command] =
     Behaviors
-      .setup[Command] { context =>
+      .setup[CommandOrResponse] { context =>
         context.log.info("Orchestrator started...")
 
         val executionManager =
@@ -47,6 +48,7 @@ object Orchestrator:
         Behaviors
           .receiveMessage[CommandOrResponse] { message =>
             message match
+              // Messages from system monitor
               case IncreaseProcessors =>
                 executionManager ! ExecutionManager.IncreaseProcessors
                 Behaviors.same
@@ -55,14 +57,36 @@ object Orchestrator:
                 executionManager ! ExecutionManager.DecreaseProcessors
                 Behaviors.same
 
-              case ProcessTask(str) =>
-                context.log.info(s"Processing task: $str from MQ")
-                ftpManager ! FtpManager.DownloadFile(str)
+              // Messages from MQ Manager
+              case ProcessTask(task) =>
+                context.log.info(s"Processing task: ${task.taskType} from MQ")
+                context.self ! DownloadTaskFiles(task)
                 Behaviors.same
 
-              case ExecutionManager.TaskExecuted(str) =>
-                context.log.info(s"Task processed: $str")
+              // Messages from self
+              case DownloadTaskFiles(task) =>
+                context.log.info(s"Downloading file: ${task.taskType}")
+                ftpManager ! FtpManager.DownloadTask(task)
                 Behaviors.same
+
+              case UploadTaskFiles(task) =>
+                context.log.info(s"Uploading file: ${task.taskType}")
+                ftpManager ! FtpManager.UploadTask(task)
+                Behaviors.same
+
+              case ExecuteTask(task) =>
+                context.log.info(s"Executing task: ${task.taskType}")
+                executionManager ! ExecutionManager.ExecuteTask(task)
+                Behaviors.same
+
+              // Messages from Execution Manager
+
+              case ExecutionManager.TaskExecuted(task) =>
+                context.log.info(s"Task processed: ${task.taskType}")
+                mqManager ! MqManager.SerializeMqMessage(task)
+                Behaviors.same
+
+              // Messages from Ftp Manager
 
               case FtpManager.SuccessfulUpload =>
                 context.log.info("File uploaded successfully")

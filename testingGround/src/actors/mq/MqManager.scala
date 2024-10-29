@@ -125,7 +125,7 @@ object MqManager:
               processingMessages()
 
             case ReportMqError(exception) =>
-              // ref ! s"Exception: $exception"
+              context.log.error(exception)
               processingMessages()
         }
       processingMessages()

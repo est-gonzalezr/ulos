@@ -37,7 +37,7 @@ object ExecutionManager:
   def delegateProcessing(
       activeWorkers: Int,
       maxWorkers: Int,
-      ref: ActorRef[Orchestrator.Command]
+      ref: ActorRef[Response]
   ): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match

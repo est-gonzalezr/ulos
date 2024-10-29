@@ -13,9 +13,9 @@ object FtpManager:
   sealed trait Command
   case object IncreaseProcessors extends Command
   case object DecreaseProcessors extends Command
-  final case class UploadFile(str: String) extends Command
-  final case class DownloadFile(str: String) extends Command
-  final case class ReportFtpJob(str: String) extends Command
+  final case class UploadTask(task: Task) extends Command
+  final case class DownloadTask(task: Task) extends Command
+  final case class ReportFtpJob(task: Task) extends Command
 
   sealed trait Response
   case object SuccessfulUpload extends Response
@@ -49,7 +49,7 @@ object FtpManager:
             context.log.warn("Cannot decrease processors below 1")
             Behaviors.same
 
-        case UploadFile(str) =>
+        case UploadTask(str) =>
           if activeWorkers < maxWorkers then
             context.log.info(s"Uploading file: $str")
 
@@ -58,7 +58,7 @@ object FtpManager:
 
             context.ask(
               ftpWorker,
-              ref => FtpWorker.UploadFile(str, ref)
+              ref => FtpWorker.UploadTask(str, ref)
             ) {
               case Success(_) =>
                 ReportFtpJob("Job successful")
@@ -71,7 +71,7 @@ object FtpManager:
             context.log.warn("Cannot upload file, all workers are busy")
             Behaviors.same
 
-        case DownloadFile(str) =>
+        case DownloadTask(str) =>
           if activeWorkers < maxWorkers then
             context.log.info(s"Downloading file: $str")
             ref ! SuccessfulUpload
