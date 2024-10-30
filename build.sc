@@ -4,7 +4,7 @@ import mill.scalalib._
 import mill.define.ModuleRef
 import coursier.maven.MavenRepository
 
-val AkkaVersion = "2.9.6"
+val AkkaVersion = "2.10.0"
 
 val scalaToolkit = ivy"org.scala-lang::toolkit::0.5.0"
 val catsEffect = ivy"org.typelevel::cats-effect::3.5.4"

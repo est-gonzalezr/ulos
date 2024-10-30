@@ -21,6 +21,7 @@ import types.MqMessage
 import types.Task
 
 import actors.Orchestrator
+import akka.Done
 
 /** This actor manages the actors that are related to the Message Queue. It acts
   * as the intermediary between the MQ and the system that processes the tasks
@@ -47,6 +48,7 @@ object MqManager:
 
   private final case class DeliverToOrchestrator(task: Task) extends Command
   private final case class ReportMqError(str: String) extends Command
+  private final case class ReportMqSuccess(str: String) extends Command
 
   // Implicit timeout for ask pattern
   implicit val timeout: Timeout = 10.seconds
@@ -67,11 +69,6 @@ object MqManager:
       val mqConsumer = context.spawn(
         MqConsumer(context.self, channel),
         "mq-consumer"
-      )
-
-      val mqCommunicator = context.spawn(
-        MqCommunicator(channel),
-        "mq-communicator"
       )
 
       def processingMessages(): Behavior[Command] =
@@ -163,12 +160,36 @@ object MqManager:
 
             case AcknowledgeMqMessage(mqMessage) =>
               // context.log.info("Sending message to MQ")
-              mqCommunicator ! MqCommunicator.SendAck(mqMessage)
+              val communicator = context.spawnAnonymous(MqCommunicator(channel))
+
+              context.askWithStatus[MqCommunicator.SendAck, Done](
+                communicator,
+                ref => MqCommunicator.SendAck(mqMessage, ref)
+              ) {
+                case Success(Done) =>
+                  ReportMqSuccess("Success")
+
+                case Failure(exception) =>
+                  AcknowledgeMqMessage(mqMessage)
+              }
+
               Behaviors.same
 
             case RejectMqMessage(mqMessage) =>
               // context.log.info("Sending message to MQ")
-              mqCommunicator ! MqCommunicator.SendReject(mqMessage)
+              val communicator = context.spawnAnonymous(MqCommunicator(channel))
+
+              context.askWithStatus[MqCommunicator.SendReject, Done](
+                communicator,
+                ref => MqCommunicator.SendReject(mqMessage, ref)
+              ) {
+                case Success(Done) =>
+                  ReportMqSuccess("Success")
+
+                case Failure(exception) =>
+                  ReportMqError(exception.getMessage)
+              }
+
               Behaviors.same
 
             case DeliverToOrchestrator(task) =>
@@ -178,6 +199,10 @@ object MqManager:
 
             case ReportMqError(exception) =>
               context.log.error(exception)
+              Behaviors.same
+
+            case ReportMqSuccess(str) =>
+              context.log.info(str)
               Behaviors.same
         }
 

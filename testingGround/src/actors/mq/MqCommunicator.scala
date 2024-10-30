@@ -79,4 +79,5 @@ object MqCommunicator:
 
   def sendReject(channel: Channel, mqMessage: MqMessage): Unit =
     channel.basicNack(mqMessage.id.toLong, false, true)
+
 end MqCommunicator
