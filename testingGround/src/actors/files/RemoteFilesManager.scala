@@ -1,17 +1,17 @@
 package actors.files
 
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
+import types.Task
 
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
-
-import types.Task
 
 object RemoteFilesManager:
   // Command protocol
@@ -20,14 +20,14 @@ object RemoteFilesManager:
   // Public command protocol
   case object IncreaseProcessors extends Command
   case object DecreaseProcessors extends Command
-  final case class UploadTaskFiles(task: Task) extends Command
   final case class DownloadTaskFiles(task: Task) extends Command
+  final case class UploadTaskFiles(task: Task) extends Command
 
   // Internal command protocol
-  final case class ReportTaskDownloaded(task: Task) extends Command
-  final case class ReportTaskUploaded(task: Task) extends Command
-  final case class ReportTaskDownloadFailed(task: Task) extends Command
-  final case class ReportTaskUploadFailed(task: Task) extends Command
+  private final case class ReportTaskDownloaded(task: Task) extends Command
+  private final case class ReportTaskUploaded(task: Task) extends Command
+  private final case class ReportTaskDownloadFailed(task: Task) extends Command
+  private final case class ReportTaskUploadFailed(task: Task) extends Command
 
   // Response protocol
   sealed trait Response
@@ -72,7 +72,36 @@ object RemoteFilesManager:
         case DownloadTaskFiles(task) =>
           val remoteFilesWorker = context.spawnAnonymous(RemoteFilesWorker())
 
-          context.askWithStatus[]()
+          context.askWithStatus[RemoteFilesWorker.DownloadFile, Done](
+            remoteFilesWorker,
+            ref => RemoteFilesWorker.DownloadFile(task.storageTaskPath, ref)
+          ) {
+            case Success(_) =>
+              ReportTaskDownloaded(task)
+            case Failure(throwable) =>
+              ReportTaskDownloadFailed(
+                task.copy(errorMessage = Some(throwable.getMessage))
+              )
+          }
+
+          delegateProcessing(activeWorkers + 1, maxWorkers, ref)
+
+        case UploadTaskFiles(task) =>
+          val remoteFilesWorker = context.spawnAnonymous(RemoteFilesWorker())
+
+          context.askWithStatus[RemoteFilesWorker.UploadFile, Done](
+            remoteFilesWorker,
+            ref => RemoteFilesWorker.UploadFile(task.storageTaskPath, ref)
+          ) {
+            case Success(_) =>
+              ReportTaskUploaded(task)
+            case Failure(throwable) =>
+              ReportTaskUploadFailed(
+                task.copy(errorMessage = Some(throwable.getMessage))
+              )
+          }
+
+          delegateProcessing(activeWorkers + 1, maxWorkers, ref)
 
         /* **********************************************************************
          * Internal commands
@@ -80,18 +109,22 @@ object RemoteFilesManager:
 
         case ReportTaskDownloaded(task) =>
           context.log.info(s"Downloaded file: ${task.taskType}")
+          ref ! SuccessfulDownload(task)
           delegateProcessing(activeWorkers - 1, maxWorkers, ref)
 
         case ReportTaskUploaded(task) =>
           context.log.info(s"Uploaded file: ${task.taskType}")
+          ref ! SuccessfulUpload(task)
           delegateProcessing(activeWorkers - 1, maxWorkers, ref)
 
         case ReportTaskDownloadFailed(task) =>
           context.log.warn(s"Failed to download file: ${task.taskType}")
+          ref ! FailedDownload(task)
           delegateProcessing(activeWorkers - 1, maxWorkers, ref)
 
         case ReportTaskUploadFailed(task) =>
           context.log.warn(s"Failed to upload file: ${task.taskType}")
+          ref ! FailedUpload(task)
           delegateProcessing(activeWorkers - 1, maxWorkers, ref)
     }
   end delegateProcessing

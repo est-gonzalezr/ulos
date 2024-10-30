@@ -35,7 +35,8 @@ case class Task(
     parsed: Boolean,
     executed: Boolean,
     errorMessage: Option[String],
-    mqId: String
+    mqId: String,
+    retriesRemaining: Int
 )
 
 /** Companion object for the Task class. It contains the JSON encoders and

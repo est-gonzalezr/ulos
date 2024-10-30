@@ -86,13 +86,13 @@ object ExecutionManager:
 
             context.askWithStatus[
               ExecutionWorker.ExecuteTask,
-              ExecutionWorker.TaskExecuted
+              Boolean
             ](
               executionWorker,
               ref => ExecutionWorker.ExecuteTask(task, ref)
             ) {
-              case Success(ExecutionWorker.TaskExecuted(task)) =>
-                ReportTaskExecuted(task)
+              case Success(passed) =>
+                ReportTaskExecuted(task.copy())
               case Failure(throwable) =>
                 ReportTaskFailed(
                   task.copy(errorMessage = Some(throwable.getMessage))

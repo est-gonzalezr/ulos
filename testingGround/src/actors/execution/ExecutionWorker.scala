@@ -22,12 +22,12 @@ object ExecutionWorker:
   sealed trait Command
   final case class ExecuteTask(
       task: Task,
-      replyTo: ActorRef[StatusReply[TaskExecuted]]
+      replyTo: ActorRef[StatusReply[Boolean]]
   ) extends Command
 
   // Response protocol
   sealed trait Response
-  final case class TaskExecuted(task: Task) extends Response
+  // final case class TaskExecuted(passed: Boolean) extends Response
 
   def apply(): Behavior[Command] = processing()
 
@@ -44,19 +44,17 @@ object ExecutionWorker:
             s"Received task of type: ${task.taskType}"
           )
 
-          val processedTask = process(task)
-
-          replyTo ! StatusReply.Success(TaskExecuted(processedTask))
+          replyTo ! StatusReply.Success(executionResult(task))
       end match
 
       Behaviors.stopped
     }
   end processing
 
-  private def process(task: Task): Task =
+  private def executionResult(task: Task): Boolean =
     val endTime = System.currentTimeMillis() + 5000
     while System.currentTimeMillis() < endTime do ()
     end while
-    task
-  end process
+    true
+  end executionResult
 end ExecutionWorker
