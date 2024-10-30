@@ -19,6 +19,8 @@ import scala.util.Success
 import com.rabbitmq.client.Channel
 
 import types.MqMessage
+import types.OpaqueTypes.RoutingKey
+import types.OpaqueTypes.ExchangeName
 
 object MqCommunicator:
   // Command protocol
@@ -26,6 +28,8 @@ object MqCommunicator:
 
   final case class SendMqMessage(
       mqMessage: MqMessage,
+      exchangeName: ExchangeName,
+      routingKey: RoutingKey,
       ref: ActorRef[StatusReply[Done]]
   ) extends Command
   final case class SendAck(
@@ -42,12 +46,17 @@ object MqCommunicator:
   def processing(channel: Channel): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
-        case SendMqMessage(mqMessage, ref) =>
+        case SendMqMessage(mqMessage, exchangeName, routingKey, ref) =>
           context.log.info(
-            s"Processing message..."
+            s"Sending message..."
           )
 
-          sendAck(channel, mqMessage)
+          sendmessage(
+            channel,
+            exchangeName,
+            routingKey,
+            mqMessage.bytes
+          )
 
           ref ! StatusReply.Ack
 
@@ -79,5 +88,18 @@ object MqCommunicator:
 
   def sendReject(channel: Channel, mqMessage: MqMessage): Unit =
     channel.basicNack(mqMessage.id.toLong, false, true)
+
+  def sendmessage(
+      channel: Channel,
+      exchangeName: ExchangeName,
+      routingKey: RoutingKey,
+      message: Seq[Byte]
+  ): Unit =
+    channel.basicPublish(
+      exchangeName.value,
+      routingKey.value,
+      null,
+      message.toArray
+    )
 
 end MqCommunicator

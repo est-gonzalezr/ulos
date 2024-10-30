@@ -14,14 +14,17 @@ import types.MqMessage
 import types.Task
 
 object Orchestrator:
+  // Command protocol
   sealed trait Command
+
+  // Public command protocol
   case object IncreaseProcessors extends Command
   case object DecreaseProcessors extends Command
   final case class ProcessTask(task: Task) extends Command
-  private final case class DownloadTaskFiles(task: Task) extends Command
-  private final case class UploadTaskFiles(task: Task) extends Command
-  private final case class ExecuteTask(task: Task) extends Command
-  final case class ReportProcessed(task: Task) extends Command
+
+  // def apply(): Behavior[Command] = orchestrating()
+
+  // def orchestrating()
 
 //   private val defaultProcessors = 5
 //   private type CommandOrResponse = Command | ExecutionManager.Response |

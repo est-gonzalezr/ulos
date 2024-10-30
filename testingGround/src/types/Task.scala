@@ -34,7 +34,7 @@ case class Task(
     storageTaskPath: String,
     parsed: Boolean,
     executed: Boolean,
-    message: Option[String],
+    errorMessage: Option[String],
     mqId: String
 )
 
