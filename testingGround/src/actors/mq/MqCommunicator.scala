@@ -26,18 +26,19 @@ object MqCommunicator:
   // Command protocol
   sealed trait Command
 
+  // Public command protocol
   final case class SendMqMessage(
-      mqMessage: MqMessage,
+      bytes: Seq[Byte],
       exchangeName: ExchangeName,
       routingKey: RoutingKey,
       ref: ActorRef[StatusReply[Done]]
   ) extends Command
   final case class SendAck(
-      mqMessage: MqMessage,
+      id: String,
       ref: ActorRef[StatusReply[Done]]
   ) extends Command
   final case class SendReject(
-      mqMessage: MqMessage,
+      id: String,
       ref: ActorRef[StatusReply[Done]]
   ) extends Command
 
@@ -46,7 +47,7 @@ object MqCommunicator:
   def processing(channel: Channel): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
-        case SendMqMessage(mqMessage, exchangeName, routingKey, ref) =>
+        case SendMqMessage(bytes, exchangeName, routingKey, ref) =>
           context.log.info(
             s"Sending message..."
           )
@@ -55,7 +56,7 @@ object MqCommunicator:
             channel,
             exchangeName,
             routingKey,
-            mqMessage.bytes
+            bytes
           )
 
           ref ! StatusReply.Ack
@@ -83,11 +84,19 @@ object MqCommunicator:
     }
   end processing
 
-  def sendAck(channel: Channel, mqMessage: MqMessage): Unit =
-    channel.basicAck(mqMessage.id.toLong, false)
+  def sendAck(channel: Channel, mqMessageId: String): Unit =
+    mqMessageId.toLongOption match
+      case Some(id) =>
+        channel.basicAck(id, false)
+      case None =>
+        throw new Exception("Invalid message id")
 
-  def sendReject(channel: Channel, mqMessage: MqMessage): Unit =
-    channel.basicNack(mqMessage.id.toLong, false, true)
+  def sendReject(channel: Channel, mqMessageId: String): Unit =
+    mqMessageId.toLongOption match
+      case Some(id) =>
+        channel.basicReject(id, false)
+      case None =>
+        throw new Exception("Invalid message id")
 
   def sendmessage(
       channel: Channel,

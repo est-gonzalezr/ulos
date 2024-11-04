@@ -9,7 +9,7 @@ package types
   * system without exposing the actual type of the elements. This makes the code
   * more robust and less error-prone.
   */
-case object OpaqueTypes:
+object OpaqueTypes:
 
   /** Represents the routing key for the messaging system.
     */
@@ -19,6 +19,7 @@ case object OpaqueTypes:
       *
       * @param value
       *   The value to use
+      *
       * @return
       *   A new RoutingKey
       */
@@ -26,12 +27,13 @@ case object OpaqueTypes:
 
     /** Returns the value of the RoutingKey.
       *
-      * @param rk
+      * @param routingKey
       *   The RoutingKey
+      *
       * @return
       *   The value
       */
-    extension (rk: RoutingKey) def value: String = rk
+    extension (routingKey: RoutingKey) def value: String = routingKey
   end RoutingKey
 
   /** Represents the exchange name for the messaging system.
@@ -42,6 +44,7 @@ case object OpaqueTypes:
       *
       * @param value
       *   The value to use
+      *
       * @return
       *   A new ExchangeName
       */
@@ -49,12 +52,13 @@ case object OpaqueTypes:
 
     /** Returns the value of the ExchangeName.
       *
-      * @param en
+      * @param routingKey
       *   The ExchangeName
+      *
       * @return
       *   The value
       */
-    extension (en: ExchangeName) def value: String = en
+    extension (routingKey: ExchangeName) def value: String = routingKey
   end ExchangeName
 
   /** Represents the queue name for the messaging system.
@@ -65,6 +69,7 @@ case object OpaqueTypes:
       *
       * @param value
       *   The value to use
+      *
       * @return
       *   A new QueueName
       */
@@ -72,11 +77,87 @@ case object OpaqueTypes:
 
     /** Returns the value of the QueueName.
       *
-      * @param qn
+      * @param queueName
       *   The QueueName
+      *
       * @return
       *   The value
       */
-    extension (qn: QueueName) def value: String = qn
+    extension (queueName: QueueName) def value: String = queueName
   end QueueName
+
+  /** Represents the message id for the messaging system.
+    */
+  opaque type MqMessageId = String
+  object MqMessageId:
+    /** Creates a new MqMessageId.
+      *
+      * @param value
+      *   The value to use
+      *
+      * @return
+      */
+    def apply(value: String): MqMessageId = value
+
+    /** Returns the value of the MqMessageId.
+      *
+      * @param mqMessageId
+      *   The MqMessageId
+      *
+      * @return
+      *   The value
+      */
+    extension (mqMessageId: MqMessageId) def value: String = mqMessageId
+  end MqMessageId
+
+  /** Represents the task id for the messaging system.
+    */
+  opaque type Uri = String
+  object Uri:
+    /** Creates a new Uri.
+      *
+      * @param value
+      *   The value to use
+      *
+      * @return
+      *   A new Uri
+      */
+    def apply(value: String): Uri = value
+
+    /** Returns the value of the Uri.
+      *
+      * @param uri
+      *   The Uri
+      *
+      * @return
+      *   The value
+      */
+    extension (uri: Uri) def value: String = uri
+  end Uri
+
+  /** Represents the local path for the messaging system.
+    */
+  opaque type LocalPath = String
+  object LocalPath:
+
+    /** Creates a new LocalPath.
+      *
+      * @param value
+      *   The value to use
+      *
+      * @return
+      *   A new LocalPath
+      */
+    def apply(value: String): LocalPath = value
+
+    /** Returns the value of the LocalPath.
+      *
+      * @param localPath
+      *   The LocalPath
+      *
+      * @return
+      *   The value
+      */
+    extension (localPath: LocalPath) def value: String = localPath
+  end LocalPath
 end OpaqueTypes

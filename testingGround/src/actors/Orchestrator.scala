@@ -10,8 +10,14 @@ import akka.util.Timeout
 import scala.concurrent.duration.*
 import scala.util.{Success, Failure}
 
+import execution.ExecutionManager
+import files.RemoteFileManager
+import mq.MqManager
+
 import types.MqMessage
 import types.Task
+
+private val DefaultProcessors = 5
 
 object Orchestrator:
   // Command protocol
@@ -22,88 +28,61 @@ object Orchestrator:
   case object DecreaseProcessors extends Command
   final case class ProcessTask(task: Task) extends Command
 
-  // def apply(): Behavior[Command] = orchestrating()
+  private type CommandOrResponse = Command | ExecutionManager.Response |
+    RemoteFileManager.Response
 
-  // def orchestrating()
+  implicit val timeout: Timeout = Timeout(10.seconds)
 
-//   private val defaultProcessors = 5
-//   private type CommandOrResponse = Command | ExecutionManager.Response |
-//     FtpManager.Response
+  def apply(): Behavior[CommandOrResponse] = orchestrating()
 
-//   implicit val timeout: Timeout = Timeout(10.seconds)
+  def orchestrating(
+      defaultWorkers: Int = DefaultProcessors
+  ): Behavior[CommandOrResponse] =
+    Behaviors
+      .setup[CommandOrResponse] { context =>
+        context.log.info("Orchestrator started...")
 
-//   def apply(): Behavior[Command] = orchestrating()
+        val executionManager =
+          context.spawn(
+            ExecutionManager(DefaultProcessors, context.self),
+            "processing-manager"
+          )
 
-//   def orchestrating(): Behavior[Command] =
-//     Behaviors
-//       .setup[CommandOrResponse] { context =>
-//         context.log.info("Orchestrator started...")
+        val remoteFilesManager =
+          context.spawn(
+            RemoteFileManager(DefaultProcessors, context.self),
+            "ftp-manager"
+          )
 
-//         val executionManager =
-//           context.spawn(
-//             ExecutionManager(defaultProcessors, context.self),
-//             "processing-manager"
-//           )
+        val mqManager = context.spawn(MqManager(context.self), "mq-manager")
 
-//         val ftpManager =
-//           context.spawn(
-//             FtpManager(defaultProcessors, context.self),
-//             "ftp-manager"
-//           )
+        Behaviors
+          .receiveMessage[CommandOrResponse] { message =>
+            message match
+              // Messages from system monitor
+              case IncreaseProcessors =>
+                val newWorkerQuantity = defaultWorkers + 1
+                executionManager ! ExecutionManager.SetMaxExecutionWorkers(
+                  newWorkerQuantity
+                )
+                remoteFilesManager ! RemoteFileManager.SetMaxRemoteFileWorkers(
+                  newWorkerQuantity
+                )
 
-//         val mqManager = context.spawn(MqManager(context.self), "mq-manager")
+                orchestrating(newWorkerQuantity)
 
-//         Behaviors
-//           .receiveMessage[CommandOrResponse] { message =>
-//             message match
-//               // Messages from system monitor
-//               case IncreaseProcessors =>
-//                 executionManager ! ExecutionManager.IncreaseProcessors
-//                 Behaviors.same
+              case DecreaseProcessors =>
+                val newWorkerQuantity = defaultWorkers - 1
+                executionManager ! ExecutionManager.SetMaxExecutionWorkers(
+                  newWorkerQuantity
+                )
+                remoteFilesManager ! RemoteFileManager.SetMaxRemoteFileWorkers(
+                  newWorkerQuantity
+                )
 
-//               case DecreaseProcessors =>
-//                 executionManager ! ExecutionManager.DecreaseProcessors
-//                 Behaviors.same
+                orchestrating(newWorkerQuantity)
 
-//               // Messages from MQ Manager
-//               case ProcessTask(task) =>
-//                 context.log.info(s"Processing task: ${task.taskType} from MQ")
-//                 context.self ! DownloadTaskFiles(task)
-//                 Behaviors.same
-
-//               // Messages from self
-//               case DownloadTaskFiles(task) =>
-//                 context.log.info(s"Downloading file: ${task.taskType}")
-//                 ftpManager ! FtpManager.DownloadTask(task)
-//                 Behaviors.same
-
-//               case UploadTaskFiles(task) =>
-//                 context.log.info(s"Uploading file: ${task.taskType}")
-//                 ftpManager ! FtpManager.UploadTask(task)
-//                 Behaviors.same
-
-//               case ExecuteTask(task) =>
-//                 context.log.info(s"Executing task: ${task.taskType}")
-//                 executionManager ! ExecutionManager.ExecuteTask(task)
-//                 Behaviors.same
-
-//               // Messages from Execution Manager
-
-//               case ExecutionManager.TaskExecuted(task) =>
-//                 context.log.info(s"Task processed: ${task.taskType}")
-//                 mqManager ! MqManager.SerializeMqMessage(task)
-//                 Behaviors.same
-
-//               // Messages from Ftp Manager
-
-//               case FtpManager.SuccessfulUpload =>
-//                 context.log.info("File uploaded successfully")
-//                 Behaviors.same
-
-//               case FtpManager.UnsuccessfulUpload =>
-//                 context.log.error("File upload failed")
-//                 Behaviors.same
-//           }
-//       }
-//       .narrow
+          }
+      }
+      .narrow
 end Orchestrator

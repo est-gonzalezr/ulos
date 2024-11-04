@@ -8,18 +8,19 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import types.Task
+import types.OpaqueTypes.Uri
+import types.OpaqueTypes.LocalPath
 
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
 
-object RemoteFilesManager:
+object RemoteFileManager:
   // Command protocol
   sealed trait Command
 
   // Public command protocol
-  case object IncreaseProcessors extends Command
-  case object DecreaseProcessors extends Command
+  final case class SetMaxRemoteFileWorkers(maxWorkers: Int) extends Command
   final case class DownloadTaskFiles(task: Task) extends Command
   final case class UploadTaskFiles(task: Task) extends Command
 
@@ -53,30 +54,20 @@ object RemoteFilesManager:
          * Public commands
          * ********************************************************************** */
 
-        case IncreaseProcessors =>
+        case SetMaxRemoteFileWorkers(maxWorkers) =>
           context.log.info(
-            s"Increasing max processors from $maxWorkers to ${maxWorkers + 1}"
+            s"Setting max remote file workers to $maxWorkers"
           )
-          delegateProcessing(activeWorkers, maxWorkers + 1, ref)
-
-        case DecreaseProcessors =>
-          if maxWorkers > 1 then
-            context.log.info(
-              s"Decreasing max processors from $maxWorkers to ${maxWorkers - 1}"
-            )
-            delegateProcessing(activeWorkers, maxWorkers - 1, ref)
-          else
-            context.log.warn("Cannot decrease processors below 1")
-            Behaviors.same
+          delegateProcessing(activeWorkers, maxWorkers, ref)
 
         case DownloadTaskFiles(task) =>
-          val remoteFilesWorker = context.spawnAnonymous(RemoteFilesWorker())
+          val remoteFilesWorker = context.spawnAnonymous(RemoteFileWorker())
 
-          context.askWithStatus[RemoteFilesWorker.DownloadFile, Done](
+          context.askWithStatus[RemoteFileWorker.DownloadFile, LocalPath](
             remoteFilesWorker,
-            ref => RemoteFilesWorker.DownloadFile(task.storageTaskPath, ref)
+            ref => RemoteFileWorker.DownloadFile(Uri(task.taskUri), ref)
           ) {
-            case Success(_) =>
+            case Success(localPath) =>
               ReportTaskDownloaded(task)
             case Failure(throwable) =>
               ReportTaskDownloadFailed(
@@ -87,11 +78,11 @@ object RemoteFilesManager:
           delegateProcessing(activeWorkers + 1, maxWorkers, ref)
 
         case UploadTaskFiles(task) =>
-          val remoteFilesWorker = context.spawnAnonymous(RemoteFilesWorker())
+          val remoteFilesWorker = context.spawnAnonymous(RemoteFileWorker())
 
-          context.askWithStatus[RemoteFilesWorker.UploadFile, Done](
+          context.askWithStatus[RemoteFileWorker.UploadFile, Done](
             remoteFilesWorker,
-            ref => RemoteFilesWorker.UploadFile(task.storageTaskPath, ref)
+            ref => RemoteFileWorker.UploadFile(Uri(task.taskUri), ref)
           ) {
             case Success(_) =>
               ReportTaskUploaded(task)
@@ -128,64 +119,4 @@ object RemoteFilesManager:
           delegateProcessing(activeWorkers - 1, maxWorkers, ref)
     }
   end delegateProcessing
-
-//   def processing(
-//       activeWorkers: Int,
-//       maxWorkers: Int,
-//       ref: ActorRef[Response]
-//   ): Behavior[Command] =
-//     Behaviors.receive { (context, message) =>
-//       message match
-//         case IncreaseProcessors =>
-//           context.log.info(
-//             s"Increasing max processors from $maxWorkers to ${maxWorkers + 1}"
-//           )
-//           processing(activeWorkers, maxWorkers + 1, ref)
-
-//         case DecreaseProcessors =>
-//           if maxWorkers > 1 then
-//             context.log.info(
-//               s"Decreasing max processors from $maxWorkers to ${maxWorkers - 1}"
-//             )
-//             processing(activeWorkers, maxWorkers - 1, ref)
-//           else
-//             context.log.warn("Cannot decrease processors below 1")
-//             Behaviors.same
-
-//         case UploadTask(str) =>
-//           if activeWorkers < maxWorkers then
-//             context.log.info(s"Uploading file: $str")
-
-//             val ftpWorker =
-//               context.spawn(FtpWorker(), s"ftpWorker-$activeWorkers")
-
-//             context.ask(
-//               ftpWorker,
-//               ref => FtpWorker.UploadTask(str, ref)
-//             ) {
-//               case Success(_) =>
-//                 ReportFtpJob("Job successful")
-//               case Failure(_) =>
-//                 ReportFtpJob("Job failed")
-//             }
-
-//             processing(activeWorkers + 1, maxWorkers, ref)
-//           else
-//             context.log.warn("Cannot upload file, all workers are busy")
-//             Behaviors.same
-
-//         case DownloadTask(str) =>
-//           if activeWorkers < maxWorkers then
-//             context.log.info(s"Downloading file: $str")
-//             ref ! SuccessfulUpload
-//             processing(activeWorkers + 1, maxWorkers, ref)
-//           else
-//             context.log.warn("Cannot download file, all workers are busy")
-//             Behaviors.same
-
-//         case ReportFtpJob(str) =>
-//           context.log.info(str)
-//           processing(activeWorkers - 1, maxWorkers, ref)
-//     }
-//   end processing
-end RemoteFilesManager
+end RemoteFileManager

@@ -19,9 +19,13 @@ import com.rabbitmq.client.ConnectionFactory
 
 import types.MqMessage
 import types.Task
+import types.OpaqueTypes.ExchangeName
+import types.OpaqueTypes.RoutingKey
 
 import actors.Orchestrator
 import akka.Done
+
+private val DefaultMqRetries = 10
 
 /** This actor manages the actors that are related to the Message Queue. It acts
   * as the intermediary between the MQ and the system that processes the tasks
@@ -33,19 +37,21 @@ object MqManager:
 
   // Public command protocol
   final case class MqProcessTask(mqMessage: MqMessage) extends Command
-  final case class MqAcknowledgeTask(task: Task) extends Command
-  final case class MqRejectTask(task: Task) extends Command
+  final case class MqAcknowledgeTask(
+      id: String,
+      retries: Int = DefaultMqRetries
+  ) extends Command
+  final case class MqRejectTask(id: String, retries: Int = DefaultMqRetries)
+      extends Command
+  final case class MqSendMessage(
+      task: Task,
+      exchange: ExchangeName,
+      routingKey: RoutingKey,
+      retries: Int = DefaultMqRetries
+  ) extends Command
   case object Shutdown extends Command
 
   // Internal command protocol
-  private final case class DeserializeMqMessage(mqMessage: MqMessage)
-      extends Command
-  private final case class SerializeTask(task: Task) extends Command
-
-  private final case class AcknowledgeMqMessage(mqMessage: MqMessage)
-      extends Command
-  private final case class RejectMqMessage(mqMessage: MqMessage) extends Command
-
   private final case class DeliverToOrchestrator(task: Task) extends Command
   private final case class ReportMqError(str: String) extends Command
   private final case class ReportMqSuccess(str: String) extends Command
@@ -80,27 +86,106 @@ object MqManager:
              * ********************************************************************** */
 
             case MqProcessTask(mqMessage) =>
-              // context.log.info(
-              //   "Received message from MQ, sending deserialization task to MQ Message Parser"
-              // )
+              val deserializer = context.spawnAnonymous(MqMessageDeserializer())
 
-              context.self ! DeserializeMqMessage(mqMessage)
+              context
+                .askWithStatus[MqMessageDeserializer.DeserializeMessage, Task](
+                  deserializer,
+                  ref =>
+                    MqMessageDeserializer.DeserializeMessage(mqMessage, ref)
+                ) {
+                  case Success(task) =>
+                    context.self ! DeliverToOrchestrator(task)
+                    ReportMqSuccess("Task processed successfully")
+
+                  case Failure(exception) =>
+                    context.self ! MqRejectTask(mqMessage.id)
+                    ReportMqError(exception.getMessage)
+                }
               Behaviors.same
 
-            case MqAcknowledgeTask(task) =>
-              // context.log.info(
-              //   "Received task from Orchestrator, sending serialization task to MQ Message Parser"
-              // )
+            case MqAcknowledgeTask(mqId, retries) =>
+              val communicator = context.spawnAnonymous(MqCommunicator(channel))
 
-              context.self ! SerializeTask(task)
+              context.askWithStatus[MqCommunicator.SendAck, Done](
+                communicator,
+                ref => MqCommunicator.SendAck(mqId, ref)
+              ) {
+                case Success(Done) =>
+                  ReportMqSuccess("Ack successful")
+
+                case Failure(exception) =>
+                  if retries > 0 then
+                    context.self ! MqAcknowledgeTask(mqId, retries - 1)
+                    ReportMqError(s"${exception.getMessage}. Retrying...")
+                  else ReportMqError(exception.getMessage)
+              }
               Behaviors.same
 
-            case MqRejectTask(task) =>
-              // context.log.info(
-              //   "Received task from Orchestrator, sending serialization task to MQ Message Parser"
-              // )
+            case MqRejectTask(mqId, retries) =>
+              val communicator = context.spawnAnonymous(MqCommunicator(channel))
 
-              context.self ! SerializeTask(task)
+              context.askWithStatus[MqCommunicator.SendReject, Done](
+                communicator,
+                ref => MqCommunicator.SendReject(mqId, ref)
+              ) {
+                case Success(Done) =>
+                  ReportMqSuccess("Reject successful")
+
+                case Failure(exception) =>
+                  if retries > 0 then
+                    context.self ! MqRejectTask(mqId, retries - 1)
+                    ReportMqError(s"${exception.getMessage}. Retrying...")
+                  else ReportMqError(exception.getMessage)
+              }
+              Behaviors.same
+
+            case MqSendMessage(mqMessage, exchange, routingKey, retries) =>
+              val serializer = context.spawnAnonymous(MqMessageSerializer())
+
+              context
+                .askWithStatus[MqMessageSerializer.SerializeMessage, Seq[Byte]](
+                  serializer,
+                  ref => MqMessageSerializer.SerializeMessage(mqMessage, ref)
+                ) {
+                  case Success(bytes) =>
+                    val communicator =
+                      context.spawnAnonymous(MqCommunicator(channel))
+
+                    context.askWithStatus[MqCommunicator.SendMqMessage, Done](
+                      communicator,
+                      ref =>
+                        MqCommunicator
+                          .SendMqMessage(bytes, exchange, routingKey, ref)
+                    ) {
+                      case Success(Done) =>
+                        ReportMqSuccess("Message sent successfully")
+
+                      case Failure(exception) =>
+                        if retries > 0 then
+                          context.self ! MqSendMessage(
+                            mqMessage,
+                            exchange,
+                            routingKey,
+                            retries - 1
+                          )
+                          ReportMqError(s"${exception.getMessage}. Retrying...")
+                        else ReportMqError(exception.getMessage)
+                    }
+
+                    ReportMqSuccess("Message serialized successfully")
+                  case Failure(exception) =>
+                    if retries > 0 then
+                      context.self ! MqSendMessage(
+                        mqMessage,
+                        exchange,
+                        routingKey,
+                        retries - 1
+                      )
+                      ReportMqError(s"${exception.getMessage}. Retrying...")
+                    else ReportMqError(exception.getMessage)
+                }
+
               Behaviors.same
 
             case Shutdown =>
@@ -112,97 +197,16 @@ object MqManager:
              * Internal commands
              * ********************************************************************** */
 
-            case DeserializeMqMessage(mqMessage) =>
-              // context.log.info(
-              //   "Received message to deserialize, delegating to worker deserializer..."
-              // )
-
-              val deserializer = context.spawnAnonymous(MqMessageDeserializer())
-
-              context.askWithStatus[
-                MqMessageDeserializer.DeserializeMessage,
-                MqMessageDeserializer.MessageDeserialized
-              ](
-                deserializer,
-                ref => MqMessageDeserializer.DeserializeMessage(mqMessage, ref)
-              ) {
-                case Success(MqMessageDeserializer.MessageDeserialized(task)) =>
-                  DeliverToOrchestrator(task)
-                case Failure(exception) =>
-                  RejectMqMessage(mqMessage)
-              }
-
-              Behaviors.same
-
-            case SerializeTask(task) =>
-              // context.log.info(
-              //   "Received message to serialize, delegating to worker serializer..."
-              // )
-
-              val serializer = context.spawnAnonymous(MqMessageSerializer())
-
-              context.askWithStatus[
-                MqMessageSerializer.SerializeMessage,
-                MqMessageSerializer.MessageSerialized
-              ](
-                serializer,
-                ref => MqMessageSerializer.SerializeMessage(task, ref)
-              ) {
-                case Success(
-                      MqMessageSerializer.MessageSerialized(mqMessage)
-                    ) =>
-                  AcknowledgeMqMessage(mqMessage)
-                case Failure(exception) =>
-                  SerializeTask(task)
-              }
-
-              Behaviors.same
-
-            case AcknowledgeMqMessage(mqMessage) =>
-              // context.log.info("Sending message to MQ")
-              val communicator = context.spawnAnonymous(MqCommunicator(channel))
-
-              context.askWithStatus[MqCommunicator.SendAck, Done](
-                communicator,
-                ref => MqCommunicator.SendAck(mqMessage, ref)
-              ) {
-                case Success(Done) =>
-                  ReportMqSuccess("Success")
-
-                case Failure(exception) =>
-                  AcknowledgeMqMessage(mqMessage)
-              }
-
-              Behaviors.same
-
-            case RejectMqMessage(mqMessage) =>
-              // context.log.info("Sending message to MQ")
-              val communicator = context.spawnAnonymous(MqCommunicator(channel))
-
-              context.askWithStatus[MqCommunicator.SendReject, Done](
-                communicator,
-                ref => MqCommunicator.SendReject(mqMessage, ref)
-              ) {
-                case Success(Done) =>
-                  ReportMqSuccess("Success")
-
-                case Failure(exception) =>
-                  ReportMqError(exception.getMessage)
-              }
-
-              Behaviors.same
-
             case DeliverToOrchestrator(task) =>
-              // context.log.info("Sending task to Orchestrator")
               ref ! Orchestrator.ProcessTask(task)
               Behaviors.same
 
-            case ReportMqError(exception) =>
-              context.log.error(exception)
+            case ReportMqError(errorMessage) =>
+              context.log.error(errorMessage)
               Behaviors.same
 
-            case ReportMqSuccess(str) =>
-              context.log.info(str)
+            case ReportMqSuccess(message) =>
+              context.log.info(message)
               Behaviors.same
         }
 

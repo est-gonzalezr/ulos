@@ -20,14 +20,12 @@ import scala.util.Success
 object ExecutionWorker:
   // Command protocol
   sealed trait Command
+
+  // Public command protocol
   final case class ExecuteTask(
       task: Task,
       replyTo: ActorRef[StatusReply[Boolean]]
   ) extends Command
-
-  // Response protocol
-  sealed trait Response
-  // final case class TaskExecuted(passed: Boolean) extends Response
 
   def apply(): Behavior[Command] = processing()
 

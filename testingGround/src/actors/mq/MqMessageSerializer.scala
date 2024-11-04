@@ -19,14 +19,12 @@ import zio.json.*
 object MqMessageSerializer:
   // Command protocol
   sealed trait Command
+
+  // Public command protocol
   final case class SerializeMessage(
       task: Task,
-      ref: ActorRef[StatusReply[MessageSerialized]]
+      ref: ActorRef[StatusReply[Seq[Byte]]]
   ) extends Command
-
-  // Response protocol
-  sealed trait Response
-  final case class MessageSerialized(mqMessage: MqMessage) extends Response
 
   def apply(): Behavior[Command] = serializing()
 
@@ -42,20 +40,20 @@ object MqMessageSerializer:
           context.log.info(
             s"Message received MQ Manager, serializing..."
           )
-          ref ! StatusReply.Success(MessageSerialized(taskAsMqMessage(task)))
+          ref ! StatusReply.Success(taskAsBytes(task))
       end match
 
       Behaviors.stopped
     }
 
-  /** Serializes a task into a MqMessage.
+  /** Serializes a task into bytes.
     *
     * @param task
     *   The task to be serialized.
     * @return
     *   The serialized message.
     */
-  def taskAsMqMessage(task: Task): MqMessage =
-    MqMessage(task.mqId, task.toJson.map(_.toByte))
+  def taskAsBytes(task: Task): Seq[Byte] =
+    task.toJson.map(_.toByte)
 
 end MqMessageSerializer

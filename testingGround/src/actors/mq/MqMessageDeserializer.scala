@@ -19,14 +19,12 @@ import zio.json.*
 object MqMessageDeserializer:
   // Command protocol
   sealed trait Command
+
+  // Public command protocol
   final case class DeserializeMessage(
       mqMessage: MqMessage,
-      ref: ActorRef[StatusReply[MessageDeserialized]]
+      ref: ActorRef[StatusReply[Task]]
   ) extends Command
-
-  // Response protocol
-  sealed trait Response
-  final case class MessageDeserialized(task: Task) extends Response
 
   def apply(): Behavior[Command] = deserializing()
 
@@ -45,7 +43,7 @@ object MqMessageDeserializer:
 
           mqMessageAsTask(mqMessage) match
             case Right(task) =>
-              ref ! StatusReply.Success(MessageDeserialized(task))
+              ref ! StatusReply.Success(task)
               context.log.info(
                 "Message deserialized, sent to MQ Manager"
               )
@@ -72,6 +70,6 @@ object MqMessageDeserializer:
       .map(_.toChar)
       .mkString
       .fromJson[Task]
-      .map(_.copy(mqId = mqMessage.id))
+      .map(_.copy(mqId = Some(mqMessage.id)))
 
 end MqMessageDeserializer

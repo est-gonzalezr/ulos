@@ -23,8 +23,7 @@ object ExecutionManager:
   sealed trait Command
 
   // Public command protocol
-  case object IncreaseProcessors extends Command
-  case object DecreaseProcessors extends Command
+  final case class SetMaxExecutionWorkers(maxWorkers: Int) extends Command
   final case class ExecuteTask(task: Task) extends Command
 
   // Internal command protocol
@@ -57,21 +56,11 @@ object ExecutionManager:
          * Public commands
          * ********************************************************************** */
 
-        case IncreaseProcessors =>
+        case SetMaxExecutionWorkers(maxWorkers) =>
           context.log.info(
-            s"Increasing max processors from $maxWorkers to ${maxWorkers + 1}"
+            s"Setting max execution workers to $maxWorkers"
           )
-          delegateProcessing(activeWorkers, maxWorkers + 1, ref)
-
-        case DecreaseProcessors =>
-          if maxWorkers > 1 then
-            context.log.info(
-              s"Decreasig max processors from $maxWorkers to ${maxWorkers - 1}"
-            )
-            delegateProcessing(activeWorkers, maxWorkers - 1, ref)
-          else
-            context.log.warn("Cannot decrease processors below 1")
-            Behaviors.same
+          delegateProcessing(activeWorkers, maxWorkers, ref)
 
         case ExecuteTask(task) =>
           if activeWorkers < maxWorkers then
@@ -92,7 +81,7 @@ object ExecutionManager:
               ref => ExecutionWorker.ExecuteTask(task, ref)
             ) {
               case Success(passed) =>
-                ReportTaskExecuted(task.copy())
+                ReportTaskExecuted(task)
               case Failure(throwable) =>
                 ReportTaskFailed(
                   task.copy(errorMessage = Some(throwable.getMessage))
