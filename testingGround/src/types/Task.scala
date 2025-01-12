@@ -4,10 +4,10 @@ package types
   *   Esteban Gonzalez Ruales
   */
 
-import zio.json.JsonDecoder
 import zio.json.DeriveJsonDecoder
-import zio.json.JsonEncoder
 import zio.json.DeriveJsonEncoder
+import zio.json.JsonDecoder
+import zio.json.JsonEncoder
 // executed necessary because a machine can fail while it is being executed, so we need to know if it was executed or not
 
 /** This class represents a task that is going to be executed by the system.
@@ -18,7 +18,6 @@ case class Task(
     taskType: String,
     taskUri: String,
     processingStage: String,
-    currentStagePassed: Boolean = false,
     errorMessage: Option[String],
     mqId: Option[String]
 )

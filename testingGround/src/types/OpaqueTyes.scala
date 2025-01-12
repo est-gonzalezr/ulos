@@ -110,7 +110,7 @@ object OpaqueTypes:
     extension (mqMessageId: MqMessageId) def value: String = mqMessageId
   end MqMessageId
 
-  /** Represents the task id for the messaging system.
+  /** Represents the task uri for the messaging system.
     */
   opaque type Uri = String
   object Uri:
@@ -135,29 +135,195 @@ object OpaqueTypes:
     extension (uri: Uri) def value: String = uri
   end Uri
 
-  /** Represents the local path for the messaging system.
+  /** Represents the host for the messaging system.
     */
-  opaque type LocalPath = String
-  object LocalPath:
-
-    /** Creates a new LocalPath.
+  opaque type MqHost = String
+  object MqHost:
+    /** Creates a new MqHost.
       *
       * @param value
       *   The value to use
-      *
       * @return
-      *   A new LocalPath
+      *   A new MqHost
       */
-    def apply(value: String): LocalPath = value
+    def apply(value: String): MqHost = value
 
-    /** Returns the value of the LocalPath.
+    /** Returns the value of the MqHost.
       *
-      * @param localPath
-      *   The LocalPath
-      *
+      * @param mqHost
+      *   The MqHost
       * @return
       *   The value
       */
-    extension (localPath: LocalPath) def value: String = localPath
-  end LocalPath
+    extension (mqHost: MqHost) def value: String = mqHost
+  end MqHost
+
+  /** Represents the port for the messaging system.
+    */
+  opaque type MqPort = Int
+  object MqPort:
+    /** Creates a new MqPort.
+      *
+      * @param value
+      *   The value to use
+      * @return
+      *   A new MqPort
+      */
+    def apply(value: Int): MqPort = value
+
+    /** Returns the value of the MqPort.
+      *
+      * @param mqPort
+      *   The MqPort
+      * @return
+      *   The value
+      */
+    extension (mqPort: MqPort) def value: Int = mqPort
+  end MqPort
+
+  /** Represents the user for the messaging system.
+    */
+  opaque type MqUser = String
+  object MqUser:
+    /** Creates a new MqUser.
+      *
+      * @param value
+      *   The value to use
+      * @return
+      *   A new MqUser
+      */
+    def apply(value: String): MqUser = value
+
+    /** Returns the value of the MqUser.
+      *
+      * @param mqUser
+      *   The MqUser
+      * @return
+      *   The value
+      */
+    extension (mqUser: MqUser) def value: String = mqUser
+  end MqUser
+
+  /** Represents the password for the messaging system.
+    */
+  opaque type MqPassword = String
+  object MqPassword:
+    /** Creates a new MqPassword.
+      *
+      * @param value
+      *   The value to use
+      * @return
+      *   A new MqPassword
+      */
+    def apply(value: String): MqPassword = value
+
+    /** Returns the value of the MqPassword.
+      *
+      * @param mqPassword
+      *   The MqPassword
+      * @return
+      *   The value
+      */
+    extension (mqPassword: MqPassword) def value: String = mqPassword
+  end MqPassword
+
+  /** Represents the remote storage host for the messaging system.
+    */
+  opaque type RemoteStorageHost = String
+  object RemoteStorageHost:
+    /** Creates a new RemoteStorageHost.
+      *
+      * @param value
+      *   The value to use
+      * @return
+      *   A new RemoteStorageHost
+      */
+    def apply(value: String): RemoteStorageHost = value
+
+    /** Returns the value of the RemoteStorageHost.
+      *
+      * @param remoteStorageHost
+      *   The RemoteStorageHost
+      * @return
+      *   The value
+      */
+    extension (remoteStorageHost: RemoteStorageHost)
+      def value: String =
+        remoteStorageHost
+  end RemoteStorageHost
+
+  /** Represents the remote storage port for the messaging system.
+    */
+  opaque type RemoteStoragePort = Int
+  object RemoteStoragePort:
+    /** Creates a new RemoteStoragePort.
+      *
+      * @param value
+      *   The value to use
+      * @return
+      *   A new RemoteStoragePort
+      */
+    def apply(value: Int): RemoteStoragePort = value
+
+    /** Returns the value of the RemoteStoragePort.
+      *
+      * @param remoteStoragePort
+      *   The RemoteStoragePort
+      * @return
+      *   The value
+      */
+    extension (remoteStoragePort: RemoteStoragePort)
+      def value: Int =
+        remoteStoragePort
+  end RemoteStoragePort
+
+  /** Represents the remote storage user for the messaging system.
+    */
+  opaque type RemoteStorageUser = String
+  object RemoteStorageUser:
+    /** Creates a new RemoteStorageUser.
+      *
+      * @param value
+      *   The value to use
+      * @return
+      *   A new RemoteStorageUser
+      */
+    def apply(value: String): RemoteStorageUser = value
+
+    /** Returns the value of the RemoteStorageUser.
+      *
+      * @param remoteStorageUser
+      *   The RemoteStorageUser
+      * @return
+      *   The value
+      */
+    extension (remoteStorageUser: RemoteStorageUser)
+      def value: String =
+        remoteStorageUser
+  end RemoteStorageUser
+
+  /** Represents the remote storage password for the messaging system.
+    */
+  opaque type RemoteStoragePassword = String
+  object RemoteStoragePassword:
+    /** Creates a new RemoteStoragePassword.
+      *
+      * @param value
+      *   The value to use
+      * @return
+      *   A new RemoteStoragePassword
+      */
+    def apply(value: String): RemoteStoragePassword = value
+
+    /** Returns the value of the RemoteStoragePassword.
+      *
+      * @param remoteStoragePassword
+      *   The RemoteStoragePassword
+      * @return
+      *   The value
+      */
+    extension (remoteStoragePassword: RemoteStoragePassword)
+      def value: String =
+        remoteStoragePassword
+  end RemoteStoragePassword
 end OpaqueTypes

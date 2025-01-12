@@ -6,18 +6,25 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
+import types.MqMessage
+import types.OpaqueTypes.ExchangeName
+import types.OpaqueTypes.MqHost
+import types.OpaqueTypes.MqPassword
+import types.OpaqueTypes.MqPort
+import types.OpaqueTypes.MqUser
+import types.OpaqueTypes.QueueName
+import types.Task
 
 import scala.concurrent.duration.*
-import scala.util.{Success, Failure}
+import scala.util.Failure
+import scala.util.Success
 
 import execution.ExecutionManager
 import files.RemoteFileManager
 import mq.MqManager
 
-import types.MqMessage
-import types.Task
-
 private val DefaultProcessors = 5
+private val DefaultExchange = ExchangeName("processing-exchange")
 
 object Orchestrator:
   // Command protocol
@@ -48,13 +55,23 @@ object Orchestrator:
             "processing-manager"
           )
 
-        val remoteFilesManager =
+        val remoteFileManager =
           context.spawn(
             RemoteFileManager(DefaultProcessors, context.self),
             "ftp-manager"
           )
 
-        val mqManager = context.spawn(MqManager(context.self), "mq-manager")
+        val mqManager = context.spawn(
+          MqManager(
+            context.self,
+            MqHost("localhost"),
+            MqPort(5672),
+            MqUser("guest"),
+            MqPassword("guest"),
+            QueueName("test")
+          ),
+          "mq-manager"
+        )
 
         Behaviors
           .receiveMessage[CommandOrResponse] { message =>
@@ -65,7 +82,7 @@ object Orchestrator:
                 executionManager ! ExecutionManager.SetMaxExecutionWorkers(
                   newWorkerQuantity
                 )
-                remoteFilesManager ! RemoteFileManager.SetMaxRemoteFileWorkers(
+                remoteFileManager ! RemoteFileManager.SetMaxRemoteFileWorkers(
                   newWorkerQuantity
                 )
 
@@ -76,12 +93,31 @@ object Orchestrator:
                 executionManager ! ExecutionManager.SetMaxExecutionWorkers(
                   newWorkerQuantity
                 )
-                remoteFilesManager ! RemoteFileManager.SetMaxRemoteFileWorkers(
+                remoteFileManager ! RemoteFileManager.SetMaxRemoteFileWorkers(
                   newWorkerQuantity
                 )
 
                 orchestrating(newWorkerQuantity)
 
+              case ProcessTask(task) =>
+                remoteFileManager ! RemoteFileManager.DownloadTaskFiles(task)
+                Behaviors.same
+
+              case RemoteFileManager.TaskDownloaded(task, path) =>
+                executionManager ! ExecutionManager.ExecuteTask(task, path)
+                Behaviors.same
+
+              case ExecutionManager.TaskExecuted(task) =>
+                task.mqId match
+                  case Some(id) =>
+                    mqManager ! MqManager.MqAcknowledgeTask(id)
+                  // mqManager ! MqManager.MqSendMessage
+                  case None => context.log.error("task should have id")
+                end match
+
+                Behaviors.same
+
+              case _ => Behaviors.same
           }
       }
       .narrow

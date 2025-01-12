@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
 import akka.util.Timeout
+import os.Path
 import types.Task
 
 import scala.concurrent.duration.*
@@ -24,7 +25,8 @@ object ExecutionWorker:
   // Public command protocol
   final case class ExecuteTask(
       task: Task,
-      replyTo: ActorRef[StatusReply[Boolean]]
+      path: Path,
+      replyTo: ActorRef[StatusReply[Task]]
   ) extends Command
 
   def apply(): Behavior[Command] = processing()
@@ -37,22 +39,22 @@ object ExecutionWorker:
   def processing(): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
-        case ExecuteTask(task, replyTo) =>
+        case ExecuteTask(task, path, replyTo) =>
           context.log.info(
             s"Received task of type: ${task.taskType}"
           )
 
-          replyTo ! StatusReply.Success(executionResult(task))
+          replyTo ! StatusReply.Success(executionResult(task, path))
       end match
 
       Behaviors.stopped
     }
   end processing
 
-  private def executionResult(task: Task): Boolean =
+  private def executionResult(task: Task, path: Path): Task =
     val endTime = System.currentTimeMillis() + 5000
     while System.currentTimeMillis() < endTime do ()
     end while
-    true
+    task
   end executionResult
 end ExecutionWorker

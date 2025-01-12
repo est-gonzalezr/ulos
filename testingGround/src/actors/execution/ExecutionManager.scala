@@ -6,6 +6,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
+import os.Path
 import types.Task
 
 import scala.concurrent.duration.*
@@ -24,7 +25,7 @@ object ExecutionManager:
 
   // Public command protocol
   final case class SetMaxExecutionWorkers(maxWorkers: Int) extends Command
-  final case class ExecuteTask(task: Task) extends Command
+  final case class ExecuteTask(task: Task, path: Path) extends Command
 
   // Internal command protocol
   final case class ReportTaskExecuted(task: Task) extends Command
@@ -62,7 +63,7 @@ object ExecutionManager:
           )
           delegateProcessing(activeWorkers, maxWorkers, ref)
 
-        case ExecuteTask(task) =>
+        case ExecuteTask(task, path) =>
           if activeWorkers < maxWorkers then
             context.log.info(
               s"Delegating task to executionWorker: ${task.taskType}"
@@ -75,12 +76,12 @@ object ExecutionManager:
 
             context.askWithStatus[
               ExecutionWorker.ExecuteTask,
-              Boolean
+              Task
             ](
               executionWorker,
-              ref => ExecutionWorker.ExecuteTask(task, ref)
+              ref => ExecutionWorker.ExecuteTask(task, path, ref)
             ) {
-              case Success(passed) =>
+              case Success(task) =>
                 ReportTaskExecuted(task)
               case Failure(throwable) =>
                 ReportTaskFailed(
