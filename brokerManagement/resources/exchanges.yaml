@@ -1,8 +1,0 @@
-# do not delete this queue, it is the main queue
-# and if deleted the program won't work
-main_exchange:
-    exchangeName: processing_exchange
-    exchangeType: topic
-    durable: true
-    autoDelete: false
-    internal: false
