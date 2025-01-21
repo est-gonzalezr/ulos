@@ -19,8 +19,6 @@ import types.OpaqueTypes.RemoteStorageUser
 import types.OpaqueTypes.RemoteStoragePassword
 import os.RelPath
 
-private val DefaultRemoteOpsRetries = 5
-
 object RemoteFileWorker:
   // Command protocol
   sealed trait Command
@@ -32,8 +30,7 @@ object RemoteFileWorker:
       remoteStorageUser: RemoteStorageUser,
       remoteStoragePass: RemoteStoragePassword,
       path: RelPath,
-      replyTo: ActorRef[StatusReply[Path]],
-      retries: Int = DefaultRemoteOpsRetries
+      replyTo: ActorRef[StatusReply[Path]]
   ) extends Command
   final case class UploadFile(
       remoteStorageHost: RemoteStorageHost,
@@ -41,8 +38,7 @@ object RemoteFileWorker:
       remoteStorageUser: RemoteStorageUser,
       remoteStoragePass: RemoteStoragePassword,
       path: RelPath,
-      replyTo: ActorRef[StatusReply[Done]],
-      retries: Int = DefaultRemoteOpsRetries
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
 
   def apply(): Behavior[Command] = processing
@@ -56,49 +52,41 @@ object RemoteFileWorker:
               remoteStorageUser,
               remoteStoragePass,
               path,
-              replyTo,
-              retries
+              replyTo
             ) =>
-          context.log.info(
-            s"RemoteFileWorker received download request for path: $path. Attempting to download..."
-          )
+          context.log.info(s"DownloadFile command received. Path --> $path.")
+
           downloadFile(path) match
             case Success(bytes) =>
-              context.log.info(
-                s"RemoteFileWorker successfully downloaded file: $path. Attempting to save..."
-              )
+              context.log.info(s"Download success. Path --> $path.")
+
               val localPath = os.pwd / path
               saveFile(localPath, bytes) match
                 case Success(_) =>
+                  context.log.info(s"File save success. Path --> $localPath.")
                   context.log.info(
-                    s"RemoteFileWorker successfully saved file: $localPath. Notifiying RemoteFileManager..."
+                    s"Sending StatusReply.Success to RemoteFileManager. Path --> $localPath."
                   )
+
                   replyTo ! StatusReply.success(localPath)
                 case Failure(exception) =>
                   context.log.error(
-                    s"RemoteFileWorker failed to save file: $localPath. Notifying RemoteFileManager..."
+                    s"File save failed. Path --> $localPath. Exception thrown: ${exception.getMessage()}."
                   )
-                  replyTo ! StatusReply.error(exception)
+                  context.log.info(
+                    s"Sending StatusReply.Error to RemoteFileManager."
+                  )
+                  replyTo ! StatusReply.Error(exception)
               end match
             case Failure(exception) =>
-              if retries > 0 then
-                context.log.error(
-                  s"RemoteFileWorker failed to download file: $path. Retrying..."
-                )
-                context.self ! DownloadFile(
-                  remoteStorageHost,
-                  remoteStoragePort,
-                  remoteStorageUser,
-                  remoteStoragePass,
-                  path,
-                  replyTo,
-                  retries - 1
-                )
-              else
-                context.log.error(
-                  s"RemoteFileWorker failed to download file: $path. Retries exhausted."
-                )
-                replyTo ! StatusReply.error(exception)
+              context.log.error(
+                s"Download failed. Path --> $path. Exception thrown: ${exception.getMessage()}."
+              )
+              context.log.info(
+                s"Sending StatusReply.Error to RemoteFileManager. Path --> $path."
+              )
+
+              replyTo ! StatusReply.Error(exception)
           end match
 
         case UploadFile(
@@ -107,51 +95,48 @@ object RemoteFileWorker:
               remoteStorageUser,
               remoteStoragePass,
               path,
-              replyTo,
-              retries
+              replyTo
             ) =>
-          context.log.info(
-            s"RemoteFileWorker received upload request for path: $path. Attempting to upload..."
-          )
-          // replyTo ! StatusReply.Ack
+          context.log.info(s"UploadFile command received. Path --> $path.")
+
           val localPath = os.pwd / path
           loadFile(localPath) match
             case Success(bytes) =>
-              context.log.info(
-                s"RemoteFileWorker successfully loaded file: $localPath. Attempting to upload..."
-              )
+              context.log.info(s"Local file load success. Path --> $localPath.")
 
-              uploadFile(localPath, bytes) match
+              uploadFile(path, bytes) match
                 case Success(_) =>
+                  context.log.info(s"File upload success. Path --> $path.")
+
+                  deleteFile(localPath) match
+                    case Success(_) =>
+                      context.log.info(
+                        s"Local file delete success. Path --> $localPath."
+                      )
+                    case Failure(exception) =>
+                      context.log.error(
+                        s"Local file delete failed. Path --> $localPath. Exception thrown: ${exception.getMessage()}."
+                      )
+                  end match
+
                   context.log.info(
-                    s"RemoteFileWorker successfully uploaded file: $path. Notifying RemoteFileManager..."
+                    s"Sending StatusReply.Success to RemoteFileManager. Path --> $path."
                   )
                   replyTo ! StatusReply.success(Done)
                 case Failure(exception) =>
-                  if retries > 0 then
-                    context.log.error(
-                      s"RemoteFileWorker failed to upload file: $path. Retrying..."
-                    )
-                    context.self ! UploadFile(
-                      remoteStorageHost,
-                      remoteStoragePort,
-                      remoteStorageUser,
-                      remoteStoragePass,
-                      path,
-                      replyTo,
-                      retries - 1
-                    )
-                  else
-                    context.log.error(
-                      s"RemoteFileWorker failed to upload file: $path. Retries exhausted."
-                    )
-                    replyTo ! StatusReply.error(exception)
+                  context.log.error(
+                    s"RemoteFileWorker failed to upload file: $path. Exception thrown: ${exception.getMessage()}. Notifying RemoteFileManager..."
+                  )
+                  replyTo ! StatusReply.Error(exception)
               end match
             case Failure(exception) =>
               context.log.error(
-                s"RemoteFileWorker failed to load file: $localPath. Notifying RemoteFileManager..."
+                s"Local file load failed. Path --> $localPath. Exception thrown: ${exception.getMessage()}."
               )
-              replyTo ! StatusReply.error(exception)
+              context.log.info(
+                s"Sending StatusReply.Error to RemoteFileManager. Path --> $path."
+              )
+              replyTo ! StatusReply.Error(exception)
           end match
 
       end match
@@ -172,14 +157,14 @@ object RemoteFileWorker:
       file.close()
       bytes.toSeq
     }
-    client.completePendingCommand()
+    // client.completePendingCommand()
     client.logout()
     client.disconnect()
     bytes
 
   end downloadFile
 
-  def uploadFile(path: Path, file: Seq[Byte]): Try[Boolean] =
+  def uploadFile(path: RelPath, file: Seq[Byte]): Try[Boolean] =
     val client = FTPClient()
     val result = Try {
       client.connect("localhost", 21)
@@ -191,7 +176,7 @@ object RemoteFileWorker:
         java.io.ByteArrayInputStream(file.toArray)
       )
     }
-    client.completePendingCommand()
+    // client.completePendingCommand()
     client.logout()
     client.disconnect()
     result
@@ -204,4 +189,8 @@ object RemoteFileWorker:
   def loadFile(path: Path): Try[Seq[Byte]] =
     Try(os.read.bytes(path).toSeq)
   end loadFile
+
+  def deleteFile(path: Path): Try[Unit] =
+    Try(os.remove.all(path))
+  end deleteFile
 end RemoteFileWorker

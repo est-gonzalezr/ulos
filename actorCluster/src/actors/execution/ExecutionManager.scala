@@ -24,7 +24,6 @@ object ExecutionManager:
   sealed trait Command
 
   // Public command protocol
-  final case class SetMaxExecutionWorkers(maxWorkers: Int) extends Command
   final case class ExecuteTask(task: Task, path: Path) extends Command
 
   // Internal command protocol
@@ -40,80 +39,92 @@ object ExecutionManager:
 
   def apply(
       maxWorkers: Int,
-      ref: ActorRef[Response]
+      replyTo: ActorRef[Response]
   ): Behavior[Command] =
-    delegateProcessing(0, maxWorkers, ref)
+    setup(0, maxWorkers, replyTo)
   end apply
 
-  def delegateProcessing(
+  def setup(
       activeWorkers: Int,
       maxWorkers: Int,
-      ref: ActorRef[Response]
+      replyTo: ActorRef[Response]
   ): Behavior[Command] =
-    Behaviors.receive { (context, message) =>
-      message match
+    Behaviors.setup { context =>
+      context.log.info("ExecutionManager started...")
 
-        /* **********************************************************************
-         * Public commands
-         * ********************************************************************** */
+      Behaviors.receiveMessage { message =>
+        message match
 
-        /* SetMaxExecutionWorkers
-         *
-         * Set the maximum number of execution workers that can be active at any given time.
-         */
-        case SetMaxExecutionWorkers(maxWorkers) =>
-          context.log.info(
-            s"Setting max execution workers to $maxWorkers"
-          )
-          delegateProcessing(activeWorkers, maxWorkers, ref)
+          /* **********************************************************************
+           * Public commands
+           * ********************************************************************** */
 
-        /* ExecuteTask
-         *
-         * Execute a task.
-         */
-        case ExecuteTask(task, path) =>
-          if activeWorkers < maxWorkers then
-            context.log.info(
-              s"Delegating task to executionWorker: ${task.taskType}"
-            )
+          /* ExecuteTask
+           *
+           * Execute a task.
+           */
+          case ExecuteTask(task, path) =>
+            context.log.info(s"ExecuteTask command received. Task --> $task.")
 
+            context.log.info(s"Spawning execution worker...")
             val executionWorker =
               context.spawnAnonymous(
                 ExecutionWorker()
               )
+
+            context.log.info(s"Execution worker spawned.")
+            context.log.info(
+              s"Sending task to execution worker. Task --> $task."
+            )
 
             context.askWithStatus[
               ExecutionWorker.ExecuteTask,
               Task
             ](
               executionWorker,
-              ref => ExecutionWorker.ExecuteTask(task, path, ref)
+              replyTo => ExecutionWorker.ExecuteTask(task, path, replyTo)
             ) {
               case Success(task) =>
+                context.log.info(
+                  s"Task execution success. Task awaiting rerouting to orchestrator. Task --> $task."
+                )
                 ReportTaskExecuted(task)
               case Failure(throwable) =>
+                context.log.error(
+                  s"Task execution failure. Task awaiting rejection to MQ. Task --> $task."
+                )
                 ReportTaskFailed(
                   task.copy(errorMessage = Some(throwable.getMessage))
                 )
             }
 
-            delegateProcessing(activeWorkers + 1, maxWorkers, ref)
-          else
-            context.log.info("All processors are busy")
             Behaviors.same
 
-        /* **********************************************************************
-         * Internal commands
-         * ********************************************************************** */
+          /* **********************************************************************
+           * Internal commands
+           * ********************************************************************** */
 
-        case ReportTaskExecuted(task) =>
-          ref ! TaskExecuted(task)
-          delegateProcessing(activeWorkers - 1, maxWorkers, ref)
+          case ReportTaskExecuted(task) =>
+            context.log.info(
+              s"ReportTaskExecuted command received. Task --> $task."
+            )
+            context.log.info(
+              s"Sending task to orchestrator... Task --> $task."
+            )
 
-        case ReportTaskFailed(task) =>
-          ref ! TaskExecutionError(task)
-          delegateProcessing(activeWorkers - 1, maxWorkers, ref)
+            replyTo ! TaskExecuted(task)
+            Behaviors.same
+
+          case ReportTaskFailed(task) =>
+            context.log.info(
+              s"ReportTaskFailed command received. Task --> $task."
+            )
+            context.log.info(
+              s"Sending task to orchestrator... Task --> $task."
+            )
+            replyTo ! TaskExecutionError(task)
+            Behaviors.same
+      }
     }
-
-  end delegateProcessing
+  end setup
 end ExecutionManager

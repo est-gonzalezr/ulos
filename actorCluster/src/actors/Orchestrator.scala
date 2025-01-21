@@ -44,14 +44,14 @@ object Orchestrator:
   final case class ProcessTask(task: Task) extends Command
 
   private type CommandOrResponse = Command | ExecutionManager.Response |
-    RemoteFileManager.Response | MqManager.Response
+    RemoteFileManager.Response // | MqManager.Response
 
   implicit val timeout: Timeout = Timeout(10.seconds)
 
   def apply(): Behavior[CommandOrResponse] = orchestrating()
 
   def orchestrating(
-      defaultWorkers: Int = DefaultProcessors
+      workerNumber: Int = DefaultProcessors
   ): Behavior[CommandOrResponse] =
     Behaviors
       .setup[CommandOrResponse] { context =>
@@ -99,30 +99,14 @@ object Orchestrator:
                * Increase the number of processors.
                */
               case IncreaseProcessors =>
-                val newWorkerQuantity = defaultWorkers + 1
-                executionManager ! ExecutionManager.SetMaxExecutionWorkers(
-                  newWorkerQuantity
-                )
-                remoteFileManager ! RemoteFileManager.SetMaxRemoteFileWorkers(
-                  newWorkerQuantity
-                )
-
-                orchestrating(newWorkerQuantity)
+                orchestrating(workerNumber + 1)
 
               /* DecreaseProcessors
                *
                * Decrease the number of processors.
                */
               case DecreaseProcessors =>
-                val newWorkerQuantity = defaultWorkers - 1
-                executionManager ! ExecutionManager.SetMaxExecutionWorkers(
-                  newWorkerQuantity
-                )
-                remoteFileManager ! RemoteFileManager.SetMaxRemoteFileWorkers(
-                  newWorkerQuantity
-                )
-
-                orchestrating(newWorkerQuantity)
+                orchestrating(workerNumber - 1)
 
               /* ProcessTask
                *
@@ -153,7 +137,18 @@ object Orchestrator:
                 )
                 Behaviors.same
 
-              case _ => Behaviors.same
+              case RemoteFileManager.TaskDownloadFailed(task) =>
+                mqManager ! MqManager.MqRejectTask(task.mqId)
+                Behaviors.same
+
+              case RemoteFileManager.TaskUploadFailed(task) =>
+                mqManager ! MqManager.MqRejectTask(task.mqId)
+                Behaviors.same
+
+              case ExecutionManager.TaskExecutionError(task) =>
+                mqManager ! MqManager.MqRejectTask(task.mqId)
+                Behaviors.same
+
           }
       }
       .narrow

@@ -51,31 +51,37 @@ object MqMessageConverter:
 
         case SerializeMessage(task, replyTo) =>
           context.log.info(
-            s"MqConverter received task with id ${task.taskId}. Serializing..."
+            s"SerializeMessage command received. Task --> $task."
+          )
+          context.log.info(
+            s"Sending StatusReply.Success to MqManager. Task --> $task."
           )
           replyTo ! StatusReply.Success(taskAsBytes(task))
-          context.log.info(
-            s"Task with id ${task.taskId} serialized. Bytes sent to MQ Manager"
-          )
 
         /* ------------------------------- DeserializeMessage ------------------------------- */
 
         case DeserializeMessage(mqMessage, replyTo) =>
           context.log.info(
-            s"MqConverter received message with id: ${mqMessage.id}. Deserializing..."
+            s"DeserializeMessage command received. MqMessage --> $mqMessage."
           )
 
           mqMessageAsTask(mqMessage) match
             case Right(task) =>
-              replyTo ! StatusReply.Success(task)
+              context.log.info(s"Deserialization success. Task --> $task.")
               context.log.info(
-                s"Message with id ${mqMessage.id} deserialized. Task sent to MQ Manager."
+                s"Sending StatusReply.Success to MqManager. Task --> $task."
               )
+              replyTo ! StatusReply.Success(task)
             case Left(error) =>
               context.log.error(
-                s"Deserialization failed for task with id: ${mqMessage.id}. Error: $error. Failure sent to MQ Manager."
+                s"Deserialization failed. MqMessage --> $mqMessage. Exception thrown: $error."
               )
-              replyTo ! StatusReply.Error(s"Deserialization failed: $error")
+              context.log.info(
+                s"Sending StatusReply.Error to MqManager. MqMessage --> $mqMessage."
+              )
+              replyTo ! StatusReply.Error(
+                Exception(s"Deserialization failed: $error")
+              )
           end match
       end match
 
@@ -105,5 +111,6 @@ object MqMessageConverter:
       .map(_.toChar)
       .mkString
       .fromJson[Task]
+      .map(task => task.copy(mqId = mqMessage.mqId))
 
 end MqMessageConverter

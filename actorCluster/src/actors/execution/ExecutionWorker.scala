@@ -42,19 +42,27 @@ object ExecutionWorker:
       message match
         case ExecuteTask(task, path, replyTo) =>
           context.log.info(
-            s"Execution Worker received task ${task.taskId} for processing. Executing..."
+            s"ExecuteTask command received. Task --> $task, Path --> $path."
           )
 
           executionResult(task, path) match
             case Success(executedTask) =>
               context.log.info(
-                s"Execution Worker executed successfully task ${executedTask.taskId}. Notifying Execution Manager..."
+                s"Execution success. Task --> $task, Path --> $path."
               )
+              context.log.info(
+                s"Sending StatusReply.Success to ExecutionManager. Task --> $task."
+              )
+
               replyTo ! StatusReply.Success(executedTask)
             case Failure(exception) =>
               context.log.error(
-                s"Execution Worker failed to execute task ${task.taskId}. Notifying Execution Manager..."
+                s"Execution failed. Task --> $task, Path --> $path. Exception thrown: ${exception.getMessage()}."
               )
+              context.log.info(
+                s"Sending StatusReply.Error to ExecutionManager. Task --> $task."
+              )
+
               replyTo ! StatusReply.Error(exception)
           end match
       end match
@@ -64,9 +72,21 @@ object ExecutionWorker:
   end processing
 
   private def executionResult(task: Task, path: Path): Try[Task] =
-    val endTime = System.currentTimeMillis() + 5000
-    while System.currentTimeMillis() < endTime do ()
-    end while
-    Try(task)
+    Try {
+      task.processingStages.headOption match
+        case Some("processing") =>
+          val endTime = System.currentTimeMillis() + 5000
+          while System.currentTimeMillis() < endTime do ()
+          end while
+          task
+        case Some("execution") =>
+          val endTime = System.currentTimeMillis() + 10000
+          while System.currentTimeMillis() < endTime do ()
+          end while
+          task
+        case _ =>
+          throw Exception("Task processing stage not found or empty.")
+      end match
+    }
   end executionResult
 end ExecutionWorker

@@ -12,4 +12,6 @@ package types
   * @param bytes
   *   The bytes of the message
   */
-final case class MqMessage(id: Long, bytes: Seq[Byte])
+final case class MqMessage(mqId: Long, bytes: Seq[Byte]):
+  override def toString: String = s"MqMessage(mqId=$mqId, bytes=...)"
+end MqMessage

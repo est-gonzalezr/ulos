@@ -27,7 +27,6 @@ object RemoteFileManager:
   sealed trait Command
 
   // Public command protocol
-  final case class SetMaxRemoteFileWorkers(maxWorkers: Int) extends Command
   final case class DownloadTaskFiles(
       task: Task,
       retries: Int = DefaultRemoteOpsRetries
@@ -81,144 +80,156 @@ object RemoteFileManager:
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
     Behaviors.setup { context =>
+      context.log.info("RemoteFileManager started...")
 
-      def delegateProcessing(
-          activeWorkers: Int,
-          maxWorkers: Int,
-          replyTo: ActorRef[Response]
-      ): Behavior[Command] =
-        Behaviors.receiveMessage { message =>
-          message match
+      Behaviors.receiveMessage { message =>
+        message match
 
-            /* **********************************************************************
-             * Public commands
-             * ********************************************************************** */
+          /* **********************************************************************
+           * Public commands
+           * ********************************************************************** */
 
-            /* SetMaxRemoteFileWorkers
-             *
-             * Set the maximum number of remote file workers that can be active at
-             * any given time.
-             */
-            case SetMaxRemoteFileWorkers(maxWorkers) =>
-              context.log.info(
-                s"RemoteFileManagerm setting max remote file workers to $maxWorkers"
-              )
-              delegateProcessing(activeWorkers, maxWorkers, replyTo)
+          /* DownloadTaskFiles
+           *
+           * Download a file from a remote location.
+           */
+          case DownloadTaskFiles(task, retries) =>
+            context.log.info(
+              s"DownloadTaskFiles command received. Task --> $task."
+            )
 
-            /* DownloadTaskFiles
-             *
-             * Download a file from a remote location.
-             */
-            case DownloadTaskFiles(task, retries) =>
-              context.log.info(
-                s"RemoteFileManager received download task with id: ${task.taskId}, type: ${task.taskType}, path: ${task.taskPath}. Attempting to spwan downloader worker..."
-              )
-              val downloader = context.spawnAnonymous(RemoteFileWorker())
+            context.log.info(s"Spawning downloader...")
+            val downloader = context.spawnAnonymous(RemoteFileWorker())
 
-              context.askWithStatus[RemoteFileWorker.DownloadFile, Path](
-                downloader,
-                replyTo =>
-                  RemoteFileWorker.DownloadFile(
-                    remoteStorageHost,
-                    remoteStoragePort,
-                    remoteStorageUser,
-                    remoteStoragePass,
-                    RelPath(task.taskPath),
-                    replyTo
+            context.log.info(s"Downloader spawned.")
+            context.log.info(s"Sending task to downloader. Task --> $task.")
+
+            context.askWithStatus[RemoteFileWorker.DownloadFile, Path](
+              downloader,
+              replyTo =>
+                RemoteFileWorker.DownloadFile(
+                  remoteStorageHost,
+                  remoteStoragePort,
+                  remoteStorageUser,
+                  remoteStoragePass,
+                  RelPath(task.taskPath),
+                  replyTo
+                )
+            ) {
+              case Success(path) =>
+                context.log.info(
+                  s"Download success response received from downloader. Task awaiting rerouting to orchestrator. Task --> $task, Path --> $path."
+                )
+                ReportTaskDownloaded(task, path)
+              case Failure(exception) =>
+                val failureMessage =
+                  s"Download failure response received from downloader. Task --> $task. Exception thrown: ${exception.getMessage}. $retries retries left."
+
+                if retries > 0 then
+                  context.log.warn(s"$failureMessage Retrying...")
+                  DownloadTaskFiles(task, retries - 1)
+                else
+                  context.log.error(s"$failureMessage Retries exhausted.")
+                  ReportTaskDownloadFailed(
+                    task.copy(errorMessage = Some(exception.getMessage()))
                   )
-              ) {
-                case Success(path) =>
-                  context.log.info(
-                    s"RemoteFileManager received downloaded file for task with id: ${task.taskId}, type: ${task.taskType}, path: ${task.taskPath}. Task awaiting rerouting to orchestrator..."
+                end if
+            }
+            Behaviors.same
+
+          /* UploadTaskFiles
+           *
+           * Upload a file to a remote location.
+           */
+          case UploadTaskFiles(task, retries) =>
+            context.log.info(
+              s"UploadTaskFiles command received. Task --> $task."
+            )
+
+            context.log.info(s"Spawning uploader...")
+            val uploader = context.spawnAnonymous(RemoteFileWorker())
+
+            context.log.info(s"Uploader spawned.")
+            context.log.info(s"Sending task to uploader. Task --> $task.")
+
+            context.askWithStatus[RemoteFileWorker.UploadFile, Done](
+              uploader,
+              replyTo =>
+                RemoteFileWorker.UploadFile(
+                  remoteStorageHost,
+                  remoteStoragePort,
+                  remoteStorageUser,
+                  remoteStoragePass,
+                  RelPath(task.taskPath),
+                  replyTo
+                )
+            ) {
+              case Success(Done) =>
+                context.log.info(
+                  s"Upload success response received from uploader. Task awaiting rerouting to orchestrator. Task --> $task."
+                )
+                ReportTaskUploaded(task)
+              case Failure(exception) =>
+                val failureMessage =
+                  s"Upload failure response received from uploader. Task --> $task. Exception thrown: ${exception.getMessage}. $retries retries left."
+
+                if retries > 0 then
+                  context.log.warn(s"$failureMessage Retrying...")
+                  UploadTaskFiles(task, retries - 1)
+                else
+                  context.log.error(s"$failureMessage Retries exhausted.")
+                  ReportTaskUploadFailed(
+                    task.copy(errorMessage = Some(exception.getMessage))
                   )
-                  ReportTaskDownloaded(task, path)
-                case Failure(throwable) =>
-                  if retries > 0 then
-                    context.log.warn(
-                      s"RemoteFileManager failed to download file for task with id: ${task.taskId}, type: ${task.taskType}, path: ${task.taskPath}. Retrying..."
-                    )
-                    DownloadTaskFiles(task, retries - 1)
-                  else
-                    context.log.error(
-                      s"RemoteFileManager failed to download file for task with id: ${task.taskId}, type: ${task.taskType}, path: ${task.taskPath} with error: ${throwable.getMessage}. Retries exhausted."
-                    )
-                    ReportTaskDownloadFailed(
-                      task.copy(errorMessage = Some(throwable.getMessage))
-                    )
-              }
+                end if
+            }
 
-              delegateProcessing(activeWorkers + 1, maxWorkers, replyTo)
+            Behaviors.same
 
-            /* UploadTaskFiles
-             *
-             * Upload a file to a remote location.
-             */
-            case UploadTaskFiles(task, retries) =>
-              context.log.info(
-                s"RemoteFileManager received upload task with id: ${task.taskId}, type: ${task.taskType}, path: ${task.taskPath}. Attempting to spwan uploader worker..."
-              )
-              val uploader = context.spawnAnonymous(RemoteFileWorker())
+          /* **********************************************************************
+           * Internal commands
+           * ********************************************************************** */
 
-              context.askWithStatus[RemoteFileWorker.UploadFile, Done](
-                uploader,
-                replyTo =>
-                  RemoteFileWorker.UploadFile(
-                    remoteStorageHost,
-                    remoteStoragePort,
-                    remoteStorageUser,
-                    remoteStoragePass,
-                    RelPath(task.taskPath),
-                    replyTo
-                  )
-              ) {
-                case Success(_) =>
-                  context.log.info(
-                    s"RemoteFileManager received uploaded file for task with id: ${task.taskId}, type: ${task.taskType}, path: ${task.taskPath}. Task awaiting rerouting to orchestrator..."
-                  )
-                  ReportTaskUploaded(task)
-                case Failure(throwable) =>
-                  if retries > 0 then
-                    context.log.warn(
-                      s"RemoteFileManager failed to upload file for task with id: ${task.taskId}, type: ${task.taskType}, path: ${task.taskPath}. Retrying..."
-                    )
-                    UploadTaskFiles(task, retries - 1)
-                  else
-                    context.log.error(
-                      s"RemoteFileManager failed to upload file for task with id: ${task.taskId}, type: ${task.taskType}, path: ${task.taskPath} with error: ${throwable.getMessage}. Retries exhausted."
-                    )
-                    ReportTaskUploadFailed(
-                      task.copy(errorMessage = Some(throwable.getMessage))
-                    )
-              }
+          case ReportTaskDownloaded(task, path) =>
+            context.log.info(
+              s"ReportTaskDownloaded command received. Task --> $task, Path --> $path."
+            )
+            context.log.info(
+              s"Sending TaskDownloaded to orchestrator. Task --> $task, Path --> $path."
+            )
+            replyTo ! TaskDownloaded(task, path)
+            Behaviors.same
 
-              delegateProcessing(activeWorkers + 1, maxWorkers, replyTo)
+          case ReportTaskUploaded(task) =>
+            context.log.info(
+              s"ReportTaskUploaded command received. Task --> $task."
+            )
+            context.log.info(
+              s"Sending TaskUploaded to orchestrator. Task --> $task."
+            )
+            replyTo ! TaskUploaded(task)
+            Behaviors.same
 
-            /* **********************************************************************
-             * Internal commands
-             * ********************************************************************** */
+          case ReportTaskDownloadFailed(task) =>
+            context.log.info(
+              s"ReportTaskDownloadFailed command received. Task --> $task."
+            )
+            context.log.info(
+              s"Sending TaskDownloadFailed to orchestrator. Task --> $task."
+            )
+            replyTo ! TaskDownloadFailed(task)
+            Behaviors.same
 
-            case ReportTaskDownloaded(task, path) =>
-              context.log.info(s"Downloaded file: ${task.taskType}")
-              replyTo ! TaskDownloaded(task, path)
-              delegateProcessing(activeWorkers - 1, maxWorkers, replyTo)
-
-            case ReportTaskUploaded(task) =>
-              context.log.info(s"Uploaded file: ${task.taskType}")
-              replyTo ! TaskUploaded(task)
-              delegateProcessing(activeWorkers - 1, maxWorkers, replyTo)
-
-            case ReportTaskDownloadFailed(task) =>
-              context.log.warn(s"Failed to download file: ${task.taskType}")
-              replyTo ! TaskDownloadFailed(task)
-              delegateProcessing(activeWorkers - 1, maxWorkers, replyTo)
-
-            case ReportTaskUploadFailed(task) =>
-              context.log.warn(s"Failed to upload file: ${task.taskType}")
-              replyTo ! TaskUploadFailed(task)
-              delegateProcessing(activeWorkers - 1, maxWorkers, replyTo)
-        }
-
-      delegateProcessing(activeWorkers, maxWorkers, replyTo)
+          case ReportTaskUploadFailed(task) =>
+            context.log.info(
+              s"ReportTaskUploadFailed command received. Task --> $task."
+            )
+            context.log.info(
+              s"Sending TaskUploadFailed to orchestrator. Task --> $task."
+            )
+            replyTo ! TaskUploadFailed(task)
+            Behaviors.same
+      }
     }
   end setup
 end RemoteFileManager
