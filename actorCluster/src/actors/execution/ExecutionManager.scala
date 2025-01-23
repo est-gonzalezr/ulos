@@ -38,15 +38,12 @@ object ExecutionManager:
   implicit val timeout: Timeout = 10.seconds
 
   def apply(
-      maxWorkers: Int,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
-    setup(0, maxWorkers, replyTo)
+    setup(replyTo)
   end apply
 
   def setup(
-      activeWorkers: Int,
-      maxWorkers: Int,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
     Behaviors.setup { context =>

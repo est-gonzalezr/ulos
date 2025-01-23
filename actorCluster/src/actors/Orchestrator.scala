@@ -1,5 +1,9 @@
 package actors
 
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
 import akka.actor.ProviderSelection.Remote
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -29,18 +33,19 @@ import files.RemoteFileManager
 import mq.MqManager
 import types.OpaqueTypes.RoutingKey
 
-private val DefaultProcessors = 5
 private val DefaultExchange = ExchangeName("processing-exchange")
 private val DefaultQueue = QueueName("processing-queue")
 private val DefaultRoutingKey = RoutingKey("processing")
+val DefaultProcessorQuantity = 1
 
 object Orchestrator:
   // Command protocol
   sealed trait Command
 
   // Public command protocol
-  case object IncreaseProcessors extends Command
-  case object DecreaseProcessors extends Command
+  final case class SetProcessorLimit(limit: Int) extends Command:
+    require(limit > 0, "Processor limit must be greater than 0")
+  end SetProcessorLimit
   final case class ProcessTask(task: Task) extends Command
 
   private type CommandOrResponse = Command | ExecutionManager.Response |
@@ -51,14 +56,14 @@ object Orchestrator:
   def apply(): Behavior[CommandOrResponse] = orchestrating()
 
   def orchestrating(
-      workerNumber: Int = DefaultProcessors
+      activeWorkers: Int = 0
   ): Behavior[CommandOrResponse] =
     Behaviors
       .setup[CommandOrResponse] { context =>
         context.log.info("Orchestrator started...")
 
         val executionManager = context.spawn(
-          ExecutionManager(DefaultProcessors, context.self),
+          ExecutionManager(context.self),
           "processing-manager"
         )
 
@@ -68,7 +73,6 @@ object Orchestrator:
             RemoteStoragePort(21),
             RemoteStorageUser("one"),
             RemoteStoragePassword("123"),
-            DefaultProcessors,
             context.self
           ),
           "ftp-manager"
@@ -81,75 +85,94 @@ object Orchestrator:
             MqUser("guest"),
             MqPassword("guest"),
             DefaultQueue,
+            DefaultProcessorQuantity,
             context.self
           ),
           "mq-manager"
         )
 
-        Behaviors
-          .receiveMessage[CommandOrResponse] { message =>
-            message match
+        val systemMonitor = context.spawn(
+          SystemMonitor(DefaultProcessorQuantity, context.self),
+          "system-monitor"
+        )
 
-              /* **********************************************************************
-               * Public commands
-               * ********************************************************************** */
+        def orchestrating(activeWorkers: Int): Behavior[CommandOrResponse] =
+          Behaviors
+            .receiveMessage[CommandOrResponse] { message =>
+              message match
 
-              /* IncreaseProcessors
-               *
-               * Increase the number of processors.
-               */
-              case IncreaseProcessors =>
-                orchestrating(workerNumber + 1)
+                /* **********************************************************************
+                 * Public commands
+                 * ********************************************************************** */
 
-              /* DecreaseProcessors
-               *
-               * Decrease the number of processors.
-               */
-              case DecreaseProcessors =>
-                orchestrating(workerNumber - 1)
+                case SetProcessorLimit(limit) =>
+                  mqManager ! MqManager.MqSetQosPrefetchCount(limit)
+                  Behaviors.same
 
-              /* ProcessTask
-               *
-               * Process a task.
-               */
-              case ProcessTask(task) =>
-                remoteFileManager ! RemoteFileManager.DownloadTaskFiles(task)
-                Behaviors.same
+                /* ProcessTask
+                 *
+                 * Process a task.
+                 */
+                case ProcessTask(task) =>
+                  remoteFileManager ! RemoteFileManager.DownloadTaskFiles(task)
+                  val numActiveWorkers = activeWorkers + 1
+                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
+                    numActiveWorkers
+                  )
+                  orchestrating(numActiveWorkers)
 
-              /* **********************************************************************
-               * Responses from other actors
-               * ********************************************************************** */
+                /* **********************************************************************
+                 * Responses from other actors
+                 * ********************************************************************** */
 
-              case RemoteFileManager.TaskDownloaded(task, path) =>
-                executionManager ! ExecutionManager.ExecuteTask(task, path)
-                Behaviors.same
+                case RemoteFileManager.TaskDownloaded(task, path) =>
+                  executionManager ! ExecutionManager.ExecuteTask(task, path)
+                  Behaviors.same
 
-              case ExecutionManager.TaskExecuted(task) =>
-                remoteFileManager ! RemoteFileManager.UploadTaskFiles(task)
-                Behaviors.same
+                case ExecutionManager.TaskExecuted(task) =>
+                  remoteFileManager ! RemoteFileManager.UploadTaskFiles(task)
+                  Behaviors.same
 
-              case RemoteFileManager.TaskUploaded(task) =>
-                mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
-                mqManager ! MqManager.MqSendMessage(
-                  task,
-                  DefaultExchange,
-                  DefaultRoutingKey
-                )
-                Behaviors.same
+                case RemoteFileManager.TaskUploaded(task) =>
+                  if !task.processingStages.isEmpty then
+                    mqManager ! MqManager.MqSendMessage(
+                      task,
+                      DefaultExchange,
+                      DefaultRoutingKey
+                    )
+                  end if
 
-              case RemoteFileManager.TaskDownloadFailed(task) =>
-                mqManager ! MqManager.MqRejectTask(task.mqId)
-                Behaviors.same
+                  mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
+                  Behaviors.same
 
-              case RemoteFileManager.TaskUploadFailed(task) =>
-                mqManager ! MqManager.MqRejectTask(task.mqId)
-                Behaviors.same
+                case RemoteFileManager.TaskDownloadFailed(task) =>
+                  mqManager ! MqManager.MqRejectTask(task.mqId)
+                  val numActiveWorkers = activeWorkers + 1
+                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
+                    numActiveWorkers
+                  )
+                  orchestrating(numActiveWorkers)
 
-              case ExecutionManager.TaskExecutionError(task) =>
-                mqManager ! MqManager.MqRejectTask(task.mqId)
-                Behaviors.same
+                case RemoteFileManager.TaskUploadFailed(task) =>
+                  mqManager ! MqManager.MqRejectTask(task.mqId)
+                  val numActiveWorkers = activeWorkers + 1
+                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
+                    numActiveWorkers
+                  )
+                  orchestrating(numActiveWorkers)
 
-          }
+                case ExecutionManager.TaskExecutionError(task) =>
+                  mqManager ! MqManager.MqRejectTask(task.mqId)
+                  val numActiveWorkers = activeWorkers + 1
+                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
+                    numActiveWorkers
+                  )
+                  orchestrating(numActiveWorkers)
+
+            }
+        end orchestrating
+
+        orchestrating(activeWorkers)
       }
       .narrow
 end Orchestrator

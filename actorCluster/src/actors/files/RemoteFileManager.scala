@@ -57,7 +57,6 @@ object RemoteFileManager:
       remoteStoragePort: RemoteStoragePort,
       remoteStorageUser: RemoteStorageUser,
       remoteStoragePass: RemoteStoragePassword,
-      maxWorkers: Int,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
     setup(
@@ -66,7 +65,6 @@ object RemoteFileManager:
       remoteStorageUser,
       remoteStoragePass,
       0,
-      maxWorkers,
       replyTo
     )
 
@@ -76,7 +74,6 @@ object RemoteFileManager:
       remoteStorageUser: RemoteStorageUser,
       remoteStoragePass: RemoteStoragePassword,
       activeWorkers: Int,
-      maxWorkers: Int,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
     Behaviors.setup { context =>

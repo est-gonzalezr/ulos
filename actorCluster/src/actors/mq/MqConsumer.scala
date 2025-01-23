@@ -24,7 +24,7 @@ object MqConsumer:
   def apply(
       channel: Channel,
       consumptionQueue: QueueName,
-      replyTo: ActorRef[MqManager.Command]
+      replyTo: ActorRef[MqConsumptionHandler.Command]
   ): Behavior[Nothing] =
     consuming(channel, consumptionQueue, replyTo)
 
@@ -45,7 +45,7 @@ object MqConsumer:
   private def consuming(
       channel: Channel,
       consumptionQueue: QueueName,
-      replyTo: ActorRef[MqManager.Command]
+      replyTo: ActorRef[MqConsumptionHandler.Command]
   ): Behavior[Nothing] =
     Behaviors.setup[Nothing] { context =>
       context.log.info("MqConsumer started...")
@@ -65,7 +65,7 @@ object MqConsumer:
     */
   private case class RabbitMqConsumer(
       channel: Channel,
-      replyTo: ActorRef[MqManager.Command]
+      replyTo: ActorRef[MqConsumptionHandler.Command]
   ) extends DefaultConsumer(channel):
     override def handleDelivery(
         consumerTag: String,
@@ -73,7 +73,7 @@ object MqConsumer:
         properties: BasicProperties,
         body: Array[Byte]
     ): Unit =
-      replyTo ! MqManager.MqProcessTask(
+      replyTo ! MqConsumptionHandler.Reroute(
         MqMessage(envelope.getDeliveryTag, body.toSeq)
       )
     end handleDelivery

@@ -74,16 +74,16 @@ object ExecutionWorker:
   private def executionResult(task: Task, path: Path): Try[Task] =
     Try {
       task.processingStages.headOption match
-        case Some("processing") =>
+        case Some("parsing") =>
           val endTime = System.currentTimeMillis() + 5000
           while System.currentTimeMillis() < endTime do ()
           end while
-          task
+          task.copy(processingStages = task.processingStages.tail)
         case Some("execution") =>
           val endTime = System.currentTimeMillis() + 10000
           while System.currentTimeMillis() < endTime do ()
           end while
-          task
+          task.copy(processingStages = task.processingStages.tail)
         case _ =>
           throw Exception("Task processing stage not found or empty.")
       end match

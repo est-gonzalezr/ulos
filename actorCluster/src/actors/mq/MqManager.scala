@@ -25,8 +25,10 @@ import types.OpaqueTypes.RoutingKey
 import types.Task
 
 import scala.concurrent.duration.*
+import scala.util.Try
 import scala.util.Failure
 import scala.util.Success
+import com.rabbitmq.client.Channel
 
 private val DefaultMqRetries = 10
 
@@ -52,6 +54,7 @@ object MqManager:
       routingKey: RoutingKey,
       retries: Int = DefaultMqRetries
   ) extends Command
+  final case class MqSetQosPrefetchCount(prefetchCount: Int) extends Command
   case object Shutdown extends Command
 
   // Internal command protocol
@@ -70,9 +73,18 @@ object MqManager:
       mqUser: MqUser,
       mqPass: MqPassword,
       consumptionQueue: QueueName,
+      maxPrefetchCount: Int,
       replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
-    setup(mqHost, mqPort, mqUser, mqPass, consumptionQueue, replyTo)
+    setup(
+      mqHost,
+      mqPort,
+      mqUser,
+      mqPass,
+      consumptionQueue,
+      maxPrefetchCount,
+      replyTo
+    )
 
   /** This behavior sets up the MqManager actor and then proceeds to process the
     * messages that are sent to it.
@@ -99,20 +111,23 @@ object MqManager:
       mqUser: MqUser,
       mqPass: MqPassword,
       consumptionQueue: QueueName,
+      maxPrefetchCount: Int,
       replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     Behaviors.setup[Command] { context =>
-      context.log.info("MqManager initialized. Ready to process messages.")
+      context.log.info("MqManager initialized...")
 
       // Create connection and channel to the broker to be handled by the MqManager globally
       val connection =
         brokerConnecton(mqHost.value, mqPort.value, mqUser.value, mqPass.value)
       val channel = connection.createChannel
 
+      val _ = setQosPrefetchCount(channel, maxPrefetchCount) // TODO review this
+
       // Spawn the MqConsumer actor to be able to consume messages from the MQ
-      val mqConsumer = context.spawn(
-        MqConsumer(channel, consumptionQueue, context.self),
-        "mq-consumer"
+      var mqConsumptionHandler = context.spawn(
+        MqConsumptionHandler(channel, consumptionQueue, context.self),
+        "mq-consumption-handler"
       )
 
       Behaviors.receiveMessage[Command] { message =>
@@ -325,6 +340,34 @@ object MqManager:
               }
             Behaviors.same
 
+          /* MqSetQos
+           *
+           * This command is sent by the system when it wants to set the Qos of the channel. It sets the Qos of the channel to the specified value.
+           */
+          case MqSetQosPrefetchCount(prefetchCount) =>
+            context.log.info(
+              s"MqSetQosPrefetchCount command received. Setting Qos prefetch count to $prefetchCount."
+            )
+            mqConsumptionHandler ! MqConsumptionHandler.Shutdown
+
+            setQosPrefetchCount(channel, prefetchCount) match
+              case Success(_) =>
+                context.log.info(
+                  s"Qos set successfully to $prefetchCount."
+                )
+              case Failure(exception) =>
+                context.log.error(
+                  s"Qos set failure. Exception thrown: ${exception.getMessage()}"
+                )
+            end match
+
+            mqConsumptionHandler = context.spawn(
+              MqConsumptionHandler(channel, consumptionQueue, context.self),
+              "mq-consumption-handler"
+            )
+
+            Behaviors.same
+
           /* Shutdown
            *
            * This command is sent by the system when it is shutting down. It closes the channel and connection to the MQ and stops the MqManager actor.
@@ -378,5 +421,8 @@ object MqManager:
     factory.newConnection()
 
   end brokerConnecton
+
+  def setQosPrefetchCount(channel: Channel, prefetchCount: Int): Try[Unit] =
+    Try(channel.basicQos(prefetchCount))
 
 end MqManager
