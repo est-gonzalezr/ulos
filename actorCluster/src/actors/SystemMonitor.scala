@@ -56,7 +56,7 @@ object SystemMonitor:
               context.log.info(s"CPU Usage: $cpuUsage%")
               context.log.info(s"RAM Usage: $ramUsage%")
 
-              val _ = context.scheduleOnce(1.second, context.self, Monitor)
+              val _ = context.scheduleOnce(5.second, context.self, Monitor)
 
               if cpuUsage > 80 || ramUsage > 90 then
                 context.log.info("Decrementing maxProcessors")

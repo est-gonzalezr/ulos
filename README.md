@@ -7,27 +7,37 @@ In your system you will have to have installed `scala`, `mill`, `python3` and `d
 Create RabbitMQ container:
 
 ```zsh
-docker run -d --rm --hostname rabbit --name rabbit -p 15672:15672 -p 5672:5672 rabbitmq:management
+docker run -d --rm --hostname rabbit --name RabbitMqServer -p 15672:15672 -p 5672:5672 rabbitmq:management
+# docker run -d --hostname rabbit --name rabbit -p 15672:15672 -p 5672:5672 rabbitmq:management
 ```
 
-In ULOS root folder run
+In your browser go to the url: http://localhost:15672.
+Enter with the username: `guest` and password `guest`.
+
+Create a new queue called `processing-queue`.
+Create a new exchange called `processing-exchange`.
+Click in the new exchange and bind the queue with the exchange with the routing key `processing`.
+
+Create local ftp server container:
 
 ```zsh
-mill -w brokerManagement.run
+docker run -d --hostname delfer --name DelferFtpServer -e USERS="one|123" -p 21:21 -p 21000-21010:21000-21010 -e ADDRESS=localhost delfer/alpine-ftp-server:latest
+# docker run -d --rm --hostname delfer --name DelferFtpServer -p 21:21 delfer/alpine-ftp-server:latest
 ```
 
-and select the first option: `1. Configure the message broker from existing yaml files`.
+From an FTP client connect to the server.
+Enter with localhost: `localhost`, username: `one`, password: `123`, and port: `21`.
 
-After that, run each of the following commands in different terminal windows.
+Upload any file to the server with name `Rationality.pdf`.
+
+In ULOS root folder run:
 
 ```zsh
-mill -w parsingCluster.run
-mill -w executionCluster.run
-mill -w databaseCluster.run
+mill actorCluster.run
+# mill -w brokerManagement.run
 ```
 
-Finally, run the `producer.py` script to send a mock message, you will need to have `pika` and `PyYAML` installed.
+Once the systems runs, go to the RabbitMQ management url and click on the created queue.
+In the "publish message" section of the queue publish a message. A sample message can be found in the ULOS repo on the file: `goodJson.json`.
 
-```zsh
-python3 producer.py
-```
+Once you publish the message, the system should immediately process the message.
