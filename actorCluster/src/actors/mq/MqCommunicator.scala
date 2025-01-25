@@ -6,18 +6,14 @@ package actors.mq
 
 import akka.Done
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
-import akka.util.Timeout
 import com.rabbitmq.client.Channel
-import types.MqMessage
 import types.OpaqueTypes.ExchangeName
 import types.OpaqueTypes.RoutingKey
 
-import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -99,7 +95,7 @@ object MqCommunicator:
          * This command is sent by the MqManager actor to send an ack to the MQ.
          */
         case SendAck(mqMessageId, replyTo) =>
-          context.log.info(s"")
+          context.log.info(s"SendAck command received. MqId: $mqMessageId.")
 
           sendAck(channel, mqMessageId) match
             case Success(_) =>

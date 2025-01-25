@@ -1,14 +1,13 @@
 package actors.files
 
 import akka.Done
-import akka.actor.ProviderSelection.Remote
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import os.Path
+import os.RelPath
 import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
@@ -18,7 +17,6 @@ import types.Task
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
-import os.RelPath
 
 private val DefaultRemoteOpsRetries = 5
 

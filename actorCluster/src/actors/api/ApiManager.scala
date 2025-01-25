@@ -4,24 +4,11 @@ package actors.api
   *   Esteban Gonzalez Ruales
   */
 
-import actors.Orchestrator
 import akka.Done
-import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
-import akka.pattern.StatusReply
 import akka.util.Timeout
-import com.rabbitmq.client.Connection
-import com.rabbitmq.client.ConnectionFactory
-import types.MqMessage
-import types.OpaqueTypes.ExchangeName
-import types.OpaqueTypes.MqHost
-import types.OpaqueTypes.MqPassword
-import types.OpaqueTypes.MqPort
-import types.OpaqueTypes.MqUser
-import types.OpaqueTypes.QueueName
-import types.OpaqueTypes.RoutingKey
 import types.Task
 
 import scala.concurrent.duration.*

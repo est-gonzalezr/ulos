@@ -5,16 +5,13 @@
 package actors.execution
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
-import akka.util.Timeout
 import os.Path
 import types.Task
 
-import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -75,7 +72,7 @@ object ExecutionWorker:
     Try {
       task.processingStages.headOption match
         case Some("parsing") =>
-          val endTime = System.currentTimeMillis() + 5000
+          val endTime = System.currentTimeMillis() + 7000
           while System.currentTimeMillis() < endTime do ()
           end while
           task.copy(processingStages = task.processingStages.tail)

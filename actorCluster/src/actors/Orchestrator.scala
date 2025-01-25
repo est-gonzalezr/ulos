@@ -4,14 +4,11 @@ package actors
   *   Esteban Gonzalez Ruales
   */
 
-import akka.actor.ProviderSelection.Remote
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
-import types.MqMessage
 import types.OpaqueTypes.ExchangeName
 import types.OpaqueTypes.MqHost
 import types.OpaqueTypes.MqPassword
@@ -22,16 +19,14 @@ import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
 import types.OpaqueTypes.RemoteStorageUser
+import types.OpaqueTypes.RoutingKey
 import types.Task
 
 import scala.concurrent.duration.*
-import scala.util.Failure
-import scala.util.Success
 
 import execution.ExecutionManager
 import files.RemoteFileManager
 import mq.MqManager
-import types.OpaqueTypes.RoutingKey
 
 private val DefaultExchange = ExchangeName("processing-exchange")
 private val DefaultQueue = QueueName("processing-queue")
@@ -47,6 +42,10 @@ object Orchestrator:
     require(limit > 0, "Processor limit must be greater than 0")
   end SetProcessorLimit
   final case class ProcessTask(task: Task) extends Command
+
+  // Internal command protocol
+  final case class GeneralAcknowledgeTask(task: Task) extends Command
+  final case class GeneralRejectTask(task: Task) extends Command
 
   private type CommandOrResponse = Command | ExecutionManager.Response |
     RemoteFileManager.Response // | MqManager.Response
@@ -121,6 +120,22 @@ object Orchestrator:
                   )
                   orchestrating(numActiveWorkers)
 
+                case GeneralAcknowledgeTask(task) =>
+                  mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
+                  val numActiveWorkers = activeWorkers - 1
+                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
+                    numActiveWorkers
+                  )
+                  orchestrating(numActiveWorkers)
+
+                case GeneralRejectTask(task) =>
+                  mqManager ! MqManager.MqRejectTask(task.mqId)
+                  val numActiveWorkers = activeWorkers - 1
+                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
+                    numActiveWorkers
+                  )
+                  orchestrating(numActiveWorkers)
+
                 /* **********************************************************************
                  * Responses from other actors
                  * ********************************************************************** */
@@ -142,32 +157,20 @@ object Orchestrator:
                     )
                   end if
 
-                  mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
+                  context.self ! GeneralAcknowledgeTask(task)
                   Behaviors.same
 
                 case RemoteFileManager.TaskDownloadFailed(task) =>
-                  mqManager ! MqManager.MqRejectTask(task.mqId)
-                  val numActiveWorkers = activeWorkers + 1
-                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
-                    numActiveWorkers
-                  )
-                  orchestrating(numActiveWorkers)
+                  context.self ! GeneralRejectTask(task)
+                  Behaviors.same
 
                 case RemoteFileManager.TaskUploadFailed(task) =>
-                  mqManager ! MqManager.MqRejectTask(task.mqId)
-                  val numActiveWorkers = activeWorkers + 1
-                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
-                    numActiveWorkers
-                  )
-                  orchestrating(numActiveWorkers)
+                  context.self ! GeneralRejectTask(task)
+                  Behaviors.same
 
                 case ExecutionManager.TaskExecutionError(task) =>
-                  mqManager ! MqManager.MqRejectTask(task.mqId)
-                  val numActiveWorkers = activeWorkers + 1
-                  systemMonitor ! SystemMonitor.NotifyActiveProcessors(
-                    numActiveWorkers
-                  )
-                  orchestrating(numActiveWorkers)
+                  context.self ! GeneralRejectTask(task)
+                  Behaviors.same
 
             }
         end orchestrating

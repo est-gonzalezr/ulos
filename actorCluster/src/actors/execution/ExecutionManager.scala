@@ -1,7 +1,6 @@
 package actors.execution
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
@@ -12,12 +11,6 @@ import types.Task
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
-
-// here it is necesaary to have a max and active processor count since
-// if we need to decrease the number of processors and all are active,
-// then the command will fail since decreasing the number of processors would be 0
-
-// TODO: implement caching of messages that are not processed due to lack of processors
 
 object ExecutionManager:
   // Command protocol

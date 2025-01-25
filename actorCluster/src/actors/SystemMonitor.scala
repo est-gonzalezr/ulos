@@ -5,20 +5,12 @@ package actors
   */
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Timeout
+import oshi.SystemInfo
 
 import scala.concurrent.duration.*
-import scala.util.Failure
-import scala.util.Success
-import actors.Orchestrator
-import scala.util.Random
-
-import oshi.SystemInfo
-import oshi.hardware.HardwareAbstractionLayer
 
 object SystemMonitor:
   sealed trait Command
@@ -64,19 +56,19 @@ object SystemMonitor:
               context.log.info(s"CPU Usage: $cpuUsage%")
               context.log.info(s"RAM Usage: $ramUsage%")
 
+              val _ = context.scheduleOnce(1.second, context.self, Monitor)
+
               if cpuUsage > 80 || ramUsage > 90 then
                 context.log.info("Decrementing maxProcessors")
                 val newProcessorQuantity = maxProcessors - 1
                 ref ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
                 monitorResources(newProcessorQuantity, activeProcessors)
-              else if cpuUsage < 20 && activeProcessors == maxProcessors then
+              else if cpuUsage < 50 && activeProcessors == maxProcessors then
                 context.log.info("Incrementing maxProcessors")
                 val newProcessorQuantity = maxProcessors + 1
                 ref ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
                 monitorResources(newProcessorQuantity, activeProcessors)
-              else
-                val _ = context.scheduleOnce(5.second, context.self, Monitor)
-                monitorResources(maxProcessors, activeProcessors)
+              else monitorResources(maxProcessors, activeProcessors)
               end if
 
             case Shutdown =>

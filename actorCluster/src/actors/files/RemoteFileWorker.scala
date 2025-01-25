@@ -5,19 +5,18 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
-import os.Path
-import types.OpaqueTypes.Uri
-import types.Task
-import scala.util.Try
-import scala.util.Failure
-import scala.util.Success
 import org.apache.commons.net.ftp.FTP
 import org.apache.commons.net.ftp.FTPClient
+import os.Path
+import os.RelPath
 import types.OpaqueTypes.RemoteStorageHost
+import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
 import types.OpaqueTypes.RemoteStorageUser
-import types.OpaqueTypes.RemoteStoragePassword
-import os.RelPath
+
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 object RemoteFileWorker:
   // Command protocol

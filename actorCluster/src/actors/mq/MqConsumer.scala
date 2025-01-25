@@ -9,7 +9,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
-import com.rabbitmq.client.Consumer
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import types.MqMessage
@@ -24,7 +23,7 @@ object MqConsumer:
   def apply(
       channel: Channel,
       consumptionQueue: QueueName,
-      replyTo: ActorRef[MqConsumptionHandler.Command]
+      replyTo: ActorRef[MqManager.Command]
   ): Behavior[Nothing] =
     consuming(channel, consumptionQueue, replyTo)
 
@@ -45,7 +44,7 @@ object MqConsumer:
   private def consuming(
       channel: Channel,
       consumptionQueue: QueueName,
-      replyTo: ActorRef[MqConsumptionHandler.Command]
+      replyTo: ActorRef[MqManager.Command]
   ): Behavior[Nothing] =
     Behaviors.setup[Nothing] { context =>
       context.log.info("MqConsumer started...")
@@ -65,7 +64,7 @@ object MqConsumer:
     */
   private case class RabbitMqConsumer(
       channel: Channel,
-      replyTo: ActorRef[MqConsumptionHandler.Command]
+      replyTo: ActorRef[MqManager.Command]
   ) extends DefaultConsumer(channel):
     override def handleDelivery(
         consumerTag: String,
@@ -73,7 +72,7 @@ object MqConsumer:
         properties: BasicProperties,
         body: Array[Byte]
     ): Unit =
-      replyTo ! MqConsumptionHandler.Reroute(
+      replyTo ! MqManager.MqProcessTask(
         MqMessage(envelope.getDeliveryTag, body.toSeq)
       )
     end handleDelivery

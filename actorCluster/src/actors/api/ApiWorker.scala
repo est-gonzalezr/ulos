@@ -6,23 +6,15 @@ package actors.api
 
 import akka.Done
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
-import akka.util.Timeout
-import com.rabbitmq.client.Channel
-import types.MqMessage
-import types.OpaqueTypes.ExchangeName
-import types.OpaqueTypes.RoutingKey
+import types.Task
 
-import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import types.Task
-import scala.concurrent.duration.*
 
 object ApiWorker:
   // Command protocol

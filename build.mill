@@ -9,18 +9,13 @@ import coursier.maven.MavenRepository
 val AkkaVersion = "2.10.0"
 
 val scalaToolkit = ivy"org.scala-lang::toolkit::0.5.0"
-val catsEffect = ivy"org.typelevel::cats-effect::3.5.4"
-val fs2 = ivy"co.fs2::fs2-core::3.1.6"
 val munit = ivy"org.scalameta::munit::1.0.1"
 val scalaYaml = ivy"org.virtuslab::scala-yaml::0.3.0"
 val amqpClient = ivy"com.rabbitmq:amqp-client:5.21.0"
 val apacheCommonsNet = ivy"commons-net:commons-net:3.10.0"
-val skunk = ivy"org.tpolecat::skunk-core::0.6.4"
 val akka = ivy"com.typesafe.akka::akka-actor-typed::$AkkaVersion"
 val akkaTestKit = ivy"com.typesafe.akka::akka-actor-testkit-typed::$AkkaVersion"
 val logback = ivy"ch.qos.logback:logback-classic::1.5.8"
-val scalaLogging = ivy"com.typesafe.scala-logging::scala-logging::3.9.4"
-val zio = ivy"dev.zio::zio::2.1.9"
 val zioJson = ivy"dev.zio::zio-json::0.7.3"
 val oshi = ivy"com.github.oshi:oshi-core:6.6.5"
 
@@ -35,7 +30,8 @@ trait ProjectConfigs extends ScalaModule {
     // "-explain",
     "-deprecation",
     "-unchecked",
-    // "-Wunused:all",
+    "-Wunused:all",
+    // "-Wunused:unsafe-warn-patvars",
     "-Wnonunit-statement",
     "-Wvalue-discard",
     "-Werror",
@@ -58,12 +54,8 @@ object actorCluster extends ProjectConfigs {
     zioJson,
     munit,
     scalaToolkit,
-    zio,
-    catsEffect,
-    scalaYaml,
     amqpClient,
     logback,
-    scalaLogging,
     apacheCommonsNet,
     oshi
   )

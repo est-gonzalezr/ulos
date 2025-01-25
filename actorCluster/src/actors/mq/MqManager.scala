@@ -10,8 +10,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
-import akka.pattern.StatusReply
 import akka.util.Timeout
+import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import types.MqMessage
@@ -25,10 +25,9 @@ import types.OpaqueTypes.RoutingKey
 import types.Task
 
 import scala.concurrent.duration.*
-import scala.util.Try
 import scala.util.Failure
 import scala.util.Success
-import com.rabbitmq.client.Channel
+import scala.util.Try
 
 private val DefaultMqRetries = 10
 
@@ -125,9 +124,9 @@ object MqManager:
       val _ = setQosPrefetchCount(channel, maxPrefetchCount) // TODO review this
 
       // Spawn the MqConsumer actor to be able to consume messages from the MQ
-      var mqConsumptionHandler = context.spawn(
-        MqConsumptionHandler(channel, consumptionQueue, context.self),
-        "mq-consumption-handler"
+      val _ = context.spawn(
+        MqConsumer(channel, consumptionQueue, context.self),
+        "mq-consumer"
       )
 
       Behaviors.receiveMessage[Command] { message =>
@@ -348,7 +347,6 @@ object MqManager:
             context.log.info(
               s"MqSetQosPrefetchCount command received. Setting Qos prefetch count to $prefetchCount."
             )
-            mqConsumptionHandler ! MqConsumptionHandler.Shutdown
 
             setQosPrefetchCount(channel, prefetchCount) match
               case Success(_) =>
@@ -360,11 +358,6 @@ object MqManager:
                   s"Qos set failure. Exception thrown: ${exception.getMessage()}"
                 )
             end match
-
-            mqConsumptionHandler = context.spawn(
-              MqConsumptionHandler(channel, consumptionQueue, context.self),
-              "mq-consumption-handler"
-            )
 
             Behaviors.same
 
@@ -417,12 +410,15 @@ object MqManager:
     factory.setPort(port)
     factory.setUsername(user)
     factory.setPassword(pass)
-    println("Connecting to broker...")
     factory.newConnection()
 
   end brokerConnecton
 
   def setQosPrefetchCount(channel: Channel, prefetchCount: Int): Try[Unit] =
-    Try(channel.basicQos(prefetchCount))
+    // Since it is not possible to change the prefetch count of a single consumer
+    // in RabbitMQ, we set the global prefetch count to the desired value.
+    // This enables the channel to have a dynamically adjustable prefetch count
+    // regardless of the number of consumers.
+    Try(channel.basicQos(prefetchCount, true))
 
 end MqManager
