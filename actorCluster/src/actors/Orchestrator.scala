@@ -24,6 +24,7 @@ import types.Task
 
 import scala.concurrent.duration.*
 
+import api.ApiManager
 import execution.ExecutionManager
 import files.RemoteFileManager
 import mq.MqManager
@@ -46,6 +47,7 @@ object Orchestrator:
   // Internal command protocol
   final case class GeneralAcknowledgeTask(task: Task) extends Command
   final case class GeneralRejectTask(task: Task) extends Command
+  case object Shutdown extends Command
 
   private type CommandOrResponse = Command | ExecutionManager.Response |
     RemoteFileManager.Response // | MqManager.Response
@@ -90,6 +92,11 @@ object Orchestrator:
           "mq-manager"
         )
 
+        val apiManager = context.spawn(
+          ApiManager(),
+          "api-manager"
+        )
+
         val systemMonitor = context.spawn(
           SystemMonitor(DefaultProcessorQuantity, context.self),
           "system-monitor"
@@ -114,6 +121,11 @@ object Orchestrator:
                  */
                 case ProcessTask(task) =>
                   remoteFileManager ! RemoteFileManager.DownloadTaskFiles(task)
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task
+                      .copy(logMessage = Some("Task received for processing."))
+                  )
+
                   val numActiveWorkers = activeWorkers + 1
                   systemMonitor ! SystemMonitor.NotifyActiveProcessors(
                     numActiveWorkers
@@ -122,6 +134,10 @@ object Orchestrator:
 
                 case GeneralAcknowledgeTask(task) =>
                   mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage = Some("Task ack sent to broker."))
+                  )
+
                   val numActiveWorkers = activeWorkers - 1
                   systemMonitor ! SystemMonitor.NotifyActiveProcessors(
                     numActiveWorkers
@@ -130,6 +146,10 @@ object Orchestrator:
 
                 case GeneralRejectTask(task) =>
                   mqManager ! MqManager.MqRejectTask(task.mqId)
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage = Some("Task reject sent to broker."))
+                  )
+
                   val numActiveWorkers = activeWorkers - 1
                   systemMonitor ! SystemMonitor.NotifyActiveProcessors(
                     numActiveWorkers
@@ -142,18 +162,41 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskDownloaded(task, path) =>
                   executionManager ! ExecutionManager.ExecuteTask(task, path)
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage =
+                      Some("Task files donwloaded for processing.")
+                    )
+                  )
                   Behaviors.same
 
                 case ExecutionManager.TaskExecuted(task) =>
                   remoteFileManager ! RemoteFileManager.UploadTaskFiles(task)
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage = Some("Task processing completed."))
+                  )
                   Behaviors.same
 
                 case RemoteFileManager.TaskUploaded(task) =>
-                  if !task.processingStages.isEmpty then
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage = Some("Task files uploaded."))
+                  )
+
+                  val taskForNextStage = task.copy(
+                    processingStages = task.processingStages.tail
+                  )
+
+                  if !taskForNextStage.processingStages.isEmpty then
                     mqManager ! MqManager.MqSendMessage(
-                      task,
+                      taskForNextStage,
                       DefaultExchange,
                       DefaultRoutingKey
+                    )
+
+                    apiManager ! ApiManager.ApiTaskLog(
+                      task.copy(
+                        logMessage =
+                          Some("Task sent for next processing stage.")
+                      )
                     )
                   end if
 
@@ -161,17 +204,46 @@ object Orchestrator:
                   Behaviors.same
 
                 case RemoteFileManager.TaskDownloadFailed(task) =>
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage =
+                      Some(
+                        s"Task files download failed with message: ${task.logMessage}"
+                      )
+                    )
+                  )
                   context.self ! GeneralRejectTask(task)
                   Behaviors.same
 
                 case RemoteFileManager.TaskUploadFailed(task) =>
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage =
+                      Some(
+                        s"Task files upload failed with message: ${task.logMessage}"
+                      )
+                    )
+                  )
                   context.self ! GeneralRejectTask(task)
                   Behaviors.same
 
                 case ExecutionManager.TaskExecutionError(task) =>
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage =
+                      Some(
+                        s"Task execution failed with message: ${task.logMessage}"
+                      )
+                    )
+                  )
                   context.self ! GeneralRejectTask(task)
                   Behaviors.same
 
+                case Shutdown =>
+                  context.log.info("Shutdown command received.")
+                  mqManager ! MqManager.Shutdown
+                  executionManager ! ExecutionManager.Shutdown
+                  remoteFileManager ! RemoteFileManager.Shutdown
+                  apiManager ! ApiManager.Shutdown
+                  systemMonitor ! SystemMonitor.Shutdown
+                  Behaviors.stopped
             }
         end orchestrating
 

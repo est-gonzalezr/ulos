@@ -7,8 +7,8 @@ In your system you will have to have installed `scala`, `mill`, `python3` and `d
 Create RabbitMQ container:
 
 ```zsh
-docker run -d --rm --hostname rabbit --name RabbitMqServer -p 15672:15672 -p 5672:5672 rabbitmq:management
-# docker run -d --hostname rabbit --name rabbit -p 15672:15672 -p 5672:5672 rabbitmq:management
+docker run -d --hostname rabbit --name RabbitMqServer -p 15672:15672 -p 5672:5672 rabbitmq:management
+# docker run -d --rm --hostname rabbit --name rabbit -p 15672:15672 -p 5672:5672 rabbitmq:management
 ```
 
 In your browser go to the url: http://localhost:15672.

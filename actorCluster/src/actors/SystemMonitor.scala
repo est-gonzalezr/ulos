@@ -24,13 +24,13 @@ object SystemMonitor:
 
   def apply(
       maxProcessors: Int,
-      ref: ActorRef[Orchestrator.Command]
+      replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
-    setup(maxProcessors, ref)
+    setup(maxProcessors, replyTo)
 
   def setup(
       maxProcessors: Int,
-      ref: ActorRef[Orchestrator.Command]
+      replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     Behaviors.setup { context =>
       context.log.info("System monitor started...")
@@ -58,21 +58,25 @@ object SystemMonitor:
 
               val _ = context.scheduleOnce(5.second, context.self, Monitor)
 
-              if cpuUsage > 80 || ramUsage > 90 then
+              if cpuUsage > 90 || ramUsage > 90 then
                 context.log.info("Decrementing maxProcessors")
                 val newProcessorQuantity = maxProcessors - 1
-                ref ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
+
+                if newProcessorQuantity > 0 then
+                  replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
+                else replyTo ! Orchestrator.Shutdown
+                end if
                 monitorResources(newProcessorQuantity, activeProcessors)
               else if cpuUsage < 50 && activeProcessors == maxProcessors then
                 context.log.info("Incrementing maxProcessors")
                 val newProcessorQuantity = maxProcessors + 1
-                ref ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
+                replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
                 monitorResources(newProcessorQuantity, activeProcessors)
               else monitorResources(maxProcessors, activeProcessors)
               end if
 
             case Shutdown =>
-              context.log.info("Shutting down system monitor")
+              context.log.info("Shutdown command received.")
               Behaviors.stopped
         }
 

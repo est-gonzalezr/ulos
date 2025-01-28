@@ -361,18 +361,6 @@ object MqManager:
 
             Behaviors.same
 
-          /* Shutdown
-           *
-           * This command is sent by the system when it is shutting down. It closes the channel and connection to the MQ and stops the MqManager actor.
-           */
-          case Shutdown =>
-            context.log.info(
-              s"Shutdown command received. Closing channel and connection to broker..."
-            )
-            channel.close()
-            connection.close()
-            Behaviors.stopped
-
           /* **********************************************************************
            * Internal commands
            * ********************************************************************** */
@@ -396,6 +384,18 @@ object MqManager:
           case Report(message) =>
             // context.log.info(s"MqManager received report: $message")
             Behaviors.same
+
+          /* **********************************************************************
+           * Shutdown command
+           * ********************************************************************** */
+
+          case Shutdown =>
+            context.log.info(
+              s"Shutdown command received. Closing channel and connection to broker."
+            )
+            channel.close()
+            connection.close()
+            Behaviors.stopped
       }
     }
 

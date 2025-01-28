@@ -4,7 +4,7 @@
   "taskType": "testing",
   "taskPath": "Rationality.pdf",
   "processingStages": [
-    "parsing",
-    "execution"
+    "PARSING",
+    "EXECUTION"
   ]
 }

@@ -22,8 +22,9 @@ object ApiManager:
   sealed trait Command
 
   // Public command protocol
-  final case class ApiTaskUpdate(task: Task, retries: Int = DefaultApiRetires)
+  final case class ApiTaskLog(task: Task, retries: Int = DefaultApiRetires)
       extends Command
+  case object Shutdown extends Command
 
   // Internal command protocol
   private final case class Report(message: String) extends Command
@@ -36,40 +37,47 @@ object ApiManager:
   def processing(): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
-        case ApiTaskUpdate(task, retries) =>
+        case ApiTaskLog(task, retries) =>
           context.log.info(
-            s"ApiManager received task with id: ${task.taskId}. Attempting update in API..."
+            s"ApiTaskLog command received. Task --> $task."
           )
 
           val apiWorker = context.spawnAnonymous(ApiWorker())
 
-          context.askWithStatus[ApiWorker.ApiUpdateTask, Done](
+          context.askWithStatus[ApiWorker.ApiTaskLog, Done](
             apiWorker,
-            replyTo => ApiWorker.ApiUpdateTask(task, replyTo)
+            replyTo => ApiWorker.ApiTaskLog(task, replyTo)
           ) {
             case Success(Done) =>
               context.log.info(
-                s"ApiManager successfully updated task with id: ${task.taskId}."
+                s"Request delivery success response received from worker. Task --> $task."
               )
               Report(s"Task ${task.taskId} updated successfully.")
             case Failure(exception) =>
+              val failureMessage =
+                s"Request delivery failure response received from worker. Task --> $task. Exception thrown: ${exception
+                    .getMessage()}. $retries retries left."
+
               if retries > 0 then
-                context.log.error(
-                  s"ApiManager failed to update task with id: ${task.taskId}. Retrying..."
-                )
-                ApiTaskUpdate(task, retries - 1)
+                context.log.error(s"$failureMessage Retrying...")
+                ApiTaskLog(task, retries - 1)
               else
-                context.log.error(
-                  s"ApiManager failed to update task with id: ${task.taskId}. Retries exhausted."
-                )
-                Report(s"Task ${task.taskId} failed to update.")
+                context.log.error(s"$failureMessage Retries exhausted.")
+                Report(s"Api failure.")
+              end if
+
           }
+          Behaviors.same
 
         case Report(message) =>
           context.log.info(message)
+          Behaviors.same
+
+        case Shutdown =>
+          context.log.info("Shutdown command received.")
+          Behaviors.stopped
       end match
 
-      Behaviors.same
     }
 
 end ApiManager

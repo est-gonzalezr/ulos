@@ -33,6 +33,7 @@ object RemoteFileManager:
       task: Task,
       retries: Int = DefaultRemoteOpsRetries
   ) extends Command
+  case object Shutdown extends Command
 
   // Internal command protocol
   private final case class ReportTaskDownloaded(task: Task, path: Path)
@@ -126,7 +127,7 @@ object RemoteFileManager:
                 else
                   context.log.error(s"$failureMessage Retries exhausted.")
                   ReportTaskDownloadFailed(
-                    task.copy(errorMessage = Some(exception.getMessage()))
+                    task.copy(logMessage = Some(exception.getMessage()))
                   )
                 end if
             }
@@ -174,7 +175,7 @@ object RemoteFileManager:
                 else
                   context.log.error(s"$failureMessage Retries exhausted.")
                   ReportTaskUploadFailed(
-                    task.copy(errorMessage = Some(exception.getMessage))
+                    task.copy(logMessage = Some(exception.getMessage))
                   )
                 end if
             }
@@ -224,6 +225,14 @@ object RemoteFileManager:
             )
             replyTo ! TaskUploadFailed(task)
             Behaviors.same
+
+          /* **********************************************************************
+           * Shutdown command
+           * ********************************************************************** */
+
+          case Shutdown =>
+            context.log.info("Shutdown command received.")
+            Behaviors.stopped
       }
     }
   end setup

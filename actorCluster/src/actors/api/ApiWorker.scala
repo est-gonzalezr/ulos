@@ -21,7 +21,7 @@ object ApiWorker:
   sealed trait Command
 
   // Public command protocol
-  final case class ApiUpdateTask(
+  final case class ApiTaskLog(
       task: Task,
       replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
@@ -31,24 +31,25 @@ object ApiWorker:
   def sendUpdate(): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
-        case ApiUpdateTask(task, replyTo) =>
+        case ApiTaskLog(task, replyTo) =>
           // Send the task to the orchestrator
-          context.log
-            .info(
-              s"ApiWorker received task with id: ${task.taskId}. Attempting update in API..."
-            )
+          context.log.info(s"ApiTaskLog command received. Task --> $task.")
 
           updateInApi(task) match
             case Success(updatedTask) =>
-              context.log
-                .info(
-                  s"ApiWorker successfully updated task with id: ${updatedTask.taskId}. Notifying ApiManager..."
-                )
-              replyTo ! StatusReply.Success(Done)
+              context.log.info(s"Api request success. Task --> $task.")
+              context.log.info(
+                s"Sending StatusReply.Ack to ApiManager. Task --> $task."
+              )
+              replyTo ! StatusReply.Ack
             case Failure(exception) =>
               context.log.error(
-                s"ApiWorker failed to update task with id: ${task.taskId}. Notifying ApiManager..."
+                s"Api request failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
               )
+              context.log.error(
+                s"Sending StatusReply.Error to ApiManager. Task --> $task."
+              )
+
               replyTo ! StatusReply.Error(exception)
           end match
       end match

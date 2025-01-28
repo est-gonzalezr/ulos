@@ -67,7 +67,7 @@ object RemoteFileWorker:
                     s"Sending StatusReply.Success to RemoteFileManager. Path --> $localPath."
                   )
 
-                  replyTo ! StatusReply.success(localPath)
+                  replyTo ! StatusReply.Success(localPath)
                 case Failure(exception) =>
                   context.log.error(
                     s"File save failed. Path --> $localPath. Exception thrown: ${exception.getMessage()}."
@@ -119,9 +119,9 @@ object RemoteFileWorker:
                   end match
 
                   context.log.info(
-                    s"Sending StatusReply.Success to RemoteFileManager. Path --> $path."
+                    s"Sending StatusReply.Ack to RemoteFileManager. Path --> $path."
                   )
-                  replyTo ! StatusReply.success(Done)
+                  replyTo ! StatusReply.Ack
                 case Failure(exception) =>
                   context.log.error(
                     s"RemoteFileWorker failed to upload file: $path. Exception thrown: ${exception.getMessage()}. Notifying RemoteFileManager..."

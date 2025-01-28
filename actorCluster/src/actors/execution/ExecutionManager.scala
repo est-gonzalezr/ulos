@@ -22,6 +22,7 @@ object ExecutionManager:
   // Internal command protocol
   final case class ReportTaskExecuted(task: Task) extends Command
   final case class ReportTaskFailed(task: Task) extends Command
+  case object Shutdown extends Command
 
   // Response protocol
   sealed trait Response
@@ -79,12 +80,12 @@ object ExecutionManager:
                   s"Task execution success. Task awaiting rerouting to orchestrator. Task --> $task."
                 )
                 ReportTaskExecuted(task)
-              case Failure(throwable) =>
+              case Failure(exception) =>
                 context.log.error(
                   s"Task execution failure. Task awaiting rejection to MQ. Task --> $task."
                 )
                 ReportTaskFailed(
-                  task.copy(errorMessage = Some(throwable.getMessage))
+                  task.copy(logMessage = Some(exception.getMessage))
                 )
             }
 
@@ -114,6 +115,14 @@ object ExecutionManager:
             )
             replyTo ! TaskExecutionError(task)
             Behaviors.same
+
+          /* **********************************************************************
+           * Shutdown command
+           * ********************************************************************** */
+
+          case Shutdown =>
+            context.log.info("Shutdown command received.")
+            Behaviors.stopped
       }
     }
   end setup

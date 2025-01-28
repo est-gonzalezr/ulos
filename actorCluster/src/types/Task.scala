@@ -18,12 +18,12 @@ case class Task(
     taskType: String,
     taskPath: String,
     processingStages: List[String],
-    errorMessage: Option[String],
+    logMessage: Option[String],
     mqId: Long = -1
 ):
 
   override def toString: String =
-    s"Task(taskId=$taskId, taskOwnerId=$taskOwnerId, taskType=$taskType, taskPath=$taskPath, processingStage=$processingStages, errorMessage=$errorMessage, mqId=$mqId)"
+    s"Task(taskId=$taskId, taskOwnerId=$taskOwnerId, taskType=$taskType, taskPath=$taskPath, processingStage=$processingStages, logMessage=$logMessage, mqId=$mqId)"
 end Task
 
 /** Companion object for the Task class. It contains the JSON encoders and
