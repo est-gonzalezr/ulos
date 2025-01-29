@@ -199,6 +199,7 @@ object Orchestrator:
                   )
 
                   val taskForNextStage = task.copy(
+                    containerImagesPaths = task.containerImagesPaths.tail,
                     processingStages = task.processingStages.tail
                   )
 

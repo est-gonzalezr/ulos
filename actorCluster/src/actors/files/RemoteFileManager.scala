@@ -104,7 +104,7 @@ object RemoteFileManager:
                   remoteStoragePort,
                   remoteStorageUser,
                   remoteStoragePass,
-                  RelPath(task.taskPath),
+                  task.filePath,
                   replyTo
                 )
             ) {
@@ -148,7 +148,7 @@ object RemoteFileManager:
                   remoteStoragePort,
                   remoteStorageUser,
                   remoteStoragePass,
-                  RelPath(task.taskPath),
+                  task.filePath,
                   replyTo
                 )
             ) {
