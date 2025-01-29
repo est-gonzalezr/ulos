@@ -31,6 +31,11 @@ object ApiWorker:
   def sendUpdate(): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
+
+        /* **********************************************************************
+         * Public commands
+         * ********************************************************************** */
+
         case ApiTaskLog(task, replyTo) =>
           // Send the task to the orchestrator
           context.log.info(s"ApiTaskLog command received. Task --> $task.")

@@ -37,6 +37,10 @@ object ExecutionWorker:
   def processing(): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
+        /* **********************************************************************
+         * Public commands
+         * ********************************************************************** */
+
         case ExecuteTask(task, path, replyTo) =>
           context.log.info(
             s"ExecuteTask command received. Task --> $task, Path --> $path."

@@ -45,6 +45,10 @@ object RemoteFileWorker:
   def processing: Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
+        /* **********************************************************************
+         * Public commands
+         * ********************************************************************** */
+
         case DownloadFile(
               remoteStorageHost,
               remoteStoragePort,

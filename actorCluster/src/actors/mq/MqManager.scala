@@ -58,7 +58,7 @@ object MqManager:
 
   // Internal command protocol
   private final case class DeliverToOrchestrator(task: Task) extends Command
-  private final case class Report(message: String) extends Command
+  private case object NoOp extends Command
 
   // Response Protocol
   sealed trait Response
@@ -136,12 +136,6 @@ object MqManager:
            * Public commands
            * ********************************************************************** */
 
-          /* MqProcessTask
-           *
-           * This command is sent by the MqConsumer actor when it receives a new message to process.
-           * It attempts to deserialize the message and then sends it to the orchestrator. In case of failure it rejects the message to the MQ.
-           *
-           */
           case MqProcessTask(mqMessage) =>
             context.log.info(
               s"MqProcessTask command received. MqMessage --> $mqMessage."
@@ -174,11 +168,6 @@ object MqManager:
               }
             Behaviors.same
 
-          /* MqAcknowledgeTask
-           *
-           * This command is sent by the Orchestrator actor when it has successfully processed a task. It attempts to acknowledge the task to the MQ.
-           * In case of failure it retries the operation until the retries are exhausted since there is nothing else to do.
-           */
           case MqAcknowledgeTask(mqId, retries) =>
             context.log.info(
               s"MqAcknowledgeTask command received. mqId --> $mqId."
@@ -197,7 +186,7 @@ object MqManager:
                 context.log.info(
                   s"MQ Ack success response received from communicator. mqId --> $mqId."
                 )
-                Report("Ack successful")
+                NoOp
 
               case Failure(exception) =>
                 val failureMessage =
@@ -209,16 +198,11 @@ object MqManager:
                   MqAcknowledgeTask(mqId, retries - 1)
                 else
                   context.log.error(s"$failureMessage Retries exhausted.")
-                  Report("Ack failed")
+                  NoOp
                 end if
             }
             Behaviors.same
 
-          /* MqRejectTask
-           *
-           * This command is sent by the Orchestrator actor when it has failed to process a task on any part of the process. It attempts to reject the task to the MQ.
-           * In case of failure it retries the operation until the retries are exhausted since there is nothing else to do.
-           */
           case MqRejectTask(mqId, retries) =>
             context.log.info(
               s"MqRejectTask command received. mqId --> $mqId."
@@ -237,7 +221,7 @@ object MqManager:
                 context.log.info(
                   s"Reject success response received from communicator. mqId --> $mqId."
                 )
-                Report("Reject successful")
+                NoOp
 
               case Failure(exception) =>
                 val failureMessage =
@@ -249,16 +233,11 @@ object MqManager:
                   MqRejectTask(mqId, retries - 1)
                 else
                   context.log.error(s"$failureMessage Retries exhausted.")
-                  Report("Reject failed")
+                  NoOp
                 end if
             }
             Behaviors.same
 
-          /* MqSendMessage
-           *
-           * This command is sent by the Orchestrator actor when it has a task to send to the MQ. It attempts to serialize the message and then send it to the MQ.
-           * In case of failure it retries the operation until the retries are exhausted since there is nothing else to do.
-           */
           case MqSendMessage(task, exchange, routingKey, retries) =>
             context.log.info(
               s"MqSendMessage command received. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}."
@@ -300,7 +279,7 @@ object MqManager:
                       context.log.info(
                         s"Send message success response received from communicator. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}."
                       )
-                      Report("Message sent successfully")
+                      NoOp
 
                     case Failure(exception) =>
                       val failureMessage =
@@ -322,11 +301,11 @@ object MqManager:
                             s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
                             s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
                         )
-                        Report(exception.getMessage)
+                        NoOp
                       end if
                   }
 
-                  Report("Message serialized successfully")
+                  NoOp
                 case Failure(exception) =>
                   context.log.error(
                     s"Serialization failure response received from serializer. Task --> $task. Exception thrown: ${exception
@@ -335,14 +314,10 @@ object MqManager:
                       s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
                       s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
                   )
-                  Report(exception.getMessage)
+                  NoOp
               }
             Behaviors.same
 
-          /* MqSetQos
-           *
-           * This command is sent by the system when it wants to set the Qos of the channel. It sets the Qos of the channel to the specified value.
-           */
           case MqSetQosPrefetchCount(prefetchCount) =>
             context.log.info(
               s"MqSetQosPrefetchCount command received. Setting Qos prefetch count to $prefetchCount."
@@ -365,10 +340,6 @@ object MqManager:
            * Internal commands
            * ********************************************************************** */
 
-          /* DeliverToOrchestrator
-           *
-           * This command is sent by the MqProcessTask command when it has successfully deserialized a message. It sends the task to the Orchestrator actor to be processed.
-           */
           case DeliverToOrchestrator(task) =>
             context.log.info(
               s"DeliverToOrchestrator command received. Task --> $task."
@@ -377,12 +348,7 @@ object MqManager:
             replyTo ! Orchestrator.ProcessTask(task)
             Behaviors.same
 
-          /* Report
-           *
-           * This command is sent by the public commands when they have finished their operation. It logs the message and continues processing.
-           */
-          case Report(message) =>
-            // context.log.info(s"MqManager received report: $message")
+          case NoOp =>
             Behaviors.same
 
           /* **********************************************************************

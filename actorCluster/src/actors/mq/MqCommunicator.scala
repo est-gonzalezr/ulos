@@ -56,11 +56,6 @@ object MqCommunicator:
          * Public commands
          * ********************************************************************** */
 
-        /* SendMessage
-         *
-         * This command is sent by the MqManager actor to send a message to the MQ.
-         */
-
         case SendMqMessage(bytes, exchangeName, routingKey, replyTo) =>
           context.log.info(
             s"SendMqMessage command received. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
@@ -90,10 +85,7 @@ object MqCommunicator:
               )
               replyTo ! StatusReply.Error(exception)
           end match
-        /* SendAck
-         *
-         * This command is sent by the MqManager actor to send an ack to the MQ.
-         */
+
         case SendAck(mqMessageId, replyTo) =>
           context.log.info(s"SendAck command received. MqId: $mqMessageId.")
 
@@ -115,10 +107,7 @@ object MqCommunicator:
               )
               replyTo ! StatusReply.Error(exception)
           end match
-        /* SendReject
-         *
-         * This command is sent by the MqManager actor to send a reject to the MQ.
-         */
+
         case SendReject(mqMessageId, replyTo) =>
           context.log.info(s"SendReject command received. MqId: $mqMessageId.")
 

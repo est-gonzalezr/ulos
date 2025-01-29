@@ -27,7 +27,7 @@ object ApiManager:
   case object Shutdown extends Command
 
   // Internal command protocol
-  private final case class Report(message: String) extends Command
+  private case object NoOp extends Command
 
   // Implicit timeout for ask pattern
   implicit val timeout: Timeout = 10.seconds
@@ -37,6 +37,10 @@ object ApiManager:
   def processing(): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
+        /* **********************************************************************
+         * Public commands
+         * ********************************************************************** */
+
         case ApiTaskLog(task, retries) =>
           context.log.info(
             s"ApiTaskLog command received. Task --> $task."
@@ -52,7 +56,7 @@ object ApiManager:
               context.log.info(
                 s"Request delivery success response received from worker. Task --> $task."
               )
-              Report(s"Task ${task.taskId} updated successfully.")
+              NoOp
             case Failure(exception) =>
               val failureMessage =
                 s"Request delivery failure response received from worker. Task --> $task. Exception thrown: ${exception
@@ -63,14 +67,13 @@ object ApiManager:
                 ApiTaskLog(task, retries - 1)
               else
                 context.log.error(s"$failureMessage Retries exhausted.")
-                Report(s"Api failure.")
+                NoOp
               end if
 
           }
           Behaviors.same
 
-        case Report(message) =>
-          context.log.info(message)
+        case NoOp =>
           Behaviors.same
 
         case Shutdown =>

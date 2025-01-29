@@ -50,10 +50,6 @@ object ExecutionManager:
            * Public commands
            * ********************************************************************** */
 
-          /* ExecuteTask
-           *
-           * Execute a task.
-           */
           case ExecuteTask(task, path) =>
             context.log.info(s"ExecuteTask command received. Task --> $task.")
 

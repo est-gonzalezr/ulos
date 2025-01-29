@@ -85,10 +85,6 @@ object RemoteFileManager:
            * Public commands
            * ********************************************************************** */
 
-          /* DownloadTaskFiles
-           *
-           * Download a file from a remote location.
-           */
           case DownloadTaskFiles(task, retries) =>
             context.log.info(
               s"DownloadTaskFiles command received. Task --> $task."
@@ -133,10 +129,6 @@ object RemoteFileManager:
             }
             Behaviors.same
 
-          /* UploadTaskFiles
-           *
-           * Upload a file to a remote location.
-           */
           case UploadTaskFiles(task, retries) =>
             context.log.info(
               s"UploadTaskFiles command received. Task --> $task."
@@ -179,7 +171,6 @@ object RemoteFileManager:
                   )
                 end if
             }
-
             Behaviors.same
 
           /* **********************************************************************
