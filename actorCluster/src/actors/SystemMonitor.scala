@@ -49,6 +49,8 @@ object SystemMonitor:
               monitorResources(maxProcessors, activeProcessors)
 
             case Monitor =>
+              context.log.info("Monitor command received.")
+
               val systemInfo = SystemInfo()
               val cpuUsage = getCpuUsage(systemInfo)
               val ramUsage = getRamUsage(systemInfo)

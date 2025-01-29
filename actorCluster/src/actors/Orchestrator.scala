@@ -112,14 +112,16 @@ object Orchestrator:
                  * ********************************************************************** */
 
                 case SetProcessorLimit(limit) =>
+                  context.log.info(
+                    s"SetProcessorLimit command received. Limit --> $limit"
+                  )
                   mqManager ! MqManager.MqSetQosPrefetchCount(limit)
                   Behaviors.same
 
-                /* ProcessTask
-                 *
-                 * Process a task.
-                 */
                 case ProcessTask(task) =>
+                  context.log.info(
+                    s"ProcessTask command received. Task --> $task"
+                  )
                   remoteFileManager ! RemoteFileManager.DownloadTaskFiles(task)
                   apiManager ! ApiManager.ApiTaskLog(
                     task
@@ -133,6 +135,9 @@ object Orchestrator:
                   orchestrating(numActiveWorkers)
 
                 case GeneralAcknowledgeTask(task) =>
+                  context.log.info(
+                    s"GeneralAcknowledgeTask command received. Task --> $task"
+                  )
                   mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage = Some("Task ack sent to broker."))
@@ -145,6 +150,9 @@ object Orchestrator:
                   orchestrating(numActiveWorkers)
 
                 case GeneralRejectTask(task) =>
+                  context.log.info(
+                    s"GeneralRejectTask command received. Task --> $task"
+                  )
                   mqManager ! MqManager.MqRejectTask(task.mqId)
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage = Some("Task reject sent to broker."))
@@ -161,6 +169,9 @@ object Orchestrator:
                  * ********************************************************************** */
 
                 case RemoteFileManager.TaskDownloaded(task, path) =>
+                  context.log.info(
+                    s"TaskDownloaded response received. Task --> $task, Path --> $path"
+                  )
                   executionManager ! ExecutionManager.ExecuteTask(task, path)
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage =
@@ -170,6 +181,9 @@ object Orchestrator:
                   Behaviors.same
 
                 case ExecutionManager.TaskExecuted(task) =>
+                  context.log.info(
+                    s"TaskExecuted response received. Task --> $task"
+                  )
                   remoteFileManager ! RemoteFileManager.UploadTaskFiles(task)
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage = Some("Task processing completed."))
@@ -177,6 +191,9 @@ object Orchestrator:
                   Behaviors.same
 
                 case RemoteFileManager.TaskUploaded(task) =>
+                  context.log.info(
+                    s"TaskUploaded response received. Task --> $task"
+                  )
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage = Some("Task files uploaded."))
                   )
@@ -204,6 +221,9 @@ object Orchestrator:
                   Behaviors.same
 
                 case RemoteFileManager.TaskDownloadFailed(task) =>
+                  context.log.info(
+                    s"TaskDownloadFailed response received. Task --> $task"
+                  )
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage =
                       Some(
@@ -215,6 +235,9 @@ object Orchestrator:
                   Behaviors.same
 
                 case RemoteFileManager.TaskUploadFailed(task) =>
+                  context.log.info(
+                    s"TaskUploadFailed response received. Task --> $task"
+                  )
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage =
                       Some(
@@ -226,6 +249,9 @@ object Orchestrator:
                   Behaviors.same
 
                 case ExecutionManager.TaskExecutionError(task) =>
+                  context.log.info(
+                    s"TaskExecutionError response received. Task --> $task"
+                  )
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage =
                       Some(
