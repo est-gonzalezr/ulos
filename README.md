@@ -18,10 +18,16 @@ Create a new queue called `processing-queue`.
 Create a new exchange called `processing-exchange`.
 Click in the new exchange and bind the queue with the exchange with the routing key `processing`.
 
+Create local postgres database:
+
+```zsh
+docker run -d --hostname postgres --name PostgresDb -p 5432:5432 -e POSTGRES_PASSWORD=guest postgres:latest
+```
+
 Create local ftp server container:
 
 ```zsh
-docker run -d --hostname delfer --name DelferFtpServer -e USERS="one|123" -p 21:21 -p 21000-21010:21000-21010 -e ADDRESS=localhost delfer/alpine-ftp-server:latest
+docker run -d --hostname delfer --name DelferFtpServer -p 21:21 -p 21000-21010:21000-21010 -e USERS="one|123" -e ADDRESS=localhost delfer/alpine-ftp-server:latest
 # docker run -d --rm --hostname delfer --name DelferFtpServer -p 21:21 delfer/alpine-ftp-server:latest
 ```
 
