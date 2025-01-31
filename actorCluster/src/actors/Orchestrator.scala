@@ -43,6 +43,7 @@ object Orchestrator:
     require(limit > 0, "Processor limit must be greater than 0")
   end SetProcessorLimit
   final case class ProcessTask(task: Task) extends Command
+  final case class RegisterLog(task: Task, log: String) extends Command
 
   // Internal command protocol
   final case class GeneralAcknowledgeTask(task: Task) extends Command
@@ -123,9 +124,9 @@ object Orchestrator:
                     s"ProcessTask command received. Task --> $task"
                   )
                   remoteFileManager ! RemoteFileManager.DownloadTaskFiles(task)
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task
-                      .copy(logMessage = Some("Task received for processing."))
+                  context.self ! RegisterLog(
+                    task,
+                    "Task received for processing."
                   )
 
                   val numActiveWorkers = activeWorkers + 1
@@ -139,8 +140,10 @@ object Orchestrator:
                     s"GeneralAcknowledgeTask command received. Task --> $task"
                   )
                   mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task.copy(logMessage = Some("Task ack sent to broker."))
+
+                  context.self ! RegisterLog(
+                    task,
+                    "Task ack sent to broker."
                   )
 
                   val numActiveWorkers = activeWorkers - 1
@@ -154,8 +157,10 @@ object Orchestrator:
                     s"GeneralRejectTask command received. Task --> $task"
                   )
                   mqManager ! MqManager.MqRejectTask(task.mqId)
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task.copy(logMessage = Some("Task reject sent to broker."))
+
+                  context.self ! RegisterLog(
+                    task,
+                    "Task reject sent to broker."
                   )
 
                   val numActiveWorkers = activeWorkers - 1
@@ -163,6 +168,15 @@ object Orchestrator:
                     numActiveWorkers
                   )
                   orchestrating(numActiveWorkers)
+
+                case RegisterLog(task, log) =>
+                  context.log.info(
+                    s"RegisterLog command received. Log --> $log"
+                  )
+                  apiManager ! ApiManager.ApiTaskLog(
+                    task.copy(logMessage = Some(log))
+                  )
+                  Behaviors.same
 
                 /* **********************************************************************
                  * Responses from other actors
@@ -173,11 +187,12 @@ object Orchestrator:
                     s"TaskDownloaded response received. Task --> $task."
                   )
                   executionManager ! ExecutionManager.ExecuteTask(task)
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task.copy(logMessage =
-                      Some("Task files donwloaded for processing.")
-                    )
+
+                  context.self ! RegisterLog(
+                    task,
+                    "Task files donwloaded for processing."
                   )
+
                   Behaviors.same
 
                 case ExecutionManager.TaskExecuted(task) =>
@@ -185,18 +200,17 @@ object Orchestrator:
                     s"TaskExecuted response received. Task --> $task"
                   )
                   remoteFileManager ! RemoteFileManager.UploadTaskFiles(task)
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task.copy(logMessage = Some("Task processing completed."))
-                  )
+
+                  context.self ! RegisterLog(task, "Task processing completed.")
+
                   Behaviors.same
 
                 case RemoteFileManager.TaskUploaded(task) =>
                   context.log.info(
                     s"TaskUploaded response received. Task --> $task"
                   )
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task.copy(logMessage = Some("Task files uploaded."))
-                  )
+
+                  context.self ! RegisterLog(task, "Task files uploaded.")
 
                   val taskForNextStage = task.copy(
                     containerImagesPaths = task.containerImagesPaths.tail,
@@ -210,11 +224,9 @@ object Orchestrator:
                       DefaultRoutingKey
                     )
 
-                    apiManager ! ApiManager.ApiTaskLog(
-                      task.copy(
-                        logMessage =
-                          Some("Task sent for next processing stage.")
-                      )
+                    context.self ! RegisterLog(
+                      taskForNextStage,
+                      "Task sent for next processing stage."
                     )
                   end if
 
@@ -225,13 +237,12 @@ object Orchestrator:
                   context.log.info(
                     s"TaskDownloadFailed response received. Task --> $task"
                   )
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task.copy(logMessage =
-                      Some(
-                        s"Task files download failed with message: ${task.logMessage}"
-                      )
-                    )
+
+                  context.self ! RegisterLog(
+                    task,
+                    s"Task files download failed with message: ${task.logMessage}"
                   )
+
                   context.self ! GeneralRejectTask(task)
                   Behaviors.same
 
@@ -239,13 +250,12 @@ object Orchestrator:
                   context.log.info(
                     s"TaskUploadFailed response received. Task --> $task"
                   )
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task.copy(logMessage =
-                      Some(
-                        s"Task files upload failed with message: ${task.logMessage}"
-                      )
-                    )
+
+                  context.self ! RegisterLog(
+                    task,
+                    s"Task files upload failed with message: ${task.logMessage}"
                   )
+
                   context.self ! GeneralRejectTask(task)
                   Behaviors.same
 
@@ -253,13 +263,12 @@ object Orchestrator:
                   context.log.info(
                     s"TaskExecutionError response received. Task --> $task"
                   )
-                  apiManager ! ApiManager.ApiTaskLog(
-                    task.copy(logMessage =
-                      Some(
-                        s"Task execution failed with message: ${task.logMessage}"
-                      )
-                    )
+
+                  context.self ! RegisterLog(
+                    task,
+                    s"Task execution failed with message: ${task.logMessage}"
                   )
+
                   context.self ! GeneralRejectTask(task)
                   Behaviors.same
 
