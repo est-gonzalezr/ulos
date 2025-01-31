@@ -9,7 +9,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
-import os.Path
 import types.Task
 
 import scala.util.Failure
@@ -23,7 +22,6 @@ object ExecutionWorker:
   // Public command protocol
   final case class ExecuteTask(
       task: Task,
-      path: Path,
       replyTo: ActorRef[StatusReply[Task]]
   ) extends Command
 
@@ -41,15 +39,15 @@ object ExecutionWorker:
          * Public commands
          * ********************************************************************** */
 
-        case ExecuteTask(task, path, replyTo) =>
+        case ExecuteTask(task, replyTo) =>
           context.log.info(
-            s"ExecuteTask command received. Task --> $task, Path --> $path."
+            s"ExecuteTask command received. Task --> $task."
           )
 
-          executionResult(task, path) match
+          executionResult(task) match
             case Success(executedTask) =>
               context.log.info(
-                s"Execution success. Task --> $task, Path --> $path."
+                s"Execution success. Task --> $task."
               )
               context.log.info(
                 s"Sending StatusReply.Success to ExecutionManager. Task --> $task."
@@ -58,7 +56,7 @@ object ExecutionWorker:
               replyTo ! StatusReply.Success(executedTask)
             case Failure(exception) =>
               context.log.error(
-                s"Execution failed. Task --> $task, Path --> $path. Exception thrown: ${exception.getMessage()}."
+                s"Execution failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
               )
               context.log.info(
                 s"Sending StatusReply.Error to ExecutionManager. Task --> $task."
@@ -72,7 +70,7 @@ object ExecutionWorker:
     }
   end processing
 
-  private def executionResult(task: Task, path: Path): Try[Task] =
+  private def executionResult(task: Task): Try[Task] =
     Try {
       task.processingStages.headOption match
         case Some("PARSING") =>

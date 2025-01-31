@@ -5,7 +5,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
-import os.Path
 import types.Task
 
 import scala.concurrent.duration.*
@@ -17,7 +16,7 @@ object ExecutionManager:
   sealed trait Command
 
   // Public command protocol
-  final case class ExecuteTask(task: Task, path: Path) extends Command
+  final case class ExecuteTask(task: Task) extends Command
 
   // Internal command protocol
   final case class ReportTaskExecuted(task: Task) extends Command
@@ -50,7 +49,7 @@ object ExecutionManager:
            * Public commands
            * ********************************************************************** */
 
-          case ExecuteTask(task, path) =>
+          case ExecuteTask(task) =>
             context.log.info(s"ExecuteTask command received. Task --> $task.")
 
             context.log.info(s"Spawning execution worker...")
@@ -69,7 +68,7 @@ object ExecutionManager:
               Task
             ](
               executionWorker,
-              replyTo => ExecutionWorker.ExecuteTask(task, path, replyTo)
+              replyTo => ExecutionWorker.ExecuteTask(task, replyTo)
             ) {
               case Success(task) =>
                 context.log.info(

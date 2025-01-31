@@ -168,11 +168,11 @@ object Orchestrator:
                  * Responses from other actors
                  * ********************************************************************** */
 
-                case RemoteFileManager.TaskDownloaded(task, path) =>
+                case RemoteFileManager.TaskDownloaded(task) =>
                   context.log.info(
-                    s"TaskDownloaded response received. Task --> $task, Path --> $path"
+                    s"TaskDownloaded response received. Task --> $task."
                   )
-                  executionManager ! ExecutionManager.ExecuteTask(task, path)
+                  executionManager ! ExecutionManager.ExecuteTask(task)
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage =
                       Some("Task files donwloaded for processing.")

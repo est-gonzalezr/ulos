@@ -2,7 +2,7 @@
   "taskId": "98478572",
   "taskOwnerId": "sdf-233465dshg-sdg34y",
   "taskType": "testing",
-  "filePath": "Rationality.pdf",
+  "filePath": "task.zip",
   "containerImagesPaths": [
     "cypressParsing.tar",
     "cypressExecution.tar"

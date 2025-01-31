@@ -13,6 +13,8 @@ import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
 import types.OpaqueTypes.RemoteStorageUser
+import types.Task
+import utilities.FileSystem
 
 import scala.util.Failure
 import scala.util.Success
@@ -23,20 +25,20 @@ object RemoteFileWorker:
   sealed trait Command
 
   // Public command protocol
-  final case class DownloadFile(
+  final case class DownloadFiles(
       remoteStorageHost: RemoteStorageHost,
       remoteStoragePort: RemoteStoragePort,
       remoteStorageUser: RemoteStorageUser,
       remoteStoragePass: RemoteStoragePassword,
-      path: RelPath,
-      replyTo: ActorRef[StatusReply[Path]]
+      task: Task,
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
-  final case class UploadFile(
+  final case class UploadFiles(
       remoteStorageHost: RemoteStorageHost,
       remoteStoragePort: RemoteStoragePort,
       remoteStorageUser: RemoteStorageUser,
       remoteStoragePass: RemoteStoragePassword,
-      path: RelPath,
+      task: Task,
       replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
 
@@ -49,100 +51,145 @@ object RemoteFileWorker:
          * Public commands
          * ********************************************************************** */
 
-        case DownloadFile(
+        case DownloadFiles(
               remoteStorageHost,
               remoteStoragePort,
               remoteStorageUser,
               remoteStoragePass,
-              path,
+              task,
               replyTo
             ) =>
-          context.log.info(s"DownloadFile command received. Path --> $path.")
+          context.log.info(s"DownloadFile command received. Task --> $task.")
+          val filesRelPath = task.filePath
+          val containerRelPath = task.containerImagesPaths.head
 
-          downloadFile(path) match
-            case Success(bytes) =>
-              context.log.info(s"Download success. Path --> $path.")
+          (downloadFile(filesRelPath), downloadFile(containerRelPath)) match
+            case (Success(fileBytes), Success(containerBytes)) =>
+              context.log.info(
+                s"Dual download success. FileRelPath --> $filesRelPath. ContainerRelPath --> $containerRelPath."
+              )
 
-              val localPath = os.pwd / path
-              saveFile(localPath, bytes) match
-                case Success(_) =>
-                  context.log.info(s"File save success. Path --> $localPath.")
+              (
+                FileSystem.saveFile(task.filePath, fileBytes),
+                FileSystem.saveFile(containerRelPath, containerBytes)
+              ) match
+                case (Success(_), Success(_)) =>
                   context.log.info(
-                    s"Sending StatusReply.Success to RemoteFileManager. Path --> $localPath."
+                    s"File save success. FileRelPath --> $filesRelPath."
+                  )
+                  context.log.info(
+                    s"Container save success. ContainerRelPath --> $containerRelPath."
+                  )
+                  context.log.info(
+                    s"Sending StatusReply.Ack to RemoteFileManager."
                   )
 
-                  replyTo ! StatusReply.Success(localPath)
-                case Failure(exception) =>
+                  replyTo ! StatusReply.Ack
+
+                case (Failure(exception), _) =>
                   context.log.error(
-                    s"File save failed. Path --> $localPath. Exception thrown: ${exception.getMessage()}."
+                    s"File save failed. FileRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
                   )
                   context.log.info(
                     s"Sending StatusReply.Error to RemoteFileManager."
                   )
+
+                  replyTo ! StatusReply.Error(exception)
+
+                case (_, Failure(exception)) =>
+                  context.log.error(
+                    s"Container save failed. ContainerRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
+                  )
+                  context.log.info(
+                    s"Sending StatusReply.Error to RemoteFileManager."
+                  )
+
                   replyTo ! StatusReply.Error(exception)
               end match
-            case Failure(exception) =>
+
+            case (Failure(exception), _) =>
               context.log.error(
-                s"Download failed. Path --> $path. Exception thrown: ${exception.getMessage()}."
+                s"File download failed. FileRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
               )
               context.log.info(
-                s"Sending StatusReply.Error to RemoteFileManager. Path --> $path."
+                s"Sending StatusReply.Error to RemoteFileManager."
+              )
+
+              replyTo ! StatusReply.Error(exception)
+
+            case (_, Failure(exception)) =>
+              context.log.error(
+                s"Container download failed. ContainerRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
+              )
+              context.log.info(
+                s"Sending StatusReply.Error to RemoteFileManager."
               )
 
               replyTo ! StatusReply.Error(exception)
           end match
 
-        case UploadFile(
+        case UploadFiles(
               remoteStorageHost,
               remoteStoragePort,
               remoteStorageUser,
               remoteStoragePass,
-              path,
+              task,
               replyTo
             ) =>
-          context.log.info(s"UploadFile command received. Path --> $path.")
+          context.log.info(
+            s"UploadFile command received. Task --> $task."
+          )
+          val filesRelPath = task.filePath
 
-          val localPath = os.pwd / path
-          loadFile(localPath) match
+          FileSystem.loadFile(filesRelPath) match
             case Success(bytes) =>
-              context.log.info(s"Local file load success. Path --> $localPath.")
+              context.log.info(
+                s"Local file load success. FileRelPath --> $filesRelPath."
+              )
 
-              uploadFile(path, bytes) match
+              uploadFile(filesRelPath, bytes) match
                 case Success(_) =>
-                  context.log.info(s"File upload success. Path --> $path.")
+                  context.log.info(
+                    s"File upload success. FileRelPath --> $filesRelPath."
+                  )
 
-                  deleteFile(localPath) match
+                  FileSystem.deleteFile(filesRelPath) match
                     case Success(_) =>
                       context.log.info(
-                        s"Local file delete success. Path --> $localPath."
+                        s"Local file delete success. FileRelPath --> $filesRelPath."
                       )
                     case Failure(exception) =>
                       context.log.error(
-                        s"Local file delete failed. Path --> $localPath. Exception thrown: ${exception.getMessage()}."
+                        s"Local file delete failed. FileRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
                       )
                   end match
 
                   context.log.info(
-                    s"Sending StatusReply.Ack to RemoteFileManager. Path --> $path."
+                    s"Sending StatusReply.Ack to RemoteFileManager. FileRelPath --> $filesRelPath."
                   )
+
                   replyTo ! StatusReply.Ack
+
                 case Failure(exception) =>
                   context.log.error(
-                    s"RemoteFileWorker failed to upload file: $path. Exception thrown: ${exception.getMessage()}. Notifying RemoteFileManager..."
+                    s"RemoteFileWorker failed to upload file: $filesRelPath. Exception thrown: ${exception.getMessage()}. Notifying RemoteFileManager..."
                   )
+
                   replyTo ! StatusReply.Error(exception)
+
               end match
             case Failure(exception) =>
               context.log.error(
-                s"Local file load failed. Path --> $localPath. Exception thrown: ${exception.getMessage()}."
+                s"Local file load failed. Path --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
               )
               context.log.info(
-                s"Sending StatusReply.Error to RemoteFileManager. Path --> $path."
+                s"Sending StatusReply.Error to RemoteFileManager. Path --> $filesRelPath."
               )
               replyTo ! StatusReply.Error(exception)
-          end match
 
+          end match
       end match
+
       Behaviors.stopped
     }
   end processing
@@ -184,16 +231,4 @@ object RemoteFileWorker:
     client.disconnect()
     result
   end uploadFile
-
-  def saveFile(path: Path, file: Seq[Byte]): Try[Unit] =
-    Try(os.write.over(path, file.toArray, createFolders = true))
-  end saveFile
-
-  def loadFile(path: Path): Try[Seq[Byte]] =
-    Try(os.read.bytes(path).toSeq)
-  end loadFile
-
-  def deleteFile(path: Path): Try[Unit] =
-    Try(os.remove.all(path))
-  end deleteFile
 end RemoteFileWorker

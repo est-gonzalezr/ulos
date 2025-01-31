@@ -6,7 +6,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
-import os.Path
 import os.RelPath
 import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
@@ -36,15 +35,14 @@ object RemoteFileManager:
   case object Shutdown extends Command
 
   // Internal command protocol
-  private final case class ReportTaskDownloaded(task: Task, path: Path)
-      extends Command
+  private final case class ReportTaskDownloaded(task: Task) extends Command
   private final case class ReportTaskUploaded(task: Task) extends Command
   private final case class ReportTaskDownloadFailed(task: Task) extends Command
   private final case class ReportTaskUploadFailed(task: Task) extends Command
 
   // Response protocol
   sealed trait Response
-  final case class TaskDownloaded(task: Task, path: Path) extends Response
+  final case class TaskDownloaded(task: Task) extends Response
   final case class TaskUploaded(task: Task) extends Response
   final case class TaskDownloadFailed(task: Task) extends Response
   final case class TaskUploadFailed(task: Task) extends Response
@@ -96,23 +94,23 @@ object RemoteFileManager:
             context.log.info(s"Downloader spawned.")
             context.log.info(s"Sending task to downloader. Task --> $task.")
 
-            context.askWithStatus[RemoteFileWorker.DownloadFile, Path](
+            context.askWithStatus[RemoteFileWorker.DownloadFiles, Done](
               downloader,
               replyTo =>
-                RemoteFileWorker.DownloadFile(
+                RemoteFileWorker.DownloadFiles(
                   remoteStorageHost,
                   remoteStoragePort,
                   remoteStorageUser,
                   remoteStoragePass,
-                  task.filePath,
+                  task,
                   replyTo
                 )
             ) {
-              case Success(path) =>
+              case Success(Done) =>
                 context.log.info(
-                  s"Download success response received from downloader. Task awaiting rerouting to orchestrator. Task --> $task, Path --> $path."
+                  s"Download success response received from downloader. Task awaiting rerouting to orchestrator. Task --> $task."
                 )
-                ReportTaskDownloaded(task, path)
+                ReportTaskDownloaded(task)
               case Failure(exception) =>
                 val failureMessage =
                   s"Download failure response received from downloader. Task --> $task. Exception thrown: ${exception.getMessage}. $retries retries left."
@@ -140,15 +138,15 @@ object RemoteFileManager:
             context.log.info(s"Uploader spawned.")
             context.log.info(s"Sending task to uploader. Task --> $task.")
 
-            context.askWithStatus[RemoteFileWorker.UploadFile, Done](
+            context.askWithStatus[RemoteFileWorker.UploadFiles, Done](
               uploader,
               replyTo =>
-                RemoteFileWorker.UploadFile(
+                RemoteFileWorker.UploadFiles(
                   remoteStorageHost,
                   remoteStoragePort,
                   remoteStorageUser,
                   remoteStoragePass,
-                  task.filePath,
+                  task,
                   replyTo
                 )
             ) {
@@ -177,14 +175,14 @@ object RemoteFileManager:
            * Internal commands
            * ********************************************************************** */
 
-          case ReportTaskDownloaded(task, path) =>
+          case ReportTaskDownloaded(task) =>
             context.log.info(
-              s"ReportTaskDownloaded command received. Task --> $task, Path --> $path."
+              s"ReportTaskDownloaded command received. Task --> $task."
             )
             context.log.info(
-              s"Sending TaskDownloaded to orchestrator. Task --> $task, Path --> $path."
+              s"Sending TaskDownloaded to orchestrator. Task --> $task."
             )
-            replyTo ! TaskDownloaded(task, path)
+            replyTo ! TaskDownloaded(task)
             Behaviors.same
 
           case ReportTaskUploaded(task) =>

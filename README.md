@@ -34,7 +34,9 @@ docker run -d --hostname delfer --name DelferFtpServer -p 21:21 -p 21000-21010:2
 From an FTP client connect to the server.
 Enter with localhost: `localhost`, username: `one`, password: `123`, and port: `21`.
 
-Upload any file to the server with name `Rationality.pdf`.
+Upload any file to the server with name `task.zip`.
+Upload any file to the server with name `cypressParsing.tar`.
+Upload any file to the server with name `cypressExecution.tar`.
 
 In ULOS root folder run:
 
