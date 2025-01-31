@@ -1,0 +1,15 @@
+<configuration>
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %gray(%d{yyyy-MM-dd HH:mm:ss}) %highlight(%-5level) %magenta(%-36logger{36}) - %cyan(%msg) %n
+                <!-- %highlight(%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg) %n -->
+            </pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <root level="TRACE">
+        <appender-ref ref="Console"/>
+    </root>
+</configuration>

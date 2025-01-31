@@ -34,6 +34,7 @@ object SystemMonitor:
   ): Behavior[Command] =
     Behaviors.setup { context =>
       context.log.info("System monitor started...")
+
       val _ = context.scheduleOnce(1.second, context.self, Monitor)
 
       def monitorResources(
