@@ -61,12 +61,14 @@ object SystemMonitor:
               val _ = context.scheduleOnce(5.second, context.self, Monitor)
 
               if cpuUsage > 90 || ramUsage > 90 then
-                context.log.info("Decrementing maxProcessors")
                 val newProcessorQuantity = maxProcessors - 1
 
                 if newProcessorQuantity > 0 then
+                  context.log.info("Decrementing maxProcessors")
                   replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
-                else replyTo ! Orchestrator.Shutdown
+                else
+                  context.log.info("No processors available. Shutting down.")
+                  replyTo ! Orchestrator.Shutdown
                 end if
                 monitorResources(newProcessorQuantity, activeProcessors)
               else if cpuUsage < 50 && activeProcessors == maxProcessors then
