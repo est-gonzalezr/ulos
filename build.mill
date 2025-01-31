@@ -13,6 +13,7 @@ val munit = ivy"org.scalameta::munit::1.0.1"
 val scalaYaml = ivy"org.virtuslab::scala-yaml::0.3.0"
 val amqpClient = ivy"com.rabbitmq:amqp-client:5.21.0"
 val apacheCommonsNet = ivy"commons-net:commons-net:3.10.0"
+val pekko = ivy"org.apache.pekko::pekko-actor-typed::1.1.3"
 val akka = ivy"com.typesafe.akka::akka-actor-typed::$AkkaVersion"
 val akkaTestKit = ivy"com.typesafe.akka::akka-actor-testkit-typed::$AkkaVersion"
 val logback = ivy"ch.qos.logback:logback-classic::1.5.8"
@@ -48,6 +49,7 @@ trait ProjectConfigs extends ScalaModule {
 object actorCluster extends ProjectConfigs {
   // def moduleDeps = Seq(coreUtils, storageUtils)
   def ivyDeps = Agg(
+    pekko,
     amqpClient,
     akka,
     akkaTestKit,
