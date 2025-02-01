@@ -4,8 +4,8 @@
   "taskType": "testing",
   "filePath": "task.zip",
   "containerImagesPaths": [
-    "cypressParsing.tar",
-    "cypressExecution.tar"
+    "cypressParsing.tar.gz",
+    "cypressExecution.tar.gz"
   ],
   "processingStages": [
     "PARSING",
