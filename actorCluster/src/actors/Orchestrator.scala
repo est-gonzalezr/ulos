@@ -48,7 +48,8 @@ object Orchestrator:
   // Internal command protocol
   final case class GeneralAcknowledgeTask(task: Task) extends Command
   final case class GeneralRejectTask(task: Task) extends Command
-  case object Shutdown extends Command
+  final case class GracefulShutdown(reason: String) extends Command
+  final case class Fail(reason: String) extends Command
 
   private type CommandOrResponse = Command | ExecutionManager.Response |
     RemoteFileManager.Response // | MqManager.Response
@@ -272,13 +273,17 @@ object Orchestrator:
                   context.self ! GeneralRejectTask(task)
                   Behaviors.same
 
-                case Shutdown =>
-                  context.log.info("Shutdown command received.")
-                  mqManager ! MqManager.Shutdown
-                  executionManager ! ExecutionManager.Shutdown
-                  remoteFileManager ! RemoteFileManager.Shutdown
-                  apiManager ! ApiManager.Shutdown
-                  systemMonitor ! SystemMonitor.Shutdown
+                case GracefulShutdown(reason) =>
+                  context.log.info(
+                    s"GracefulShutdown command received. Reason --> $reason"
+                  )
+                  mqManager ! MqManager.GracefulShutdown
+                  Behaviors.stopped
+
+                case Fail(reason) =>
+                  context.log.error(
+                    s"Fail command received. Reason --> $reason"
+                  )
                   Behaviors.stopped
             }
         end orchestrating

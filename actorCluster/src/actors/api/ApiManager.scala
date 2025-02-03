@@ -24,7 +24,6 @@ object ApiManager:
   // Public command protocol
   final case class ApiTaskLog(task: Task, retries: Int = DefaultApiRetires)
       extends Command
-  case object Shutdown extends Command
 
   // Internal command protocol
   private case object NoOp extends Command
@@ -76,9 +75,6 @@ object ApiManager:
         case NoOp =>
           Behaviors.same
 
-        case Shutdown =>
-          context.log.info("Shutdown command received.")
-          Behaviors.stopped
       end match
 
     }

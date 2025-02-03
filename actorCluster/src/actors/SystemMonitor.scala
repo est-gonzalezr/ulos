@@ -16,7 +16,6 @@ object SystemMonitor:
   sealed trait Command
   final case class NotifyActiveProcessors(activeProcessors: Int) extends Command
   case object Monitor extends Command
-  case object Shutdown extends Command
 
   sealed trait Response
   case object IncrementProcessors
@@ -68,8 +67,12 @@ object SystemMonitor:
                   context.log.info("Decrementing maxProcessors")
                   replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
                 else
-                  context.log.info("No processors available. Shutting down.")
-                  replyTo ! Orchestrator.Shutdown
+                  context.log.info(
+                    "No processors available. Recommending shutdown."
+                  )
+                  replyTo ! Orchestrator.GracefulShutdown(
+                    "Processing power exhausted."
+                  )
                 end if
                 monitorResources(newProcessorQuantity, activeProcessors)
               else if cpuUsage < 50 && activeProcessors == maxProcessors then
@@ -79,10 +82,6 @@ object SystemMonitor:
                 monitorResources(newProcessorQuantity, activeProcessors)
               else monitorResources(maxProcessors, activeProcessors)
               end if
-
-            case Shutdown =>
-              context.log.info("Shutdown command received.")
-              Behaviors.stopped
         }
 
       monitorResources(maxProcessors, 0)

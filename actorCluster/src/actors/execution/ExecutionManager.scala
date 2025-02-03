@@ -21,7 +21,6 @@ object ExecutionManager:
   // Internal command protocol
   final case class ReportTaskExecuted(task: Task) extends Command
   final case class ReportTaskFailed(task: Task) extends Command
-  case object Shutdown extends Command
 
   // Response protocol
   sealed trait Response
@@ -110,14 +109,6 @@ object ExecutionManager:
             )
             replyTo ! TaskExecutionError(task)
             Behaviors.same
-
-          /* **********************************************************************
-           * Shutdown command
-           * ********************************************************************** */
-
-          case Shutdown =>
-            context.log.info("Shutdown command received.")
-            Behaviors.stopped
       }
     }
   end setup

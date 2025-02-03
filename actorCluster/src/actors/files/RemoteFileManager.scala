@@ -32,7 +32,6 @@ object RemoteFileManager:
       task: Task,
       retries: Int = DefaultRemoteOpsRetries
   ) extends Command
-  case object Shutdown extends Command
 
   // Internal command protocol
   private final case class ReportTaskDownloaded(task: Task) extends Command
@@ -214,14 +213,6 @@ object RemoteFileManager:
             )
             replyTo ! TaskUploadFailed(task)
             Behaviors.same
-
-          /* **********************************************************************
-           * Shutdown command
-           * ********************************************************************** */
-
-          case Shutdown =>
-            context.log.info("Shutdown command received.")
-            Behaviors.stopped
       }
     }
   end setup

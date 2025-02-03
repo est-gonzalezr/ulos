@@ -54,7 +54,7 @@ object MqManager:
       retries: Int = DefaultMqRetries
   ) extends Command
   final case class MqSetQosPrefetchCount(prefetchCount: Int) extends Command
-  case object Shutdown extends Command
+  case object GracefulShutdown extends Command
 
   // Internal command protocol
   private final case class DeliverToOrchestrator(task: Task) extends Command
@@ -377,9 +377,9 @@ object MqManager:
                * Shutdown command
                * ********************************************************************** */
 
-              case Shutdown =>
+              case GracefulShutdown =>
                 context.log.info(
-                  s"Shutdown command received. Closing channel and connection to broker."
+                  s"GracefulShutdown command received. Closing channel and connection to broker."
                 )
                 channel.close()
                 connection.close()
@@ -398,8 +398,9 @@ object MqManager:
               s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
           )
 
-          replyTo ! Orchestrator.Shutdown
-
+          replyTo ! Orchestrator.Fail(
+            "Connection to broker failed. CONTACT SYSTEM ADMINISTRATOR!!!."
+          )
           Behaviors.stopped
       end match
     }
