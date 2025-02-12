@@ -72,8 +72,6 @@ object DockerUtil:
 
         override def onNext(response: WaitResponse): Unit =
           exitCode = response.getStatusCode
-
-        def getExitCode: Int = exitCode
       }
 
       dockerClient.waitContainerCmd(container.getId).exec(waitCallback)
