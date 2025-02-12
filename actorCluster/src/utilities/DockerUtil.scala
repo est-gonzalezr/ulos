@@ -81,6 +81,5 @@ object DockerUtil:
       (container.getId, exitCode, logBuffer.mkString("\n"))
     finally logStream.close() // Ensure log stream is closed properly
     end try
-    // ("", -1, "")
   end runContainer
 end DockerUtil
