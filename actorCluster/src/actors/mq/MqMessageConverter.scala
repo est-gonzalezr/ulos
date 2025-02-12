@@ -50,35 +50,35 @@ object MqMessageConverter:
         /* ------------------------------- SerializeMessage ------------------------------- */
 
         case SerializeMessage(task, replyTo) =>
-          context.log.info(
-            s"SerializeMessage command received. Task --> $task."
-          )
-          context.log.info(
-            s"Sending StatusReply.Success to MqManager. Task --> $task."
-          )
+          // context.log.info(
+          //   s"SerializeMessage command received. Task --> $task."
+          // )
+          // context.log.info(
+          //   s"Sending StatusReply.Success to MqManager. Task --> $task."
+          // )
           replyTo ! StatusReply.Success(taskAsBytes(task))
 
         /* ------------------------------- DeserializeMessage ------------------------------- */
 
         case DeserializeMessage(mqMessage, replyTo) =>
-          context.log.info(
-            s"DeserializeMessage command received. MqMessage --> $mqMessage."
-          )
+          // context.log.info(
+          //   s"DeserializeMessage command received. MqMessage --> $mqMessage."
+          // )
 
           mqMessageAsTask(mqMessage) match
             case Right(task) =>
-              context.log.info(s"Deserialization success. Task --> $task.")
-              context.log.info(
-                s"Sending StatusReply.Success to MqManager. Task --> $task."
-              )
+              // context.log.info(s"Deserialization success. Task --> $task.")
+              // context.log.info(
+              //   s"Sending StatusReply.Success to MqManager. Task --> $task."
+              // )
               replyTo ! StatusReply.Success(task)
             case Left(error) =>
-              context.log.error(
-                s"Deserialization failed. MqMessage --> $mqMessage. Exception thrown: $error."
-              )
-              context.log.info(
-                s"Sending StatusReply.Error to MqManager. MqMessage --> $mqMessage."
-              )
+              // context.log.error(
+              //   s"Deserialization failed. MqMessage --> $mqMessage. Exception thrown: $error."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Error to MqManager. MqMessage --> $mqMessage."
+              // )
               replyTo ! StatusReply.Error(
                 Exception(s"Deserialization failed: $error")
               )

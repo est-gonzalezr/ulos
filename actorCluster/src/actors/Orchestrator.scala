@@ -138,7 +138,7 @@ object Orchestrator:
 
                 case GeneralAcknowledgeTask(task) =>
                   context.log.info(
-                    s"GeneralAcknowledgeTask command received. Task --> $task"
+                    s"GeneralAcknowledgeTask command received. TaskId --> ${task.mqId}."
                   )
                   mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
 
@@ -155,7 +155,7 @@ object Orchestrator:
 
                 case GeneralRejectTask(task) =>
                   context.log.info(
-                    s"GeneralRejectTask command received. Task --> $task"
+                    s"GeneralRejectTask command received. TaskId --> ${task.mqId}."
                   )
                   mqManager ! MqManager.MqRejectTask(task.mqId)
 
@@ -172,7 +172,7 @@ object Orchestrator:
 
                 case RegisterLog(task, log) =>
                   context.log.info(
-                    s"RegisterLog command received. Log --> $log"
+                    s"RegisterLog command received. Log --> $log."
                   )
                   apiManager ! ApiManager.ApiTaskLog(
                     task.copy(logMessage = Some(log))
@@ -185,7 +185,7 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskDownloaded(task) =>
                   context.log.info(
-                    s"TaskDownloaded response received. Task --> $task."
+                    s"TaskDownloaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}."
                   )
                   executionManager ! ExecutionManager.ExecuteTask(task)
 
@@ -198,7 +198,7 @@ object Orchestrator:
 
                 case ExecutionManager.TaskExecuted(task) =>
                   context.log.info(
-                    s"TaskExecuted response received. Task --> $task"
+                    s"TaskExecuted response received. TaskId --> ${task.taskId}, TaskDefintion --> ${task.taskDefinition}"
                   )
                   remoteFileManager ! RemoteFileManager.UploadTaskFiles(task)
 
@@ -208,17 +208,16 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskUploaded(task) =>
                   context.log.info(
-                    s"TaskUploaded response received. Task --> $task"
+                    s"TaskUploaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}."
                   )
 
                   context.self ! RegisterLog(task, "Task files uploaded.")
 
                   val taskForNextStage = task.copy(
-                    containerImagesPaths = task.containerImagesPaths.tail,
-                    processingStages = task.processingStages.tail
+                    stages = task.stages.tail
                   )
 
-                  if !taskForNextStage.processingStages.isEmpty then
+                  if !taskForNextStage.stages.isEmpty then
                     mqManager ! MqManager.MqSendMessage(
                       taskForNextStage,
                       DefaultExchange,
@@ -236,7 +235,7 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskDownloadFailed(task) =>
                   context.log.info(
-                    s"TaskDownloadFailed response received. Task --> $task"
+                    s"TaskDownloadFailed response received. TaskId --> ${task.taskId}."
                   )
 
                   context.self ! RegisterLog(
@@ -249,7 +248,7 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskUploadFailed(task) =>
                   context.log.info(
-                    s"TaskUploadFailed response received. Task --> $task"
+                    s"TaskUploadFailed response received. TaskId --> ${task.taskId}, Files --> ${task.filePath.toString}."
                   )
 
                   context.self ! RegisterLog(
@@ -262,7 +261,7 @@ object Orchestrator:
 
                 case ExecutionManager.TaskExecutionError(task) =>
                   context.log.info(
-                    s"TaskExecutionError response received. Task --> $task"
+                    s"TaskExecutionError response received. TaskId --> ${task.taskId}."
                   )
 
                   context.self ! RegisterLog(

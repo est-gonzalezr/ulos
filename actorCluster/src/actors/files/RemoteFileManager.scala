@@ -1,5 +1,9 @@
 package actors.files
 
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -46,7 +50,7 @@ object RemoteFileManager:
   final case class TaskDownloadFailed(task: Task) extends Response
   final case class TaskUploadFailed(task: Task) extends Response
 
-  implicit val timeout: Timeout = 10.seconds
+  implicit val timeout: Timeout = 20.seconds
 
   def apply(
       remoteStorageHost: RemoteStorageHost,

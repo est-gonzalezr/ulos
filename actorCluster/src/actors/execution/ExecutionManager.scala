@@ -1,5 +1,9 @@
 package actors.execution
 
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
@@ -27,7 +31,7 @@ object ExecutionManager:
   final case class TaskExecuted(task: Task) extends Response
   final case class TaskExecutionError(task: Task) extends Response
 
-  implicit val timeout: Timeout = 10.seconds
+  implicit val timeout: Timeout = 300.seconds
 
   def apply(
       replyTo: ActorRef[Response]

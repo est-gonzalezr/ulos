@@ -1,21 +1,26 @@
 package actors.files
 
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
+
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
+import org.apache.commons.net.PrintCommandListener
 import org.apache.commons.net.ftp.FTP
 import org.apache.commons.net.ftp.FTPClient
 import os.Path
-import os.RelPath
 import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
 import types.OpaqueTypes.RemoteStorageUser
 import types.Task
-import utilities.FileSystem
+import utilities.FileSystemUtil
 
+import java.io.PrintWriter
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -59,71 +64,71 @@ object RemoteFileWorker:
               task,
               replyTo
             ) =>
-          context.log.info(s"DownloadFile command received. Task --> $task.")
-          val filesRelPath = task.filePath
-          val containerRelPath = task.containerImagesPaths.head
+          // context.log.info(s"DownloadFile command received. Task --> $task.")
+          val filesPath = task.filePath
+          val containerPath = task.stages.head(1)
 
-          (downloadFile(filesRelPath), downloadFile(containerRelPath)) match
+          (downloadFile(filesPath), downloadFile(containerPath)) match
             case (Success(fileBytes), Success(containerBytes)) =>
-              context.log.info(
-                s"Dual download success. FileRelPath --> $filesRelPath. ContainerRelPath --> $containerRelPath."
-              )
+              // context.log.info(
+              //   s"Dual download success. FilePath --> $filesPath. ContainerPath --> $containerPath."
+              // )
 
               (
-                FileSystem.saveFile(task.filePath, fileBytes),
-                FileSystem.saveFile(containerRelPath, containerBytes)
+                FileSystemUtil.saveFile(filesPath, fileBytes),
+                FileSystemUtil.saveFile(containerPath, containerBytes)
               ) match
                 case (Success(_), Success(_)) =>
-                  context.log.info(
-                    s"File save success. FileRelPath --> $filesRelPath."
-                  )
-                  context.log.info(
-                    s"Container save success. ContainerRelPath --> $containerRelPath."
-                  )
-                  context.log.info(
-                    s"Sending StatusReply.Ack to RemoteFileManager."
-                  )
+                  // context.log.info(
+                  //   s"File save success. FilePath --> $filesPath."
+                  // )
+                  // context.log.info(
+                  //   s"Container save success. ContainerPath --> $containerPath."
+                  // )
+                  // context.log.info(
+                  //   s"Sending StatusReply.Ack to RemoteFileManager."
+                  // )
 
                   replyTo ! StatusReply.Ack
 
                 case (Failure(exception), _) =>
-                  context.log.error(
-                    s"File save failed. FileRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
-                  )
-                  context.log.info(
-                    s"Sending StatusReply.Error to RemoteFileManager."
-                  )
+                  // context.log.error(
+                  //   s"File save failed. FilePath --> $filesPath. Exception thrown: ${exception.getMessage()}."
+                  // )
+                  // context.log.info(
+                  //   s"Sending StatusReply.Error to RemoteFileManager."
+                  // )
 
                   replyTo ! StatusReply.Error(exception)
 
                 case (_, Failure(exception)) =>
-                  context.log.error(
-                    s"Container save failed. ContainerRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
-                  )
-                  context.log.info(
-                    s"Sending StatusReply.Error to RemoteFileManager."
-                  )
+                  // context.log.error(
+                  //   s"Container save failed. ContainerPath --> $filesPath. Exception thrown: ${exception.getMessage()}."
+                  // )
+                  // context.log.info(
+                  //   s"Sending StatusReply.Error to RemoteFileManager."
+                  // )
 
                   replyTo ! StatusReply.Error(exception)
               end match
 
             case (Failure(exception), _) =>
-              context.log.error(
-                s"File download failed. FileRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
-              )
-              context.log.info(
-                s"Sending StatusReply.Error to RemoteFileManager."
-              )
+              // context.log.error(
+              //   s"File download failed. FilePath --> $filesPath. Exception thrown: ${exception.getMessage()}."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Error to RemoteFileManager."
+              // )
 
               replyTo ! StatusReply.Error(exception)
 
             case (_, Failure(exception)) =>
-              context.log.error(
-                s"Container download failed. ContainerRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
-              )
-              context.log.info(
-                s"Sending StatusReply.Error to RemoteFileManager."
-              )
+              // context.log.error(
+              //   s"Container download failed. ContainerPath --> $filesPath. Exception thrown: ${exception.getMessage()}."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Error to RemoteFileManager."
+              // )
 
               replyTo ! StatusReply.Error(exception)
           end match
@@ -139,52 +144,52 @@ object RemoteFileWorker:
           context.log.info(
             s"UploadFile command received. Task --> $task."
           )
-          val filesRelPath = task.filePath
+          val filesPath = task.filePath
 
-          FileSystem.loadFile(filesRelPath) match
+          FileSystemUtil.loadFile(filesPath) match
             case Success(bytes) =>
-              context.log.info(
-                s"Local file load success. FileRelPath --> $filesRelPath."
-              )
+              // context.log.info(
+              //   s"Local file load success. FilePath --> $filesPath."
+              // )
 
-              uploadFile(filesRelPath, bytes) match
+              uploadFile(filesPath, bytes) match
                 case Success(_) =>
-                  context.log.info(
-                    s"File upload success. FileRelPath --> $filesRelPath."
-                  )
+                  // context.log.info(
+                  //   s"File upload success. FilePath --> $filesPath."
+                  // )
 
-                  FileSystem.deleteFile(filesRelPath) match
+                  FileSystemUtil.deleteFile(filesPath) match
                     case Success(_) =>
-                      context.log.info(
-                        s"Local file delete success. FileRelPath --> $filesRelPath."
-                      )
+                    // context.log.info(
+                    //   s"Local file delete success. FilePath --> $filesPath."
+                    // )
                     case Failure(exception) =>
-                      context.log.error(
-                        s"Local file delete failed. FileRelPath --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
-                      )
+                    // context.log.error(
+                    //   s"Local file delete failed. FilePath --> $filesPath. Exception thrown: ${exception.getMessage()}."
+                    // )
                   end match
 
                   context.log.info(
-                    s"Sending StatusReply.Ack to RemoteFileManager. FileRelPath --> $filesRelPath."
+                    s"Sending StatusReply.Ack to RemoteFileManager. FilePath --> $filesPath."
                   )
 
                   replyTo ! StatusReply.Ack
 
                 case Failure(exception) =>
-                  context.log.error(
-                    s"RemoteFileWorker failed to upload file: $filesRelPath. Exception thrown: ${exception.getMessage()}. Notifying RemoteFileManager..."
-                  )
+                  // context.log.error(
+                  //   s"RemoteFileWorker failed to upload file: $filesPath. Exception thrown: ${exception.getMessage()}. Notifying RemoteFileManager..."
+                  // )
 
                   replyTo ! StatusReply.Error(exception)
 
               end match
             case Failure(exception) =>
-              context.log.error(
-                s"Local file load failed. Path --> $filesRelPath. Exception thrown: ${exception.getMessage()}."
-              )
-              context.log.info(
-                s"Sending StatusReply.Error to RemoteFileManager. Path --> $filesRelPath."
-              )
+              // context.log.error(
+              //   s"Local file load failed. Path --> $filesPath. Exception thrown: ${exception.getMessage()}."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Error to RemoteFileManager. Path --> $filesPath."
+              // )
               replyTo ! StatusReply.Error(exception)
 
           end match
@@ -194,8 +199,11 @@ object RemoteFileWorker:
     }
   end processing
 
-  def downloadFile(path: RelPath): Try[Seq[Byte]] =
+  def downloadFile(path: Path): Try[Seq[Byte]] =
     val client = FTPClient()
+    // client.addProtocolCommandListener(
+    //   PrintCommandListener(PrintWriter(System.out), true)
+    // )
     val bytes = Try {
       client.connect("localhost", 21)
       client.login("one", "123")
@@ -214,7 +222,7 @@ object RemoteFileWorker:
 
   end downloadFile
 
-  def uploadFile(path: RelPath, file: Seq[Byte]): Try[Boolean] =
+  def uploadFile(path: Path, file: Seq[Byte]): Try[Boolean] =
     val client = FTPClient()
     val result = Try {
       client.connect("localhost", 21)

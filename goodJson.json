@@ -1,14 +1,16 @@
 {
   "taskId": "98478572",
-  "taskOwnerId": "sdf-233465dshg-sdg34y",
-  "taskType": "testing",
-  "filePath": "task.zip",
-  "containerImagesPaths": [
-    "cypressParsing.tar.gz",
-    "cypressExecution.tar.gz"
-  ],
-  "processingStages": [
-    "PARSING",
-    "EXECUTION"
+  "taskOwnerId": "24",
+  "taskDefinition": "testing",
+  "filePath": "/ftp/one/task.zip",
+  "stages": [
+    [
+      "PARSING",
+      "/ftp/one/cypressParsing.tar.gz"
+    ],
+    [
+      "EXECUTION",
+      "/ftp/one/cypressExecution.tar.gz"
+    ]
   ]
 }

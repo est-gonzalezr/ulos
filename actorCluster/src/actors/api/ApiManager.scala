@@ -68,7 +68,6 @@ object ApiManager:
                 context.log.error(s"$failureMessage Retries exhausted.")
                 NoOp
               end if
-
           }
           Behaviors.same
 

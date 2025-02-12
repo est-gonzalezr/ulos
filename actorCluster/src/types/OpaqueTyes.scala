@@ -1,8 +1,8 @@
+package types
+
 /** @author
   *   Esteban Gonzalez Ruales
   */
-
-package types
 
 /** Provides the opaque types for the messaging system elements. This is a way
   * to provide a type-safe way to handle the different elements of the messaging

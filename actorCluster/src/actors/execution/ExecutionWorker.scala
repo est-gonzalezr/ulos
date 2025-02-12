@@ -1,8 +1,8 @@
+package actors.execution
+
 /** @author
   *   Esteban Gonzalez Ruales
   */
-
-package actors.execution
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -10,6 +10,7 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
 import types.Task
+import utilities.DockerUtil
 
 import scala.util.Failure
 import scala.util.Success
@@ -40,27 +41,27 @@ object ExecutionWorker:
          * ********************************************************************** */
 
         case ExecuteTask(task, replyTo) =>
-          context.log.info(
-            s"ExecuteTask command received. Task --> $task."
-          )
+          // context.log.info(
+          //   s"ExecuteTask command received. Task --> $task."
+          // )
 
           executionResult(task) match
             case Success(executedTask) =>
-              context.log.info(
-                s"Execution success. Task --> $task."
-              )
-              context.log.info(
-                s"Sending StatusReply.Success to ExecutionManager. Task --> $task."
-              )
+              // context.log.info(
+              //   s"Execution success. Task --> $task."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Success to ExecutionManager. Task --> $task."
+              // )
 
               replyTo ! StatusReply.Success(executedTask)
             case Failure(exception) =>
-              context.log.error(
-                s"Execution failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
-              )
-              context.log.info(
-                s"Sending StatusReply.Error to ExecutionManager. Task --> $task."
-              )
+              // context.log.error(
+              //   s"Execution failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Error to ExecutionManager. Task --> $task."
+              // )
 
               replyTo ! StatusReply.Error(exception)
           end match
@@ -72,9 +73,11 @@ object ExecutionWorker:
 
   private def executionResult(task: Task): Try[Task] =
     Try {
-      val endTime = System.currentTimeMillis() + 7000
-      while System.currentTimeMillis() < endTime do ()
-      end while
+      val _ = DockerUtil.runContainer(
+        "cypress/included",
+        Seq("run", "-b", "electron")
+      )
+
       task
     }
   end executionResult

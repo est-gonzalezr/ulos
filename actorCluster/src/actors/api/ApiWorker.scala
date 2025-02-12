@@ -38,22 +38,22 @@ object ApiWorker:
 
         case ApiTaskLog(task, replyTo) =>
           // Send the task to the orchestrator
-          context.log.info(s"ApiTaskLog command received. Task --> $task.")
+          // context.log.info(s"ApiTaskLog command received. Task --> $task.")
 
           updateInApi(task) match
             case Success(updatedTask) =>
-              context.log.info(s"Api request success. Task --> $task.")
-              context.log.info(
-                s"Sending StatusReply.Ack to ApiManager. Task --> $task."
-              )
+              // context.log.info(s"Api request success. Task --> $task.")
+              // context.log.info(
+              //   s"Sending StatusReply.Ack to ApiManager. Task --> $task."
+              // )
               replyTo ! StatusReply.Ack
             case Failure(exception) =>
-              context.log.error(
-                s"Api request failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
-              )
-              context.log.error(
-                s"Sending StatusReply.Error to ApiManager. Task --> $task."
-              )
+              // context.log.error(
+              //   s"Api request failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
+              // )
+              // context.log.error(
+              //   s"Sending StatusReply.Error to ApiManager. Task --> $task."
+              // )
 
               replyTo ! StatusReply.Error(exception)
           end match

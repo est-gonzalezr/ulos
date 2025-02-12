@@ -68,21 +68,21 @@ object MqCommunicator:
             bytes
           ) match
             case Success(_) =>
-              context.log.info(
-                s"Send message success response received from MQ. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
-              )
-              context.log.info(
-                s"Sending StatusReply.Ack to MqManager. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
-              )
+              // context.log.info(
+              //   s"Send message success response received from MQ. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Ack to MqManager. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
+              // )
               replyTo ! StatusReply.Ack
 
             case Failure(exception) =>
-              context.log.error(
-                s"Send message failure response received from MQ. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey. Exception thrown: ${exception.getMessage}."
-              )
-              context.log.info(
-                s"Sending StatusReply.Error to MqManager. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
-              )
+              // context.log.error(
+              //   s"Send message failure response received from MQ. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey. Exception thrown: ${exception.getMessage}."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Error to MqManager. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
+              // )
               replyTo ! StatusReply.Error(exception)
           end match
 
@@ -91,20 +91,20 @@ object MqCommunicator:
 
           sendAck(channel, mqMessageId) match
             case Success(_) =>
-              context.log.info(
-                s"Ack success reponse received from MQ. MqId: $mqMessageId."
-              )
-              context.log.info(
-                s"Sending StatusReply.Ack to MqManager. MqId: $mqMessageId."
-              )
+              // context.log.info(
+              //   s"Ack success reponse received from MQ. MqId: $mqMessageId."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Ack to MqManager. MqId: $mqMessageId."
+              // )
               replyTo ! StatusReply.Ack
             case Failure(exception) =>
-              context.log.error(
-                s"Ack failure response received from MQ. MqId: $mqMessageId. Exception thrown: ${exception.getMessage}."
-              )
-              context.log.info(
-                s"Sending StatusReply.Error to MqManager. MqId: $mqMessageId."
-              )
+              // context.log.error(
+              //   s"Ack failure response received from MQ. MqId: $mqMessageId. Exception thrown: ${exception.getMessage}."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Error to MqManager. MqId: $mqMessageId."
+              // )
               replyTo ! StatusReply.Error(exception)
           end match
 
@@ -113,20 +113,20 @@ object MqCommunicator:
 
           sendReject(channel, mqMessageId) match
             case Success(_) =>
-              context.log.info(
-                s"Reject success response received from MQ. MqId: $mqMessageId."
-              )
-              context.log.info(
-                s"Sending StatusReply.Ack to MqManager. MqId: $mqMessageId."
-              )
+              // context.log.info(
+              //   s"Reject success response received from MQ. MqId: $mqMessageId."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Ack to MqManager. MqId: $mqMessageId."
+              // )
               replyTo ! StatusReply.Ack
             case Failure(exception) =>
-              context.log.error(
-                s"Reject failure response received from MQ. MqId: $mqMessageId. Exception thrown: ${exception.getMessage}."
-              )
-              context.log.info(
-                s"Sending StatusReply.Error to MqManager. MqId: $mqMessageId."
-              )
+              // context.log.error(
+              //   s"Reject failure response received from MQ. MqId: $mqMessageId. Exception thrown: ${exception.getMessage}."
+              // )
+              // context.log.info(
+              //   s"Sending StatusReply.Error to MqManager. MqId: $mqMessageId."
+              // )
               replyTo ! StatusReply.Error(exception)
           end match
       end match
