@@ -48,7 +48,7 @@ trait ProjectConfigs extends ScalaModule {
   }
 }
 
-object actorCluster extends ProjectConfigs {
+object cluster extends ProjectConfigs {
   // def moduleDeps = Seq(coreUtils, storageUtils)
   def ivyDeps = Agg(
     pekko,

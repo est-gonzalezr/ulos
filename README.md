@@ -41,7 +41,7 @@ Upload any file to the server with name `cypressExecution.tar`.
 In ULOS root folder run:
 
 ```zsh
-mill actorCluster.run
+mill cluster.run
 # mill -w brokerManagement.run
 ```
 
