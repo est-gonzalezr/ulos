@@ -44,7 +44,7 @@ object FileSystemUtil:
     }
   end deleteFile
 
-  private def localPath(path: Path): Path =
+  def localPath(path: Path): Path =
     val rel = path.relativeTo(os.root)
     os.pwd / rel
   end localPath

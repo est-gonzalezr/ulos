@@ -16,13 +16,27 @@ import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientBuilder
 
 import scala.collection.mutable.ListBuffer
+import os.Path
 
 object DockerUtil:
   // val config = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
   val dockerClient = DockerClientBuilder.getInstance().build()
 
-  def runContainer(image: String, cmd: Seq[String]): (String, Int, String) =
-    val containerFolder = "/cypress_testing"
+  def filteredCommand(cmd: String): Seq[String] =
+    cmd
+      .split(" ")
+      .toSeq
+      .filter(_ != "-it")
+      .filter(_ != "-d")
+
+  def runContainer(
+      bindFileLocalPath: Path,
+      image: String,
+      cmd: String
+  ): (String, Int, String) =
+    val workingDir = "/temp"
+    val cmdSeq = filteredCommand(cmd)
+
     dockerClient
       .listContainersCmd()
       .withShowAll(true)
@@ -31,15 +45,15 @@ object DockerUtil:
       .forEach(container => println(container.getId))
 
     val container = dockerClient
-      .createContainerCmd("cypress/included")
-      .withCmd("run", "-b", "electron")
-      .withWorkingDir("/cypress")
+      .createContainerCmd(image)
+      .withCmd(cmdSeq*)
+      .withWorkingDir(workingDir)
       // .withName("cypress_container")
       .withHostConfig(
         HostConfig()
           .withBinds(
             Bind.parse(
-              "/Users/estebangonzalezruales/Downloads/ulos/cypress:/cypress"
+              s"${bindFileLocalPath.toString}:$workingDir"
             )
           )
           .withAutoRemove(true)
@@ -54,7 +68,7 @@ object DockerUtil:
       override def onNext(frame: Frame): Unit =
         val logLine = new String(frame.getPayload)
         logBuffer += logLine
-        println(logLine) // Print logs in real-time
+        // println(logLine) // Print logs in real-time
       end onNext
     }
 

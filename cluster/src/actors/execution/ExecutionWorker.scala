@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
 import types.Task
 import utilities.DockerUtil
+import utilities.FileSystemUtil
 
 import scala.util.Failure
 import scala.util.Success
@@ -72,18 +73,23 @@ object ExecutionWorker:
   end processing
 
   private def executionResult(task: Task): Try[Task] =
-    // Try {
-    //   val _ = DockerUtil.runContainer(
-    //     "cypress/included",
-    //     Seq("run", "-b", "electron")
-    //   )
+    Try {
+      val (containerId, exitCode, output) = DockerUtil.runContainer(
+        FileSystemUtil.localPath(task.filePath),
+        "cypress/included",
+        "run -b electron"
+      )
 
-    //   task
-    // }
+      println(containerId)
+      println(exitCode)
+      println(output)
 
-    println("Sleeping for 5 sec")
-    Thread.sleep(5000)
-    println("Waking up")
-    Try(task)
+      task
+    }
+
+    // println("Sleeping for 5 sec")
+    // Thread.sleep(5000)
+    // println("Waking up")
+    // Try(task)
   end executionResult
 end ExecutionWorker
