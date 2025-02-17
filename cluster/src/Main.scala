@@ -16,8 +16,8 @@ import akka.actor.typed.ActorSystem
 // import utilities.DockerHelper
 // import utilities.DockerUtil
 // import scala.util.Try
-import os.Path
-import os.RelPath
+// import os.Path
+// import os.RelPath
 
 @main def main(): Unit =
   val _ = ActorSystem(Orchestrator(), "task-orchestrator")
@@ -37,6 +37,8 @@ import os.RelPath
 
   // val p1 = Path("/cypress/testing/")
   // val p2 = Path("/cypress/testing/files/1.txt")
+  // println(p2.baseName)
+  // println(Path(p2.baseName))
 
   // val segments1 = p1.segments.toVector
   // val segments2 = p2.segments.toVector

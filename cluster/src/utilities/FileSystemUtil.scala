@@ -10,43 +10,63 @@ import os.RelPath
 import scala.util.Try
 import scala.util.Failure
 
+val excludedPatterns = Seq("__MACOSX".r, ".DS_Store".r)
+
 object FileSystemUtil:
-  def saveFile(path: Path, file: Seq[Byte]): Try[Path] =
-    val absPath = localPath(path)
+  def saveFile(relPath: RelPath, file: Seq[Byte]): Try[Path] =
+    val absPath = localPath(relPath)
     Try {
       os.write.over(absPath, file.toArray, createFolders = true)
       absPath
     }
   end saveFile
 
-  def loadFile(path: Path): Try[Seq[Byte]] =
-    val absPath = localPath(path)
+  def loadFile(relPath: RelPath): Try[Seq[Byte]] =
+    val absPath = localPath(relPath)
     Try(os.read.bytes(absPath).toSeq)
   end loadFile
 
-  def deleteBaseDir(path: Path): Try[Path] =
-    val baseDir = path.segments.toVector.headOption
+  def deleteTaskBaseDir(relPath: RelPath): Try[Path] =
     Try {
+      val baseDir = relPath.segments.toVector.headOption
       baseDir match
         case Some(str) =>
-          os.remove.all(os.pwd / str)
-        case _ =>
+          val taskBasePath = os.pwd / str
+          os.remove.all(taskBasePath)
+          taskBasePath
+        case _ => throw Throwable("Non existent base dir")
       end match
-      path
     }
-  end deleteBaseDir
+  end deleteTaskBaseDir
 
-  def deleteFile(path: Path): Try[Path] =
-    val absPath = localPath(path)
+  def deleteFile(relPath: RelPath): Try[Path] =
+    val absPath = localPath(relPath)
     Try {
       if os.remove(absPath) then absPath
       else throw Throwable("File doesn't exist")
     }
   end deleteFile
 
-  def localPath(path: Path): Path =
-    val rel = path.relativeTo(os.root)
-    os.pwd / rel
+  def unzipFile(relPath: RelPath): Try[Path] =
+    val absPath = localPath(relPath)
+    val unzipPath = absPath / os.up
+    Try(
+      os.unzip(
+        absPath,
+        unzipPath,
+        excludePatterns = excludedPatterns
+      ) / absPath.baseName
+    )
+  end unzipFile
+
+  def zipFile(relPath: RelPath): Try[Path] =
+    val absPath = localPath(relPath)
+    val zipPath = absPath / os.up / absPath.baseName
+    Try(os.zip(absPath, Seq(zipPath)))
+  end zipFile
+
+  private def localPath(relPath: RelPath): Path =
+    os.pwd / relPath
   end localPath
 
   private def commonPrefix(p1: Path, p2: Path): Option[Path] =

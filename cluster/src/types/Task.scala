@@ -5,6 +5,7 @@ package types
   */
 
 import os.Path
+import os.RelPath
 import zio.json.DeriveJsonDecoder
 import zio.json.DeriveJsonEncoder
 import zio.json.JsonDecoder
@@ -17,13 +18,17 @@ case class Task(
     taskOwnerId: String,
     taskDefinition: String,
     filePath: Path,
-    stages: List[Tuple2[String, Path]],
+    stages: List[Tuple2[Path, String]],
     logMessage: Option[String],
     mqId: Long = -1
 ):
 
   override def toString: String =
     s"Task(taskId=$taskId, taskOwnerId=$taskOwnerId, taskDefinition=$taskDefinition, filePath=$filePath, stages=$stages, logMessage=$logMessage, mqId=$mqId)"
+
+  def relTaskFilePath: RelPath = filePath.relativeTo(os.root)
+  def relContainerFilePath: Option[RelPath] =
+    stages.headOption.map(_(0).relativeTo(os.root))
 end Task
 
 /** Companion object for the Task class. It contains the JSON encoders and

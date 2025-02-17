@@ -42,7 +42,9 @@ object DockerUtil:
       .withShowAll(true)
       .withShowAll(true)
       .exec()
-      .forEach(container => println(container.getId))
+    // .forEach(container => println(container.getId))
+
+    // println(s"Inside docker: $bindFileLocalPath")
 
     val container = dockerClient
       .createContainerCmd(image)
@@ -68,7 +70,7 @@ object DockerUtil:
       override def onNext(frame: Frame): Unit =
         val logLine = new String(frame.getPayload)
         logBuffer += logLine
-        // println(logLine) // Print logs in real-time
+        println(logLine) // Print logs in real-time
       end onNext
     }
 
