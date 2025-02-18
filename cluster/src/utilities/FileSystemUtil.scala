@@ -9,6 +9,8 @@ import os.RelPath
 
 import scala.util.Try
 import scala.util.Failure
+import scala.util.Success
+import os.unzip
 
 val excludedPatterns = Seq("__MACOSX".r, ".DS_Store".r)
 
@@ -49,20 +51,41 @@ object FileSystemUtil:
 
   def unzipFile(relPath: RelPath): Try[Path] =
     val absPath = localPath(relPath)
-    val unzipPath = absPath / os.up
-    Try(
-      os.unzip(
+    val unzipPath = absPath / os.up / absPath.baseName
+    val tempDir = "temporaryTransferDir"
+    Try {
+      val _ = os.remove.all(unzipPath)
+
+      val _ = os.unzip(
         absPath,
         unzipPath,
         excludePatterns = excludedPatterns
-      ) / absPath.baseName
-    )
+      )
+
+      os.list(unzipPath).headOption match
+        case Some(dir) =>
+          os.move(dir, dir / os.up / tempDir)
+        case None => throw Throwable("Nothing inside of zip")
+      end match
+
+      os.list(unzipPath).headOption match
+        case Some(dir) =>
+          os.list(dir)
+            .foreach(path =>
+              os.move(path, unzipPath / path.last, replaceExisting = true)
+            )
+          val _ = os.remove(unzipPath / tempDir)
+        case None => throw Throwable("Unable to reorganize folders")
+      end match
+
+      unzipPath
+    }
   end unzipFile
 
   def zipFile(relPath: RelPath): Try[Path] =
     val absPath = localPath(relPath)
     val zipPath = absPath / os.up / absPath.baseName
-    Try(os.zip(absPath, Seq(zipPath)))
+    Try(os.zip(absPath, Seq(zipPath), excludePatterns = excludedPatterns))
   end zipFile
 
   private def localPath(relPath: RelPath): Path =
