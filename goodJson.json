@@ -1,16 +1,18 @@
 {
   "taskId": "98478572",
   "taskOwnerId": "24",
-  "taskDefinition": "testing",
-  "filePath": "/ftp/one/cypress.zip",
-  "stages": [
-    [
-      "/ftp/one/cypressParsing.tar.gz",
-      "PARSING"
-    ],
-    [
-      "/ftp/one/cypressExecution.tar.gz",
-      "EXECUTION"
+  "filePath": "/ftp/one/task1.zip",
+  "taskDefinition": {
+    "definitionName": "cypress_1",
+    "stages": [
+      [
+        "/ftp/one/cypressParsing.tar.gz",
+        "PARSING"
+      ],
+      [
+        "/ftp/one/cypressExecution.tar.gz",
+        "EXECUTION"
+      ]
     ]
-  ]
+  }
 }

@@ -66,7 +66,7 @@ object RemoteFileWorker:
             ) =>
           // context.log.info(s"DownloadFile command received. Task --> $task.")
           val filesPath = task.filePath
-          val containerPath = task.stages.head(0)
+          val containerPath = task.taskDefinition.stages.head(0)
 
           (downloadFile(filesPath), downloadFile(containerPath)) match
             case (Success(fileBytes), Success(containerBytes)) =>
@@ -77,7 +77,7 @@ object RemoteFileWorker:
               (
                 FileSystemUtil.saveFile(task.relTaskFilePath, fileBytes),
                 FileSystemUtil.saveFile(
-                  task.relContainerFilePath.get,
+                  task.relContainerPath.get,
                   containerBytes
                 )
               ) match
@@ -148,7 +148,7 @@ object RemoteFileWorker:
             s"UploadFile command received. Task --> $task."
           )
           val filesPath = task.filePath
-          val containerPath = task.stages.head(1)
+          val containerPath = task.taskDefinition.stages.head(0)
 
           FileSystemUtil.loadFile(task.relTaskFilePath) match
             case Success(bytes) =>
@@ -165,7 +165,7 @@ object RemoteFileWorker:
                   (
                     FileSystemUtil.deleteTaskBaseDir(task.relTaskFilePath),
                     FileSystemUtil.deleteTaskBaseDir(
-                      task.relContainerFilePath.get
+                      task.relContainerPath.get
                     )
                   ) match
                     case (Success(_), Success(_))                 =>

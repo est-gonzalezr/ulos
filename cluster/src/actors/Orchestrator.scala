@@ -214,10 +214,11 @@ object Orchestrator:
                   context.self ! RegisterLog(task, "Task files uploaded.")
 
                   val taskForNextStage = task.copy(
-                    stages = task.stages.tail
+                    taskDefinition = task.taskDefinition
+                      .copy(stages = task.taskDefinition.stages.tail)
                   )
 
-                  if !taskForNextStage.stages.isEmpty then
+                  if !taskForNextStage.taskDefinition.stages.isEmpty then
                     mqManager ! MqManager.MqSendMessage(
                       taskForNextStage,
                       DefaultExchange,
