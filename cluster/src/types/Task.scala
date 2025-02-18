@@ -27,7 +27,7 @@ final case class Task(
 
   def relTaskFilePath: RelPath = filePath.relativeTo(os.root)
   def relContainerPath: Option[RelPath] =
-    taskDefinition.stages.headOption.map(_(0).relativeTo(os.root))
+    taskDefinition.stages.headOption.map(_(1).relativeTo(os.root))
 
   // def relContainerFilePath: Option[RelPath] =
   //   stages.headOption.map(_(0).relativeTo(os.root))

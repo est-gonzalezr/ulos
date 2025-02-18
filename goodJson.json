@@ -6,12 +6,14 @@
     "definitionName": "cypress_1",
     "stages": [
       [
+        "PARSING",
         "/ftp/one/cypressParsing.tar.gz",
-        "PARSING"
+        "run -b electron"
       ],
       [
+        "EXECUTION",
         "/ftp/one/cypressExecution.tar.gz",
-        "EXECUTION"
+        "run -b electron"
       ]
     ]
   }

@@ -66,7 +66,7 @@ object RemoteFileWorker:
             ) =>
           // context.log.info(s"DownloadFile command received. Task --> $task.")
           val filesPath = task.filePath
-          val containerPath = task.taskDefinition.stages.head(0)
+          val containerPath = task.taskDefinition.stages.head(1)
 
           (downloadFile(filesPath), downloadFile(containerPath)) match
             case (Success(fileBytes), Success(containerBytes)) =>
@@ -148,7 +148,7 @@ object RemoteFileWorker:
             s"UploadFile command received. Task --> $task."
           )
           val filesPath = task.filePath
-          val containerPath = task.taskDefinition.stages.head(0)
+          val containerPath = task.taskDefinition.stages.head(1)
 
           FileSystemUtil.loadFile(task.relTaskFilePath) match
             case Success(bytes) =>

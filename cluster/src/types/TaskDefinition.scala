@@ -12,7 +12,7 @@ import zio.json.JsonEncoder
 
 final case class TaskDefinition(
     definitionName: String,
-    stages: List[Tuple2[Path, String]]
+    stages: List[Tuple3[String, Path, String]]
 )
 
 object TaskDefinition:
