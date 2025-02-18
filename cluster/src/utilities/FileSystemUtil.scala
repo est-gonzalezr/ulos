@@ -6,11 +6,11 @@ package utilities
 
 import os.Path
 import os.RelPath
+import os.unzip
 
-import scala.util.Try
 import scala.util.Failure
 import scala.util.Success
-import os.unzip
+import scala.util.Try
 
 val excludedPatterns = Seq("__MACOSX".r, ".DS_Store".r)
 
