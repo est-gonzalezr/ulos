@@ -74,9 +74,7 @@ object ExecutionWorker:
 
   private def executionResult(task: Task): Try[Task] =
     Try {
-      val unzipedTaskDir = FileSystemUtil.unzipFile(task.relTaskFilePath)
-
-      unzipedTaskDir match
+      FileSystemUtil.unzipFile(task.relTaskFilePath) match
         case Success(dir) =>
           val (containerId, exitCode, output) = DockerUtil.runContainer(
             dir,
@@ -89,6 +87,8 @@ object ExecutionWorker:
           println(exitCode)
           println(output)
           println("------------------------------------------")
+
+          val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
 
           task
 
