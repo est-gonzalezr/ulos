@@ -162,16 +162,23 @@ object RemoteFileWorker:
                   //   s"File upload success. FilePath --> $filesPath."
                   // )
 
-                  (
+                  val results = Seq(
                     FileSystemUtil.deleteTaskBaseDir(task.relTaskFilePath),
-                    FileSystemUtil.deleteTaskBaseDir(
-                      task.relContainerPath.get
-                    )
-                  ) match
-                    case (Success(_), Success(_))                 =>
-                    case (Failure(exception), Failure(excpetion)) =>
-                    case (Failure(excpetion), _)                  =>
-                    case (_, Failure(exception))                  =>
+                    FileSystemUtil.deleteFile(task.relContainerPath.get),
+                    FileSystemUtil.deleteFile(task.relTaskFilePath)
+                  )
+
+                  results.collectFirst { case Failure(exception) =>
+                    exception
+                  } match
+                    case Some(exception) =>
+                      // Handle the first failure (log it, throw it, etc.)
+                      context.log.error(
+                        s"RemoteFileWorker failed delete operation. Exception thrown: ${exception.getMessage()}"
+                      )
+                    case None =>
+                    // All succeeded
+
                   end match
 
                   context.log.info(

@@ -30,14 +30,10 @@ object FileSystemUtil:
 
   def deleteTaskBaseDir(relPath: RelPath): Try[Path] =
     Try {
-      val baseDir = relPath.segments.toVector.headOption
-      baseDir match
-        case Some(str) =>
-          val taskBasePath = os.pwd / str
-          os.remove.all(taskBasePath)
-          taskBasePath
-        case _ => throw Throwable("Non existent base dir")
-      end match
+      val absPath = localPath(relPath)
+      val deletePath = absPath / os.up / absPath.baseName
+      os.remove.all(deletePath)
+      absPath
     }
   end deleteTaskBaseDir
 
@@ -55,28 +51,25 @@ object FileSystemUtil:
     val tempDir = "temporaryTransferDir"
     Try {
       val _ = os.remove.all(unzipPath)
-
       val _ = os.unzip(
         absPath,
         unzipPath,
         excludePatterns = excludedPatterns
       )
 
-      os.list(unzipPath).headOption match
-        case Some(dir) =>
-          os.move(dir, dir / os.up / tempDir)
-        case None => throw Throwable("Nothing inside of zip")
-      end match
+      if os.list(unzipPath).length == 1 && os.isDir(os.list(unzipPath).head)
+      then
+        os.list(unzipPath)
+          .foreach(path =>
+            os.move(path, path / os.up / tempDir, replaceExisting = true)
+          )
 
-      os.list(unzipPath).headOption match
-        case Some(dir) =>
-          os.list(dir)
-            .foreach(path =>
-              os.move(path, unzipPath / path.last, replaceExisting = true)
-            )
-          val _ = os.remove(unzipPath / tempDir)
-        case None => throw Throwable("Unable to reorganize folders")
-      end match
+        os.list(unzipPath / tempDir)
+          .foreach(path =>
+            os.move(path, unzipPath / path.last, replaceExisting = true)
+          )
+        os.remove.all(unzipPath / tempDir)
+      end if
 
       unzipPath
     }

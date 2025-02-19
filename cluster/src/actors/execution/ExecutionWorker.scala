@@ -74,25 +74,40 @@ object ExecutionWorker:
 
   private def executionResult(task: Task): Try[Task] =
     Try {
+      println("------------------------ Entering execution")
       FileSystemUtil.unzipFile(task.relTaskFilePath) match
         case Success(dir) =>
-          val (containerId, exitCode, output) = DockerUtil.runContainer(
-            dir,
-            "cypress/included",
-            "run -b electron"
+          println(os.list(dir))
+          println(1)
+          // val (containerId, exitCode, output) = DockerUtil.runContainer(
+          //   dir,
+          //   "cypress/included",
+          //   "run -b electron"
+          // )
+
+          // println("------------------------------------------")
+          // println(containerId)
+          // println(exitCode)
+          // println(output)
+          // println("------------------------------------------")
+          os.write.over(
+            dir / s"output_${task.taskDefinition.stages.head(0)}.txt",
+            "oaerhgowerhoehjrogpijweorpjgoewrihoiewrhogijewropgijo"
           )
 
-          println("------------------------------------------")
-          println(containerId)
-          println(exitCode)
-          println(output)
-          println("------------------------------------------")
+          println(os.list(dir))
 
           val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
 
+          println("Sleeping for 5 sec")
+          Thread.sleep(10000)
+          println("Waking up")
+
           task
 
-        case Failure(exception) => throw Throwable("Could not unzip file")
+        case Failure(exception) =>
+          println(exception)
+          throw Throwable("Could not unzip file")
       end match
     }
 
