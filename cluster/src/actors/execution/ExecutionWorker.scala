@@ -16,6 +16,7 @@ import utilities.FileSystemUtil
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import java.nio.file.FileSystem
 
 object ExecutionWorker:
   // Command protocol
@@ -77,31 +78,28 @@ object ExecutionWorker:
       println("------------------------ Entering execution")
       FileSystemUtil.unzipFile(task.relTaskFilePath) match
         case Success(dir) =>
-          println(os.list(dir))
-          println(1)
-          // val (containerId, exitCode, output) = DockerUtil.runContainer(
-          //   dir,
-          //   "cypress/included",
-          //   "run -b electron"
-          // )
-
-          // println("------------------------------------------")
-          // println(containerId)
-          // println(exitCode)
-          // println(output)
-          // println("------------------------------------------")
-          os.write.over(
-            dir / s"output_${task.taskDefinition.stages.head(0)}.txt",
-            "oaerhgowerhoehjrogpijweorpjgoewrihoiewrhogijewropgijo"
+          val (containerId, exitCode, output) = DockerUtil.runContainer(
+            dir,
+            "cypress/included",
+            "run -b electron"
           )
 
-          println(os.list(dir))
+          println("------------------------------------------")
+          println(containerId)
+          println(exitCode)
+          println(output)
+          println("------------------------------------------")
+
+          os.write.over(
+            dir / s"output_${task.taskDefinition.stages.head(0)}.txt",
+            output
+          )
 
           val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
 
-          println("Sleeping for 5 sec")
-          Thread.sleep(10000)
-          println("Waking up")
+          // println("Sleeping for 5 sec")
+          // Thread.sleep(20000)
+          // println("Waking up")
 
           task
 

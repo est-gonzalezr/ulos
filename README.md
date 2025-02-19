@@ -34,9 +34,10 @@ docker run -d --hostname delfer --name DelferFtpServer -p 21:21 -p 21000-21010:2
 From an FTP client connect to the server.
 Enter with localhost: `localhost`, username: `one`, password: `123`, and port: `21`.
 
-Upload any file to the server with name `task1.zip`.
 Upload any file to the server with name `cypressParsing.tar`.
 Upload any file to the server with name `cypressExecution.tar`.
+
+In the `testing-files` folder you can find a cypress folder. Compress it into a zip as `task1.zip` and upload it to the FTP server.
 
 In ULOS root folder run:
 
@@ -46,6 +47,6 @@ mill cluster.run
 ```
 
 Once the systems runs, go to the RabbitMQ management url and click on the created queue.
-In the "publish message" section of the queue publish a message. A sample message can be found in the ULOS repo on the file: `goodJson.json`.
+In the "publish message" section of the queue publish a message. A sample message can be found in the ULOS repo on the file: `testing-files/goodJson.json`.
 
 Once you publish the message, the system should immediately process the message.

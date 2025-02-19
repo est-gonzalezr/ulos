@@ -78,7 +78,10 @@ object FileSystemUtil:
   def zipFile(relPath: RelPath): Try[Path] =
     val absPath = localPath(relPath)
     val zipPath = absPath / os.up / absPath.baseName
-    Try(os.zip(absPath, Seq(zipPath), excludePatterns = excludedPatterns))
+    val _ = os.remove.all(absPath)
+    Try(
+      os.zip(absPath, Seq(zipPath), excludePatterns = excludedPatterns)
+    )
   end zipFile
 
   private def localPath(relPath: RelPath): Path =
