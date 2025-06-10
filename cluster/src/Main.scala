@@ -5,12 +5,9 @@
 
 import actors.Orchestrator
 import akka.actor.typed.ActorSystem
-import os.Path
-import os.RelPath
 
 @main def main(): Unit =
   val _ = ActorSystem(Orchestrator(), "task-orchestrator")
-  var x = null
   // guardian.terminate()
 
   // val path = Path("/Users/estebangonzalezruales/Downloads/ulos/ftp/one/task1")
