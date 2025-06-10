@@ -1,8 +1,9 @@
 package types
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
+/**
+ * @author
+ *   Esteban Gonzalez Ruales
+ */
 
 import os.Path
 import zio.json.DeriveJsonDecoder
@@ -11,8 +12,8 @@ import zio.json.JsonDecoder
 import zio.json.JsonEncoder
 
 final case class TaskDefinition(
-    definitionName: String,
-    stages: List[Tuple3[String, Path, String]]
+  definitionName: String,
+  stages: List[Tuple3[String, Path, String]],
 )
 
 object TaskDefinition:

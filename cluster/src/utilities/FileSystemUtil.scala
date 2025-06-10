@@ -1,16 +1,17 @@
 package utilities
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
-import os.Path
-import os.RelPath
-import os.unzip
+/**
+ * @author
+ *   Esteban Gonzalez Ruales
+ */
 
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
+import os.Path
+import os.RelPath
+import os.unzip
 
 val excludedPatterns = Seq("__MACOSX".r, ".DS_Store".r)
 
@@ -54,20 +55,16 @@ object FileSystemUtil:
       val _ = os.unzip(
         absPath,
         unzipPath,
-        excludePatterns = excludedPatterns
+        excludePatterns = excludedPatterns,
       )
 
       if os.list(unzipPath).length == 1 && os.isDir(os.list(unzipPath).head)
       then
         os.list(unzipPath)
-          .foreach(path =>
-            os.move(path, path / os.up / tempDir, replaceExisting = true)
-          )
+          .foreach(path => os.move(path, path / os.up / tempDir, replaceExisting = true))
 
         os.list(unzipPath / tempDir)
-          .foreach(path =>
-            os.move(path, unzipPath / path.last, replaceExisting = true)
-          )
+          .foreach(path => os.move(path, unzipPath / path.last, replaceExisting = true))
         os.remove.all(unzipPath / tempDir)
       end if
 
@@ -80,7 +77,7 @@ object FileSystemUtil:
     val zipPath = absPath / os.up / absPath.baseName
     val _ = os.remove.all(absPath)
     Try(
-      os.zip(absPath, Seq(zipPath), excludePatterns = excludedPatterns)
+      os.zip(absPath, Seq(zipPath), excludePatterns = excludedPatterns),
     )
   end zipFile
 
@@ -94,8 +91,7 @@ object FileSystemUtil:
     val commonSegments =
       segments1.zip(segments2).takeWhile(_ == _).map(_(0))
 
-    if commonSegments.nonEmpty then
-      Some(os.Path(commonSegments.mkString("/", "/", "")))
+    if commonSegments.nonEmpty then Some(os.Path(commonSegments.mkString("/", "/", "")))
     else None
     end if
   end commonPrefix

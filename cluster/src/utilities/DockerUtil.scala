@@ -1,8 +1,11 @@
 package utilities
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
+/**
+ * @author
+ *   Esteban Gonzalez Ruales
+ */
+
+import scala.collection.mutable.ListBuffer
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
@@ -14,13 +17,11 @@ import com.github.dockerjava.api.model.Volume
 import com.github.dockerjava.api.model.WaitResponse
 import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientBuilder
-
-import scala.collection.mutable.ListBuffer
 import os.Path
 
 object DockerUtil:
   // val config = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
-  val dockerClient = DockerClientBuilder.getInstance().build()
+  val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
 
   def filteredCommand(cmd: String): Seq[String] =
     cmd
@@ -30,9 +31,9 @@ object DockerUtil:
       .filter(_ != "-d")
 
   def runContainer(
-      bindFileLocalPath: Path,
-      image: String,
-      cmd: String
+    bindFileLocalPath: Path,
+    image: String,
+    cmd: String,
   ): (String, Int, String) =
     val workingDir = "/temp"
     val cmdSeq = filteredCommand(cmd)
@@ -55,10 +56,10 @@ object DockerUtil:
         HostConfig()
           .withBinds(
             Bind.parse(
-              s"${bindFileLocalPath.toString}:$workingDir"
-            )
+              s"${bindFileLocalPath.toString}:$workingDir",
+            ),
           )
-          .withAutoRemove(true)
+          .withAutoRemove(true),
       )
       .exec()
 
@@ -66,13 +67,12 @@ object DockerUtil:
 
     // Capture logs
     val logBuffer = ListBuffer[String]()
-    val logCallback = new ResultCallback.Adapter[Frame] {
+    val logCallback = new ResultCallback.Adapter[Frame]:
       override def onNext(frame: Frame): Unit =
         val logLine = new String(frame.getPayload)
         logBuffer += logLine
         println(logLine) // Print logs in real-time
       end onNext
-    }
 
     val logStream = dockerClient
       .logContainerCmd(container.getId)
@@ -84,11 +84,10 @@ object DockerUtil:
     try
       @volatile var exitCode: Int = -1 // Default to -1
       // Wait for container to finish and capture exit code
-      val waitCallback = new ResultCallback.Adapter[WaitResponse] {
+      val waitCallback = new ResultCallback.Adapter[WaitResponse]:
 
         override def onNext(response: WaitResponse): Unit =
           exitCode = response.getStatusCode
-      }
 
       dockerClient.waitContainerCmd(container.getId).exec(waitCallback)
       waitCallback.awaitCompletion()

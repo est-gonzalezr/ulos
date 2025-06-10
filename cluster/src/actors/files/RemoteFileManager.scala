@@ -1,8 +1,13 @@
 package actors.files
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
+/**
+ * @author
+ *   Esteban Gonzalez Ruales
+ */
+
+import scala.concurrent.duration.*
+import scala.util.Failure
+import scala.util.Success
 
 import akka.Done
 import akka.actor.typed.ActorRef
@@ -17,10 +22,6 @@ import types.OpaqueTypes.RemoteStoragePort
 import types.OpaqueTypes.RemoteStorageUser
 import types.Task
 
-import scala.concurrent.duration.*
-import scala.util.Failure
-import scala.util.Success
-
 private val DefaultRemoteOpsRetries = 5
 
 object RemoteFileManager:
@@ -29,12 +30,12 @@ object RemoteFileManager:
 
   // Public command protocol
   final case class DownloadTaskFiles(
-      task: Task,
-      retries: Int = DefaultRemoteOpsRetries
+    task: Task,
+    retries: Int = DefaultRemoteOpsRetries,
   ) extends Command
   final case class UploadTaskFiles(
-      task: Task,
-      retries: Int = DefaultRemoteOpsRetries
+    task: Task,
+    retries: Int = DefaultRemoteOpsRetries,
   ) extends Command
 
   // Internal command protocol
@@ -53,11 +54,11 @@ object RemoteFileManager:
   implicit val timeout: Timeout = 20.seconds
 
   def apply(
-      remoteStorageHost: RemoteStorageHost,
-      remoteStoragePort: RemoteStoragePort,
-      remoteStorageUser: RemoteStorageUser,
-      remoteStoragePass: RemoteStoragePassword,
-      replyTo: ActorRef[Response]
+    remoteStorageHost: RemoteStorageHost,
+    remoteStoragePort: RemoteStoragePort,
+    remoteStorageUser: RemoteStorageUser,
+    remoteStoragePass: RemoteStoragePassword,
+    replyTo: ActorRef[Response],
   ): Behavior[Command] =
     setup(
       remoteStorageHost,
@@ -65,16 +66,16 @@ object RemoteFileManager:
       remoteStorageUser,
       remoteStoragePass,
       0,
-      replyTo
+      replyTo,
     )
 
   def setup(
-      remoteStorageHost: RemoteStorageHost,
-      remoteStoragePort: RemoteStoragePort,
-      remoteStorageUser: RemoteStorageUser,
-      remoteStoragePass: RemoteStoragePassword,
-      activeWorkers: Int,
-      replyTo: ActorRef[Response]
+    remoteStorageHost: RemoteStorageHost,
+    remoteStoragePort: RemoteStoragePort,
+    remoteStorageUser: RemoteStorageUser,
+    remoteStoragePass: RemoteStoragePassword,
+    activeWorkers: Int,
+    replyTo: ActorRef[Response],
   ): Behavior[Command] =
     Behaviors.setup { context =>
       context.log.info("RemoteFileManager started...")
@@ -88,7 +89,7 @@ object RemoteFileManager:
 
           case DownloadTaskFiles(task, retries) =>
             context.log.info(
-              s"DownloadTaskFiles command received. Task --> $task."
+              s"DownloadTaskFiles command received. Task --> $task.",
             )
 
             context.log.info(s"Spawning downloader...")
@@ -106,12 +107,12 @@ object RemoteFileManager:
                   remoteStorageUser,
                   remoteStoragePass,
                   task,
-                  replyTo
-                )
+                  replyTo,
+                ),
             ) {
               case Success(Done) =>
                 context.log.info(
-                  s"Download success response received from downloader. Task awaiting rerouting to orchestrator. Task --> $task."
+                  s"Download success response received from downloader. Task awaiting rerouting to orchestrator. Task --> $task.",
                 )
                 ReportTaskDownloaded(task)
               case Failure(exception) =>
@@ -124,7 +125,7 @@ object RemoteFileManager:
                 else
                   context.log.error(s"$failureMessage Retries exhausted.")
                   ReportTaskDownloadFailed(
-                    task.copy(logMessage = Some(exception.getMessage()))
+                    task.copy(logMessage = Some(exception.getMessage())),
                   )
                 end if
             }
@@ -132,7 +133,7 @@ object RemoteFileManager:
 
           case UploadTaskFiles(task, retries) =>
             context.log.info(
-              s"UploadTaskFiles command received. Task --> $task."
+              s"UploadTaskFiles command received. Task --> $task.",
             )
 
             context.log.info(s"Spawning uploader...")
@@ -150,12 +151,12 @@ object RemoteFileManager:
                   remoteStorageUser,
                   remoteStoragePass,
                   task,
-                  replyTo
-                )
+                  replyTo,
+                ),
             ) {
               case Success(Done) =>
                 context.log.info(
-                  s"Upload success response received from uploader. Task awaiting rerouting to orchestrator. Task --> $task."
+                  s"Upload success response received from uploader. Task awaiting rerouting to orchestrator. Task --> $task.",
                 )
                 ReportTaskUploaded(task)
               case Failure(exception) =>
@@ -168,7 +169,7 @@ object RemoteFileManager:
                 else
                   context.log.error(s"$failureMessage Retries exhausted.")
                   ReportTaskUploadFailed(
-                    task.copy(logMessage = Some(exception.getMessage))
+                    task.copy(logMessage = Some(exception.getMessage)),
                   )
                 end if
             }
@@ -180,40 +181,40 @@ object RemoteFileManager:
 
           case ReportTaskDownloaded(task) =>
             context.log.info(
-              s"ReportTaskDownloaded command received. Task --> $task."
+              s"ReportTaskDownloaded command received. Task --> $task.",
             )
             context.log.info(
-              s"Sending TaskDownloaded to orchestrator. Task --> $task."
+              s"Sending TaskDownloaded to orchestrator. Task --> $task.",
             )
             replyTo ! TaskDownloaded(task)
             Behaviors.same
 
           case ReportTaskUploaded(task) =>
             context.log.info(
-              s"ReportTaskUploaded command received. Task --> $task."
+              s"ReportTaskUploaded command received. Task --> $task.",
             )
             context.log.info(
-              s"Sending TaskUploaded to orchestrator. Task --> $task."
+              s"Sending TaskUploaded to orchestrator. Task --> $task.",
             )
             replyTo ! TaskUploaded(task)
             Behaviors.same
 
           case ReportTaskDownloadFailed(task) =>
             context.log.info(
-              s"ReportTaskDownloadFailed command received. Task --> $task."
+              s"ReportTaskDownloadFailed command received. Task --> $task.",
             )
             context.log.info(
-              s"Sending TaskDownloadFailed to orchestrator. Task --> $task."
+              s"Sending TaskDownloadFailed to orchestrator. Task --> $task.",
             )
             replyTo ! TaskDownloadFailed(task)
             Behaviors.same
 
           case ReportTaskUploadFailed(task) =>
             context.log.info(
-              s"ReportTaskUploadFailed command received. Task --> $task."
+              s"ReportTaskUploadFailed command received. Task --> $task.",
             )
             context.log.info(
-              s"Sending TaskUploadFailed to orchestrator. Task --> $task."
+              s"Sending TaskUploadFailed to orchestrator. Task --> $task.",
             )
             replyTo ! TaskUploadFailed(task)
             Behaviors.same

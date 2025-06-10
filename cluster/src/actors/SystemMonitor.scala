@@ -1,16 +1,17 @@
 package actors
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
+/**
+ * @author
+ *   Esteban Gonzalez Ruales
+ */
+
+import scala.concurrent.duration.*
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import oshi.SystemInfo
-
-import scala.concurrent.duration.*
 
 object SystemMonitor:
   sealed trait Command
@@ -22,14 +23,14 @@ object SystemMonitor:
   case object DecrementProcessors
 
   def apply(
-      maxProcessors: Int,
-      replyTo: ActorRef[Orchestrator.Command]
+    maxProcessors: Int,
+    replyTo: ActorRef[Orchestrator.Command],
   ): Behavior[Command] =
     setup(maxProcessors, replyTo)
 
   def setup(
-      maxProcessors: Int,
-      replyTo: ActorRef[Orchestrator.Command]
+    maxProcessors: Int,
+    replyTo: ActorRef[Orchestrator.Command],
   ): Behavior[Command] =
     Behaviors.setup { context =>
       context.log.info("System monitor started...")
@@ -37,14 +38,14 @@ object SystemMonitor:
       val _ = context.scheduleOnce(1.second, context.self, Monitor)
 
       def monitorResources(
-          maxProcessors: Int,
-          activeProcessors: Int
+        maxProcessors: Int,
+        activeProcessors: Int,
       ): Behavior[Command] =
         Behaviors.receiveMessage { message =>
           message match
             case NotifyActiveProcessors(activeProcessors) =>
               context.log.info(
-                s"NotifyActiveProcessors command received. ActiveProcessors --> $activeProcessors"
+                s"NotifyActiveProcessors command received. ActiveProcessors --> $activeProcessors",
               )
               monitorResources(maxProcessors, activeProcessors)
 
@@ -68,10 +69,10 @@ object SystemMonitor:
                   replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
                 else
                   context.log.info(
-                    "No processors available. Recommending shutdown."
+                    "No processors available. Recommending shutdown.",
                   )
                   replyTo ! Orchestrator.GracefulShutdown(
-                    "Processing power exhausted."
+                    "Processing power exhausted.",
                   )
                 end if
                 monitorResources(newProcessorQuantity, activeProcessors)

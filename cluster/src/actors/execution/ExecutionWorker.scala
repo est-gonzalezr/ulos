@@ -1,8 +1,15 @@
 package actors.execution
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
+/**
+ * @author
+ *   Esteban Gonzalez Ruales
+ */
+
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
+import java.nio.file.FileSystem
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -13,28 +20,24 @@ import types.Task
 import utilities.DockerUtil
 import utilities.FileSystemUtil
 
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import java.nio.file.FileSystem
-
 object ExecutionWorker:
   // Command protocol
   sealed trait Command
 
   // Public command protocol
   final case class ExecuteTask(
-      task: Task,
-      replyTo: ActorRef[StatusReply[Task]]
+    task: Task,
+    replyTo: ActorRef[StatusReply[Task]],
   ) extends Command
 
   def apply(): Behavior[Command] = processing()
 
-  /** This behavior represents the processing state of the actor.
-    *
-    * @return
-    *   A behavior that processes a task and then stops.
-    */
+  /**
+   * This behavior represents the processing state of the actor.
+   *
+   * @return
+   *   A behavior that processes a task and then stops.
+   */
   def processing(): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
@@ -81,7 +84,7 @@ object ExecutionWorker:
           val (containerId, exitCode, output) = DockerUtil.runContainer(
             dir,
             "cypress/included",
-            "run -b electron"
+            "run -b electron",
           )
 
           println("------------------------------------------")
@@ -92,7 +95,7 @@ object ExecutionWorker:
 
           os.write.over(
             dir / s"output_${task.taskDefinition.stages.head(0)}.txt",
-            output
+            output,
           )
 
           val _ = FileSystemUtil.zipFile(task.relTaskFilePath)

@@ -2,7 +2,18 @@
 
 ## Temporary instructions to run the system
 
-In your system you will have to have installed `scala`, `mill`, `python3` and `docker`.
+In your system you will have to have installed `scala3`, `mill`, `python3` and `docker`.
+
+Mill can be installed with the following command:
+
+```zsh
+# linux or mac
+curl -L https://repo1.maven.org/maven2/com/lihaoyi/mill-dist/1.0.0-RC1/mill-dist-1.0.0-RC1-mill.sh -o mill
+chmod +x mill
+
+# windows
+curl -L https://repo1.maven.org/maven2/com/lihaoyi/mill-dist/1.0.0-RC1/mill-dist-1.0.0-RC1-mill.bat -o mill.bat
+```
 
 Create RabbitMQ container:
 
@@ -42,7 +53,7 @@ In the `testing-files` folder you can find a cypress folder. Compress it into a 
 In ULOS root folder run:
 
 ```zsh
-mill cluster.run
+./mill cluster.run
 # mill -w brokerManagement.run
 ```
 

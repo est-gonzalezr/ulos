@@ -1,56 +1,60 @@
+/** @author
+ *    Esteban Gonzalez Ruales
+ */
+
+//| mill-version: 1.0.0-RC1
+//| mvnDeps:
+//| - com.goyeau::mill-scalafix::0.5.0
+
 package build
 
-import coursier.Repository
-import mill._
-import mill.scalalib._
-import mill.define.ModuleRef
-import coursier.maven.MavenRepository
+import mill.*
+import mill.scalalib.*
 
-val AkkaVersion = "2.10.0"
+val AkkaVersion = "2.10.6"
 
-val scalaToolkit = ivy"org.scala-lang::toolkit::0.7.0"
-val munit = ivy"org.scalameta::munit::1.0.1"
-val scalaYaml = ivy"org.virtuslab::scala-yaml::0.3.0"
-val amqpClient = ivy"com.rabbitmq:amqp-client:5.21.0"
-val apacheCommonsNet = ivy"commons-net:commons-net:3.10.0"
-val pekko = ivy"org.apache.pekko::pekko-actor-typed::1.1.3"
-val akka = ivy"com.typesafe.akka::akka-actor-typed::$AkkaVersion"
-val akkaTestKit = ivy"com.typesafe.akka::akka-actor-testkit-typed::$AkkaVersion"
-val logback = ivy"ch.qos.logback:logback-classic::1.5.8"
-val logbackCore = ivy"ch.qos.logback:logback-core::1.5.8"
-val zioJson = ivy"dev.zio::zio-json::0.7.3"
-val oshi = ivy"com.github.oshi:oshi-core:6.6.5"
-val docker = ivy"com.github.docker-java:docker-java:3.4.1"
+val scalaToolkit = mvn"org.scala-lang::toolkit::0.7.0"
+val munit = mvn"org.scalameta::munit::1.0.1"
+val scalaYaml = mvn"org.virtuslab::scala-yaml::0.3.0"
+val amqpClient = mvn"com.rabbitmq:amqp-client:5.21.0"
+val apacheCommonsNet = mvn"commons-net:commons-net:3.10.0"
+val pekko = mvn"org.apache.pekko::pekko-actor-typed::1.1.3"
+val akka = mvn"com.typesafe.akka::akka-actor-typed::$AkkaVersion"
+val akkaTestKit = mvn"com.typesafe.akka::akka-actor-testkit-typed::$AkkaVersion"
+val logback = mvn"ch.qos.logback:logback-classic::1.5.8"
+val logbackCore = mvn"ch.qos.logback:logback-core::1.5.8"
+val zioJson = mvn"dev.zio::zio-json::0.7.3"
+val oshi = mvn"com.github.oshi:oshi-core:6.6.5"
+val docker = mvn"com.github.docker-java:docker-java:3.4.1"
 
-val akkaRepository = Seq(
-  MavenRepository("https://repo.akka.io/maven")
-)
+trait ProjectConfigs extends ScalaModule:
+  def scalaVersion = "3.7.1"
 
-trait ProjectConfigs extends ScalaModule {
-  def scalaVersion = "3.5.0"
   def scalacOptions = Seq(
-    // "-verbose",
-    // "-explain",
-    "-deprecation",
-    "-unchecked",
-    // "-Wunused:all",
-    // "-Wunused:unsafe-warn-patvars",
+    // "-Werror",
     "-Wnonunit-statement",
+    "-Wshadow:all",
     "-Wvalue-discard",
-    "-Werror",
+    // "-Wunused:all",
+    "-Wunused:unsafe-warn-patvars",
+    // "-Yretain-trees",
+    "-Xsemanticdb",
+    s"-P:semanticdb:sourceroot:$millSourcePath",
+    "-deprecation",
+    "-explain",
+    "-explain-types",
     "-new-syntax",
-    "-rewrite"
+    "-unchecked"
   )
 
-  def scalaDocOptions = Seq("-siteroot", "mydocs", "-no-link-warnings")
-  def repositoriesTask: Task[Seq[Repository]] = T.task {
-    super.repositoriesTask() ++ akkaRepository
-  }
-}
 
-object cluster extends ProjectConfigs {
+  def scalaDocOptions = Seq("-siteroot", "mydocs", "-no-link-warnings")
+  def repositories = Seq("https://repo.akka.io/maven")
+end ProjectConfigs
+
+object cluster extends ProjectConfigs:
   // def moduleDeps = Seq(coreUtils, storageUtils)
-  def ivyDeps = Agg(
+  def mvnDeps = Seq(
     pekko,
     amqpClient,
     akka,
@@ -58,7 +62,6 @@ object cluster extends ProjectConfigs {
     zioJson,
     munit,
     scalaToolkit,
-    amqpClient,
     logback,
     apacheCommonsNet,
     oshi,
@@ -75,4 +78,4 @@ object cluster extends ProjectConfigs {
     "PUBLISHING_ROUTING_KEY" -> "user.notification",
     "DATABASE_ROUTING_KEY" -> "database.task.update"
   )
-}
+end cluster

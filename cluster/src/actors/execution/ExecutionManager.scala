@@ -1,8 +1,13 @@
 package actors.execution
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
+/**
+ * @author
+ *   Esteban Gonzalez Ruales
+ */
+
+import scala.concurrent.duration.*
+import scala.util.Failure
+import scala.util.Success
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -10,10 +15,6 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import types.Task
-
-import scala.concurrent.duration.*
-import scala.util.Failure
-import scala.util.Success
 
 object ExecutionManager:
   // Command protocol
@@ -34,13 +35,13 @@ object ExecutionManager:
   implicit val timeout: Timeout = 300.seconds
 
   def apply(
-      replyTo: ActorRef[Response]
+    replyTo: ActorRef[Response],
   ): Behavior[Command] =
     setup(replyTo)
   end apply
 
   def setup(
-      replyTo: ActorRef[Response]
+    replyTo: ActorRef[Response],
   ): Behavior[Command] =
     Behaviors.setup { context =>
       context.log.info("ExecutionManager started...")
@@ -58,32 +59,32 @@ object ExecutionManager:
             context.log.info(s"Spawning execution worker...")
             val executionWorker =
               context.spawnAnonymous(
-                ExecutionWorker()
+                ExecutionWorker(),
               )
 
             context.log.info(s"Execution worker spawned.")
             context.log.info(
-              s"Sending task to execution worker. Task --> $task."
+              s"Sending task to execution worker. Task --> $task.",
             )
 
             context.askWithStatus[
               ExecutionWorker.ExecuteTask,
-              Task
+              Task,
             ](
               executionWorker,
-              replyTo => ExecutionWorker.ExecuteTask(task, replyTo)
+              replyTo => ExecutionWorker.ExecuteTask(task, replyTo),
             ) {
               case Success(task) =>
                 context.log.info(
-                  s"Task execution success. Task awaiting rerouting to orchestrator. Task --> $task."
+                  s"Task execution success. Task awaiting rerouting to orchestrator. Task --> $task.",
                 )
                 ReportTaskExecuted(task)
               case Failure(exception) =>
                 context.log.error(
-                  s"Task execution failure. Task awaiting rejection to MQ. Task --> $task."
+                  s"Task execution failure. Task awaiting rejection to MQ. Task --> $task.",
                 )
                 ReportTaskFailed(
-                  task.copy(logMessage = Some(exception.getMessage))
+                  task.copy(logMessage = Some(exception.getMessage)),
                 )
             }
 
@@ -95,10 +96,10 @@ object ExecutionManager:
 
           case ReportTaskExecuted(task) =>
             context.log.info(
-              s"ReportTaskExecuted command received. Task --> $task."
+              s"ReportTaskExecuted command received. Task --> $task.",
             )
             context.log.info(
-              s"Sending task to orchestrator... Task --> $task."
+              s"Sending task to orchestrator... Task --> $task.",
             )
 
             replyTo ! TaskExecuted(task)
@@ -106,10 +107,10 @@ object ExecutionManager:
 
           case ReportTaskFailed(task) =>
             context.log.info(
-              s"ReportTaskFailed command received. Task --> $task."
+              s"ReportTaskFailed command received. Task --> $task.",
             )
             context.log.info(
-              s"Sending task to orchestrator... Task --> $task."
+              s"Sending task to orchestrator... Task --> $task.",
             )
             replyTo ! TaskExecutionError(task)
             Behaviors.same
