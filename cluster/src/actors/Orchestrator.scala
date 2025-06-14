@@ -12,7 +12,6 @@ import actors.files.RemoteFileManager
 import actors.mq.MqManager
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import types.OpaqueTypes.ExchangeName
@@ -28,9 +27,6 @@ import types.OpaqueTypes.RemoteStorageUser
 import types.OpaqueTypes.RoutingKey
 import types.Task
 
-private val DefaultExchange = ExchangeName("processing-exchange")
-private val DefaultQueue = QueueName("processing-queue")
-private val DefaultRoutingKey = RoutingKey("processing")
 val DefaultProcessorQuantity = 1
 
 object Orchestrator:
@@ -55,9 +51,41 @@ object Orchestrator:
 
   implicit val timeout: Timeout = Timeout(10.seconds)
 
-  def apply(): Behavior[CommandOrResponse] = orchestrating()
+  def apply(
+    mqHost: MqHost,
+    mqPort: MqPort,
+    mqUser: MqUser,
+    mqPassword: MqPassword,
+    mqExchangeName: ExchangeName,
+    mqQueueName: QueueName,
+    remoteStorageHost: RemoteStorageHost,
+    remoteStoragePort: RemoteStoragePort,
+    remoteStorageUser: RemoteStorageUser,
+    remoteStoragePassword: RemoteStoragePassword,
+  ): Behavior[CommandOrResponse] = orchestrating(
+    mqHost,
+    mqPort,
+    mqUser,
+    mqPassword,
+    mqExchangeName,
+    mqQueueName,
+    remoteStorageHost,
+    remoteStoragePort,
+    remoteStorageUser,
+    remoteStoragePassword,
+  )
 
   def orchestrating(
+    mqHost: MqHost,
+    mqPort: MqPort,
+    mqUser: MqUser,
+    mqPassword: MqPassword,
+    mqExchangeName: ExchangeName,
+    mqQueueName: QueueName,
+    remoteStorageHost: RemoteStorageHost,
+    remoteStoragePort: RemoteStoragePort,
+    remoteStorageUser: RemoteStorageUser,
+    remoteStoragePassword: RemoteStoragePassword,
     activeWorkers: Int = 0,
   ): Behavior[CommandOrResponse] =
     Behaviors
@@ -71,10 +99,10 @@ object Orchestrator:
 
         val remoteFileManager = context.spawn(
           RemoteFileManager(
-            RemoteStorageHost("localhost"),
-            RemoteStoragePort(21),
-            RemoteStorageUser("one"),
-            RemoteStoragePassword("123"),
+            remoteStorageHost,
+            remoteStoragePort,
+            remoteStorageUser,
+            remoteStoragePassword,
             context.self,
           ),
           "ftp-manager",
@@ -82,11 +110,11 @@ object Orchestrator:
 
         val mqManager = context.spawn(
           MqManager(
-            MqHost("localhost"),
-            MqPort(5672),
-            MqUser("guest"),
-            MqPassword("guest"),
-            DefaultQueue,
+            mqHost,
+            mqPort,
+            mqUser,
+            mqPassword,
+            mqQueueName,
             DefaultProcessorQuantity,
             context.self,
           ),
@@ -189,7 +217,7 @@ object Orchestrator:
 
                 case ExecutionManager.TaskExecuted(task) =>
                   context.log.info(
-                    s"TaskExecuted response received. TaskId --> ${task.taskId}, TaskDefintion --> ${task.taskDefinition}",
+                    s"TaskExecuted response received. TaskId --> ${task.taskId}",
                   )
                   remoteFileManager ! RemoteFileManager.UploadTaskFiles(task)
 
@@ -204,16 +232,15 @@ object Orchestrator:
 
                   context.self ! RegisterLog(task, "Task files uploaded.")
 
-                  val taskForNextStage = task.copy(
-                    taskDefinition = task.taskDefinition
-                      .copy(stages = task.taskDefinition.stages.tail),
-                  )
+                  if !task.routingKeys.tail.isEmpty then
+                    val taskForNextStage = task.copy(
+                      routingKeys = task.routingKeys.tail,
+                    )
 
-                  if !taskForNextStage.taskDefinition.stages.isEmpty then
                     mqManager ! MqManager.MqSendMessage(
                       taskForNextStage,
-                      DefaultExchange,
-                      DefaultRoutingKey,
+                      mqExchangeName,
+                      RoutingKey(taskForNextStage.routingKeys.head),
                     )
 
                     context.self ! RegisterLog(

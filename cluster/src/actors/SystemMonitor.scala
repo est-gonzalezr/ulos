@@ -9,7 +9,6 @@ import scala.concurrent.duration.*
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import oshi.SystemInfo
 
@@ -44,20 +43,20 @@ object SystemMonitor:
         Behaviors.receiveMessage { message =>
           message match
             case NotifyActiveProcessors(activeProcessors) =>
-              context.log.info(
-                s"NotifyActiveProcessors command received. ActiveProcessors --> $activeProcessors",
-              )
+              // context.log.info(
+              //   s"NotifyActiveProcessors command received. ActiveProcessors --> $activeProcessors",
+              // )
               monitorResources(maxProcessors, activeProcessors)
 
             case Monitor =>
-              context.log.info("Monitor command received.")
+              // context.log.info("Monitor command received.")
 
               val systemInfo = SystemInfo()
               val cpuUsage = getCpuUsage(systemInfo)
               val ramUsage = getRamUsage(systemInfo)
 
-              context.log.info(s"CPU Usage: $cpuUsage%")
-              context.log.info(s"RAM Usage: $ramUsage%")
+              // context.log.info(s"CPU Usage: $cpuUsage%")
+              // context.log.info(s"RAM Usage: $ramUsage%")
 
               val _ = context.scheduleOnce(5.second, context.self, Monitor)
 
@@ -65,19 +64,19 @@ object SystemMonitor:
                 val newProcessorQuantity = maxProcessors - 1
 
                 if newProcessorQuantity > 0 then
-                  context.log.info("Decrementing maxProcessors")
+                  // context.log.info("Decrementing maxProcessors")
                   replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
-                else
-                  context.log.info(
-                    "No processors available. Recommending shutdown.",
-                  )
-                  replyTo ! Orchestrator.GracefulShutdown(
-                    "Processing power exhausted.",
-                  )
+                // else
+                //   // context.log.info(
+                //   //   "No processors available. Recommending shutdown.",
+                //   // )
+                //   replyTo ! Orchestrator.GracefulShutdown(
+                //     "Processing power exhausted.",
+                //   )
                 end if
                 monitorResources(newProcessorQuantity, activeProcessors)
               else if cpuUsage < 50 && activeProcessors == maxProcessors then
-                context.log.info("Incrementing maxProcessors")
+                // context.log.info("Incrementing maxProcessors")
                 val newProcessorQuantity = maxProcessors + 1
                 replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
                 monitorResources(newProcessorQuantity, activeProcessors)

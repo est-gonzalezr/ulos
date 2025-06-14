@@ -14,7 +14,6 @@ import actors.Orchestrator
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import com.rabbitmq.client.Channel
@@ -115,7 +114,7 @@ object MqManager:
     replyTo: ActorRef[Orchestrator.Command],
   ): Behavior[Command] =
     Behaviors.setup[Command] { context =>
-      context.log.info("MqManager initialized...")
+      context.log.info("MqManager started...")
 
       // Create connection and channel to the broker to be handled by the MqManager globally
 

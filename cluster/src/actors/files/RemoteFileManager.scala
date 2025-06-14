@@ -12,10 +12,8 @@ import scala.util.Success
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
-import os.RelPath
 import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
@@ -65,7 +63,6 @@ object RemoteFileManager:
       remoteStoragePort,
       remoteStorageUser,
       remoteStoragePass,
-      0,
       replyTo,
     )
 
@@ -74,7 +71,6 @@ object RemoteFileManager:
     remoteStoragePort: RemoteStoragePort,
     remoteStorageUser: RemoteStorageUser,
     remoteStoragePass: RemoteStoragePassword,
-    activeWorkers: Int,
     replyTo: ActorRef[Response],
   ): Behavior[Command] =
     Behaviors.setup { context =>

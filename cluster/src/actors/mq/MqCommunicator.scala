@@ -12,7 +12,6 @@ import scala.util.Try
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
 import com.rabbitmq.client.Channel
@@ -85,7 +84,7 @@ object MqCommunicator:
               // context.log.info(
               //   s"Sending StatusReply.Error to MqManager. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
               // )
-              replyTo ! StatusReply.Error(exception)
+              replyTo ! StatusReply.Error(exception.getMessage())
           end match
 
         case SendAck(mqMessageId, replyTo) =>
@@ -129,7 +128,7 @@ object MqCommunicator:
               // context.log.info(
               //   s"Sending StatusReply.Error to MqManager. MqId: $mqMessageId."
               // )
-              replyTo ! StatusReply.Error(exception)
+              replyTo ! StatusReply.Error(exception.getMessage())
           end match
       end match
 

@@ -5,9 +5,35 @@
 
 import actors.Orchestrator
 import akka.actor.typed.ActorSystem
+import types.OpaqueTypes.*
 
 @main def main(): Unit =
-  val _ = ActorSystem(Orchestrator(), "task-orchestrator")
+  val mqHost = MqHost("localhost")
+  val mqPort = MqPort(5672)
+  val mqUser = MqUser("guest")
+  val mqPassword = MqPassword("guest")
+  val mqExchangeName = ExchangeName("processing-exchange")
+  val mqQueueName = QueueName("processing-queue")
+  val remoteStorageHost = RemoteStorageHost("localhost")
+  val remoteStoragePort = RemoteStoragePort(21)
+  val remoteStorageUser = RemoteStorageUser("one")
+  val remoteStoragePassword = RemoteStoragePassword("123")
+
+  val _ = ActorSystem(
+    Orchestrator(
+      mqHost,
+      mqPort,
+      mqUser,
+      mqPassword,
+      mqExchangeName,
+      mqQueueName,
+      remoteStorageHost,
+      remoteStoragePort,
+      remoteStorageUser,
+      remoteStoragePassword,
+    ),
+    "task-orchestrator",
+  )
   // guardian.terminate()
 
   // val path = Path("/Users/estebangonzalezruales/Downloads/ulos/ftp/one/task1")

@@ -9,18 +9,14 @@ import scala.collection.mutable.ListBuffer
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
-import com.github.dockerjava.api.command.CreateContainerResponse
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Frame
 import com.github.dockerjava.api.model.HostConfig
-import com.github.dockerjava.api.model.Volume
 import com.github.dockerjava.api.model.WaitResponse
-import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientBuilder
 import os.Path
 
 object DockerUtil:
-  // val config = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
   val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
 
   def filteredCommand(cmd: String): Seq[String] =
@@ -33,9 +29,10 @@ object DockerUtil:
   def runContainer(
     bindFileLocalPath: Path,
     image: String,
+    workingDir: String,
     cmd: String,
   ): (String, Int, String) =
-    val workingDir = "/temp"
+    // val workingDir = "/temp"
     val cmdSeq = filteredCommand(cmd)
 
     dockerClient
@@ -43,15 +40,11 @@ object DockerUtil:
       .withShowAll(true)
       .withShowAll(true)
       .exec()
-    // .forEach(container => println(container.getId))
-
-    // println(s"Inside docker: $bindFileLocalPath")
 
     val container = dockerClient
       .createContainerCmd(image)
       .withCmd(cmdSeq*)
       .withWorkingDir(workingDir)
-      // .withName("cypress_container")
       .withHostConfig(
         HostConfig()
           .withBinds(

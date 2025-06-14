@@ -9,15 +9,13 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import java.nio.file.FileSystem
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
+import executors.CypressExecutor
+import executors.Executor
 import types.Task
-import utilities.DockerUtil
 import utilities.FileSystemUtil
 
 object ExecutionWorker:
@@ -39,7 +37,7 @@ object ExecutionWorker:
    *   A behavior that processes a task and then stops.
    */
   def processing(): Behavior[Command] =
-    Behaviors.receive { (context, message) =>
+    Behaviors.receive { (_, message) =>
       message match
         /* **********************************************************************
          * Public commands
@@ -50,25 +48,33 @@ object ExecutionWorker:
           //   s"ExecuteTask command received. Task --> $task."
           // )
 
-          executionResult(task) match
-            case Success(executedTask) =>
-              // context.log.info(
-              //   s"Execution success. Task --> $task."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Success to ExecutionManager. Task --> $task."
-              // )
+          val executorOption = task.routingKeys.headOption match
+            case Some("processing") => Some(CypressExecutor)
+            case _                  => None
 
-              replyTo ! StatusReply.Success(executedTask)
-            case Failure(exception) =>
-              // context.log.error(
-              //   s"Execution failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Error to ExecutionManager. Task --> $task."
-              // )
+          executorOption match
+            case Some(executor) =>
+              executeTask(executor, task) match
+                case Success(executedTask) =>
+                  // context.log.info(
+                  //   s"Execution success. Task --> $task."
+                  // )
+                  // context.log.info(
+                  //   s"Sending StatusReply.Success to ExecutionManager. Task --> $task."
+                  // )
 
-              replyTo ! StatusReply.Error(exception)
+                  replyTo ! StatusReply.Success(executedTask)
+                case Failure(exception) =>
+                  // context.log.error(
+                  //   s"Execution failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
+                  // )
+                  // context.log.info(
+                  //   s"Sending StatusReply.Error to ExecutionManager. Task --> $task."
+                  // )
+
+                  replyTo ! StatusReply.Error(exception)
+            case None =>
+              replyTo ! StatusReply.Error("No executor available")
           end match
       end match
 
@@ -76,45 +82,21 @@ object ExecutionWorker:
     }
   end processing
 
-  private def executionResult(task: Task): Try[Task] =
+  private def executeTask(executor: Executor, task: Task): Try[Task] =
     Try {
       println("------------------------ Entering execution")
       FileSystemUtil.unzipFile(task.relTaskFilePath) match
         case Success(dir) =>
-          val (containerId, exitCode, output) = DockerUtil.runContainer(
-            dir,
-            "cypress/included",
-            "run -b electron",
-          )
-
-          println("------------------------------------------")
-          println(containerId)
-          println(exitCode)
-          println(output)
-          println("------------------------------------------")
-
-          os.write.over(
-            dir / s"output_${task.taskDefinition.stages.head(0)}.txt",
-            output,
-          )
+          val executedTask = executor.execute(dir, task)
 
           val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
 
-          // println("Sleeping for 5 sec")
-          // Thread.sleep(20000)
-          // println("Waking up")
-
-          task
+          executedTask
 
         case Failure(exception) =>
           println(exception)
           throw Throwable("Could not unzip file")
       end match
     }
-
-    // println("Sleeping for 5 sec")
-    // Thread.sleep(5000)
-    // println("Waking up")
-    // Try(task)
-  end executionResult
+  end executeTask
 end ExecutionWorker

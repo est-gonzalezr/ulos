@@ -5,15 +5,12 @@ package actors.execution
  *   Esteban Gonzalez Ruales
  */
 
-import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.AskPattern.*
 import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Timeout
 import types.Task
 
 object ExecutionManager:
@@ -32,7 +29,7 @@ object ExecutionManager:
   final case class TaskExecuted(task: Task) extends Response
   final case class TaskExecutionError(task: Task) extends Response
 
-  implicit val timeout: Timeout = 300.seconds
+  // implicit val timeout: Timeout = 300.seconds
 
   def apply(
     replyTo: ActorRef[Response],
@@ -86,7 +83,7 @@ object ExecutionManager:
                 ReportTaskFailed(
                   task.copy(logMessage = Some(exception.getMessage)),
                 )
-            }
+            }(using task.timeout)
 
             Behaviors.same
 

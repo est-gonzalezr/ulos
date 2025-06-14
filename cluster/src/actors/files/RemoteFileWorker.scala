@@ -9,14 +9,11 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import java.io.PrintWriter
-
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
-import org.apache.commons.net.PrintCommandListener
 import org.apache.commons.net.ftp.FTP
 import org.apache.commons.net.ftp.FTPClient
 import os.Path
@@ -68,22 +65,14 @@ object RemoteFileWorker:
             ) =>
           // context.log.info(s"DownloadFile command received. Task --> $task.")
           val filesPath = task.filePath
-          val containerPath = task.taskDefinition.stages.head(1)
 
-          (downloadFile(filesPath), downloadFile(containerPath)) match
-            case (Success(fileBytes), Success(containerBytes)) =>
+          downloadFile(filesPath) match
+            case Success(fileBytes) =>
               // context.log.info(
               //   s"Dual download success. FilePath --> $filesPath. ContainerPath --> $containerPath."
               // )
-
-              (
-                FileSystemUtil.saveFile(task.relTaskFilePath, fileBytes),
-                FileSystemUtil.saveFile(
-                  task.relContainerPath.get,
-                  containerBytes,
-                ),
-              ) match
-                case (Success(_), Success(_)) =>
+              FileSystemUtil.saveFile(task.relTaskFilePath, fileBytes) match
+                case Success(_) =>
                   // context.log.info(
                   //   s"File save success. FilePath --> $filesPath."
                   // )
@@ -96,7 +85,7 @@ object RemoteFileWorker:
 
                   replyTo ! StatusReply.Ack
 
-                case (Failure(exception), _) =>
+                case Failure(exception) =>
                   // context.log.error(
                   //   s"File save failed. FilePath --> $filesPath. Exception thrown: ${exception.getMessage()}."
                   // )
@@ -105,31 +94,11 @@ object RemoteFileWorker:
                   // )
 
                   replyTo ! StatusReply.Error(exception)
-
-                case (_, Failure(exception)) =>
-                  // context.log.error(
-                  //   s"Container save failed. ContainerPath --> $filesPath. Exception thrown: ${exception.getMessage()}."
-                  // )
-                  // context.log.info(
-                  //   s"Sending StatusReply.Error to RemoteFileManager."
-                  // )
-
-                  replyTo ! StatusReply.Error(exception)
               end match
 
-            case (Failure(exception), _) =>
+            case Failure(exception) =>
               // context.log.error(
               //   s"File download failed. FilePath --> $filesPath. Exception thrown: ${exception.getMessage()}."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Error to RemoteFileManager."
-              // )
-
-              replyTo ! StatusReply.Error(exception)
-
-            case (_, Failure(exception)) =>
-              // context.log.error(
-              //   s"Container download failed. ContainerPath --> $filesPath. Exception thrown: ${exception.getMessage()}."
               // )
               // context.log.info(
               //   s"Sending StatusReply.Error to RemoteFileManager."
@@ -150,7 +119,6 @@ object RemoteFileWorker:
             s"UploadFile command received. Task --> $task.",
           )
           val filesPath = task.filePath
-          val containerPath = task.taskDefinition.stages.head(1)
 
           FileSystemUtil.loadFile(task.relTaskFilePath) match
             case Success(bytes) =>
@@ -166,7 +134,6 @@ object RemoteFileWorker:
 
                   val results = Seq(
                     FileSystemUtil.deleteTaskBaseDir(task.relTaskFilePath),
-                    FileSystemUtil.deleteFile(task.relContainerPath.get),
                     FileSystemUtil.deleteFile(task.relTaskFilePath),
                   )
 
