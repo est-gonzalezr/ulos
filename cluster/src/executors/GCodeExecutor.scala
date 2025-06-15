@@ -13,12 +13,12 @@ import com.github.dockerjava.core.DockerClientBuilder
 import os.Path
 import types.Task
 
-object CypressExecutor extends Executor:
+object GCodeExecutor extends Executor:
   def execute(bindFileLocalPath: Path, task: Task): Try[Task] =
     Try {
 
-      val image = "cypress-executor"
-      val workingDir = "/mnt/tests/"
+      val image = "gcode-visualizer"
+      val workingDir = "/app/tests/"
       val cmdSeq = List("run")
 
       val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
@@ -86,5 +86,4 @@ object CypressExecutor extends Executor:
       task
     }
   end execute
-
-end CypressExecutor
+end CypressGrammarExecutor

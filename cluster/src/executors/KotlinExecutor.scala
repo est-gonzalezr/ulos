@@ -13,12 +13,12 @@ import com.github.dockerjava.core.DockerClientBuilder
 import os.Path
 import types.Task
 
-object CypressExecutor extends Executor:
+object KotlinExecutor extends Executor:
   def execute(bindFileLocalPath: Path, task: Task): Try[Task] =
     Try {
 
-      val image = "cypress-executor"
-      val workingDir = "/mnt/tests/"
+      val image = "android-deployer"
+      val workingDir = "/app/"
       val cmdSeq = List("run")
 
       val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
@@ -27,6 +27,7 @@ object CypressExecutor extends Executor:
         .createContainerCmd(image)
         .withCmd(cmdSeq*)
         .withWorkingDir(workingDir)
+        .withEnv("INNER_DIR=","APK_REL=/app/build/outputs/apk/debug/app-debug.apk", "PACKAGE=com.example.budgetbuddy.MainActivity", "ADB_HOST=127.0.0.1", "ADB_PORT=5555")
         .withHostConfig(
           HostConfig()
             .withBinds(
@@ -86,5 +87,4 @@ object CypressExecutor extends Executor:
       task
     }
   end execute
-
-end CypressExecutor
+end CypressGrammarExecutor

@@ -13,11 +13,11 @@ import com.github.dockerjava.core.DockerClientBuilder
 import os.Path
 import types.Task
 
-object CypressExecutor extends Executor:
+object CypressGrammarExecutor extends Executor:
   def execute(bindFileLocalPath: Path, task: Task): Try[Task] =
     Try {
 
-      val image = "cypress-executor"
+      val image = "cypress-grammar"
       val workingDir = "/mnt/tests/"
       val cmdSeq = List("run")
 
@@ -27,6 +27,7 @@ object CypressExecutor extends Executor:
         .createContainerCmd(image)
         .withCmd(cmdSeq*)
         .withWorkingDir(workingDir)
+        .withEnv("FILES_DIR=cypress/e2e", "FILE_EXT=cy.js")
         .withHostConfig(
           HostConfig()
             .withBinds(
@@ -86,5 +87,4 @@ object CypressExecutor extends Executor:
       task
     }
   end execute
-
-end CypressExecutor
+end CypressGrammarExecutor

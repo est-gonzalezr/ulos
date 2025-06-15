@@ -14,6 +14,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
 import executors.CypressExecutor
+import executors.CypressGrammarExecutor
+import executors.GCodeExecutor
 import executors.Executor
 import types.Task
 import utilities.FileSystemUtil
@@ -49,8 +51,11 @@ object ExecutionWorker:
           // )
 
           val executorOption = task.routingKeys.headOption match
-            case Some("processing") => Some(CypressExecutor)
-            case _                  => None
+            case Some("cypress-grammar-checking")   => Some(CypressGrammarExecutor)
+            case Some("cypress-execution") => Some(CypressExecutor)
+            case Some("gcode-execution") => Some(GCodeExecutor)
+
+            case _                    => None
 
           executorOption match
             case Some(executor) =>
@@ -83,20 +88,19 @@ object ExecutionWorker:
   end processing
 
   private def executeTask(executor: Executor, task: Task): Try[Task] =
-    Try {
-      println("------------------------ Entering execution")
-      FileSystemUtil.unzipFile(task.relTaskFilePath) match
-        case Success(dir) =>
-          val executedTask = executor.execute(dir, task)
+    println("------------------------ Entering execution")
+    FileSystemUtil.unzipFile(task.relTaskFilePath) match
+      case Success(dir) =>
+        val executedTask = executor.execute(dir, task)
 
-          val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
+        val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
 
-          executedTask
+        executedTask
 
-        case Failure(exception) =>
-          println(exception)
-          throw Throwable("Could not unzip file")
-      end match
-    }
+      case Failure(exception) =>
+        println(exception)
+        Failure(Throwable("Could not unzip file"))
+    end match
+
   end executeTask
 end ExecutionWorker
