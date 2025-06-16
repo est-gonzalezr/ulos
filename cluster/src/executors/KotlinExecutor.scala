@@ -27,7 +27,13 @@ object KotlinExecutor extends Executor:
         .createContainerCmd(image)
         .withCmd(cmdSeq*)
         .withWorkingDir(workingDir)
-        .withEnv("INNER_DIR=","APK_REL=/app/build/outputs/apk/debug/app-debug.apk", "PACKAGE=com.example.budgetbuddy.MainActivity", "ADB_HOST=127.0.0.1", "ADB_PORT=5555")
+        .withEnv(
+          "INNER_DIR=",
+          "APK_REL=/app/build/outputs/apk/debug/app-debug.apk",
+          "PACKAGE=com.example.budgetbuddy.MainActivity",
+          "ADB_HOST=127.0.0.1",
+          "ADB_PORT=5555",
+        )
         .withHostConfig(
           HostConfig()
             .withBinds(
@@ -87,4 +93,4 @@ object KotlinExecutor extends Executor:
       task
     }
   end execute
-end CypressGrammarExecutor
+end KotlinExecutor

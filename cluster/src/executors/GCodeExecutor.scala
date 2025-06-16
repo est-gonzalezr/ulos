@@ -86,4 +86,4 @@ object GCodeExecutor extends Executor:
       task
     }
   end execute
-end CypressGrammarExecutor
+end GCodeExecutor
