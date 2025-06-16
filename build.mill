@@ -59,13 +59,15 @@ end Dependencies
 object cluster extends Dependencies, ProjectConfigs:
   // def moduleDeps = Seq(coreUtils, storageUtils)
   def forkEnv = Map(
-    "RABBITMQ_HOST" -> "localhost",
-    "RABBITMQ_PORT" -> "5672",
-    "RABBITMQ_USER" -> "guest",
-    "RABBITMQ_PASS" -> "guest",
-    "PRIMARY_EXCHANGE" -> "processing_exchange",
-    "CONSUMPTION_QUEUE" -> "execution_testing_queue",
-    "PUBLISHING_ROUTING_KEY" -> "user.notification",
-    "DATABASE_ROUTING_KEY" -> "database.task.update"
+    "MQ_HOST" -> "localhost",
+    "MQ_PORT" -> "5672",
+    "MQ_USER" -> "guest",
+    "MQ_PASSWORD" -> "guest",
+    "MQ_EXCHANGE_NAME" -> "processing-exchange",
+    "MQ_QUEUE_NAME" -> "processing-queue",
+    "REMOTE_STORAGE_HOST" -> "localhost",
+    "REMOTE_STORAGE_PORT" -> "21",
+    "REMOTE_STORAGE_USER" -> "one",
+    "REMOTE_STORAGE_PASSWORD" -> "123"
   )
 end cluster

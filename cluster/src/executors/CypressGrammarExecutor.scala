@@ -32,10 +32,10 @@ object CypressGrammarExecutor extends Executor:
           HostConfig()
             .withBinds(
               Bind.parse(
-                s"${bindFileLocalPath.toString}:$workingDir",
-              ),
+                s"${bindFileLocalPath.toString}:$workingDir"
+              )
             )
-            .withAutoRemove(true),
+            .withAutoRemove(true)
         )
         .exec()
 
@@ -78,10 +78,11 @@ object CypressGrammarExecutor extends Executor:
 
       os.write.over(
         bindFileLocalPath / s"output_${task.routingKeys.head}.txt",
-        logBuffer.mkString("\n"),
+        logBuffer.mkString("\n")
       )
 
-      if exitCode != 0 then throw new RuntimeException(s"Container exited with code $exitCode")
+      if exitCode != 0 then
+        throw new RuntimeException(s"Container exited with code $exitCode")
       end if
 
       task

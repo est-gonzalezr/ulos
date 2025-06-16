@@ -1,9 +1,8 @@
 package types
 
-/**
- * @author
- *   Esteban Gonzalez Ruales
- */
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
 import scala.concurrent.duration.*
 
@@ -15,17 +14,16 @@ import zio.json.DeriveJsonEncoder
 import zio.json.JsonDecoder
 import zio.json.JsonEncoder
 
-/**
- * This class represents a task that is going to be executed by the system.
- */
+/** This class represents a task that is going to be executed by the system.
+  */
 final case class Task(
-  taskId: String,
-  taskOwnerId: String,
-  filePath: Path,
-  timeout: Timeout = 300.seconds,
-  routingKeys: List[String],
-  logMessage: Option[String],
-  mqId: Long = -1,
+    taskId: String,
+    taskOwnerId: String,
+    filePath: Path,
+    timeout: Timeout = 300.seconds,
+    routingKeys: List[String],
+    logMessage: Option[String],
+    mqId: Long = -1
 ):
 
   override def toString: String =
@@ -34,9 +32,9 @@ final case class Task(
   def relTaskFilePath: RelPath = filePath.relativeTo(os.root)
 end Task
 
-/**
- * Companion object for the Task class. It contains the JSON encoders and decoders.
- */
+/** Companion object for the Task class. It contains the JSON encoders and
+  * decoders.
+  */
 object Task:
   implicit val pathDecoder: JsonDecoder[Path] =
     JsonDecoder[String].map(os.Path(_))

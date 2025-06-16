@@ -1,9 +1,8 @@
 package actors.files
 
-/**
- * @author
- *   Esteban Gonzalez Ruales
- */
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
 import scala.util.Failure
 import scala.util.Success
@@ -30,20 +29,20 @@ object RemoteFileWorker:
 
   // Public command protocol
   final case class DownloadFiles(
-    remoteStorageHost: RemoteStorageHost,
-    remoteStoragePort: RemoteStoragePort,
-    remoteStorageUser: RemoteStorageUser,
-    remoteStoragePass: RemoteStoragePassword,
-    task: Task,
-    replyTo: ActorRef[StatusReply[Done]],
+      remoteStorageHost: RemoteStorageHost,
+      remoteStoragePort: RemoteStoragePort,
+      remoteStorageUser: RemoteStorageUser,
+      remoteStoragePass: RemoteStoragePassword,
+      task: Task,
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
   final case class UploadFiles(
-    remoteStorageHost: RemoteStorageHost,
-    remoteStoragePort: RemoteStoragePort,
-    remoteStorageUser: RemoteStorageUser,
-    remoteStoragePass: RemoteStoragePassword,
-    task: Task,
-    replyTo: ActorRef[StatusReply[Done]],
+      remoteStorageHost: RemoteStorageHost,
+      remoteStoragePort: RemoteStoragePort,
+      remoteStorageUser: RemoteStorageUser,
+      remoteStoragePass: RemoteStoragePassword,
+      task: Task,
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
 
   def apply(): Behavior[Command] = processing
@@ -61,7 +60,7 @@ object RemoteFileWorker:
               remoteStorageUser,
               remoteStoragePass,
               task,
-              replyTo,
+              replyTo
             ) =>
           // context.log.info(s"DownloadFile command received. Task --> $task.")
           val filesPath = task.filePath
@@ -113,10 +112,10 @@ object RemoteFileWorker:
               remoteStorageUser,
               remoteStoragePass,
               task,
-              replyTo,
+              replyTo
             ) =>
           context.log.info(
-            s"UploadFile command received. Task --> $task.",
+            s"UploadFile command received. Task --> $task."
           )
           val filesPath = task.filePath
 
@@ -134,7 +133,7 @@ object RemoteFileWorker:
 
                   val results = Seq(
                     FileSystemUtil.deleteTaskBaseDir(task.relTaskFilePath),
-                    FileSystemUtil.deleteFile(task.relTaskFilePath),
+                    FileSystemUtil.deleteFile(task.relTaskFilePath)
                   )
 
                   results.collectFirst { case Failure(exception) =>
@@ -143,7 +142,7 @@ object RemoteFileWorker:
                     case Some(exception) =>
                       // Handle the first failure (log it, throw it, etc.)
                       context.log.error(
-                        s"RemoteFileWorker failed delete operation. Exception thrown: ${exception.getMessage()}",
+                        s"RemoteFileWorker failed delete operation. Exception thrown: ${exception.getMessage()}"
                       )
                     case None =>
                     // All succeeded
@@ -151,7 +150,7 @@ object RemoteFileWorker:
                   end match
 
                   context.log.info(
-                    s"Sending StatusReply.Ack to RemoteFileManager. FilePath --> $filesPath.",
+                    s"Sending StatusReply.Ack to RemoteFileManager. FilePath --> $filesPath."
                   )
 
                   replyTo ! StatusReply.Ack
@@ -212,7 +211,7 @@ object RemoteFileWorker:
       client.setFileType(FTP.BINARY_FILE_TYPE)
       client.storeFile(
         path.toString,
-        java.io.ByteArrayInputStream(file.toArray),
+        java.io.ByteArrayInputStream(file.toArray)
       )
     }
     // client.completePendingCommand()

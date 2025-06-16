@@ -1,9 +1,8 @@
 package actors.mq
 
-/**
- * @author
- *   Esteban Gonzalez Ruales
- */
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
 import scala.concurrent.duration.*
 import scala.util.Failure
@@ -31,10 +30,10 @@ import types.Task
 
 private val DefaultMqRetries = 10
 
-/**
- * This actor manages the actors that are related to the Message Queue. It acts as the intermediary
- * between the MQ and the system that processes the tasks that come from the MQ.
- */
+/** This actor manages the actors that are related to the Message Queue. It acts
+  * as the intermediary between the MQ and the system that processes the tasks
+  * that come from the MQ.
+  */
 object MqManager:
   // Command protocol
   sealed trait Command
@@ -42,15 +41,16 @@ object MqManager:
   // Public command protocol
   final case class MqProcessTask(mqMessage: MqMessage) extends Command
   final case class MqAcknowledgeTask(
-    id: Long,
-    retries: Int = DefaultMqRetries,
+      id: Long,
+      retries: Int = DefaultMqRetries
   ) extends Command
-  final case class MqRejectTask(id: Long, retries: Int = DefaultMqRetries) extends Command
+  final case class MqRejectTask(id: Long, retries: Int = DefaultMqRetries)
+      extends Command
   final case class MqSendMessage(
-    task: Task,
-    exchange: ExchangeName,
-    routingKey: RoutingKey,
-    retries: Int = DefaultMqRetries,
+      task: Task,
+      exchange: ExchangeName,
+      routingKey: RoutingKey,
+      retries: Int = DefaultMqRetries
   ) extends Command
   final case class MqSetQosPrefetchCount(prefetchCount: Int) extends Command
   case object GracefulShutdown extends Command
@@ -66,13 +66,13 @@ object MqManager:
   implicit val timeout: Timeout = 10.seconds
 
   def apply(
-    mqHost: MqHost,
-    mqPort: MqPort,
-    mqUser: MqUser,
-    mqPass: MqPassword,
-    consumptionQueue: QueueName,
-    maxPrefetchCount: Int,
-    replyTo: ActorRef[Orchestrator.Command],
+      mqHost: MqHost,
+      mqPort: MqPort,
+      mqUser: MqUser,
+      mqPass: MqPassword,
+      consumptionQueue: QueueName,
+      maxPrefetchCount: Int,
+      replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     setup(
       mqHost,
@@ -81,37 +81,36 @@ object MqManager:
       mqPass,
       consumptionQueue,
       maxPrefetchCount,
-      replyTo,
+      replyTo
     )
 
-  /**
-   * This behavior sets up the MqManager actor and then proceeds to process the messages that are
-   * sent to it.
-   *
-   * @param mqHost
-   *   hostname of the MQ
-   * @param mqPort
-   *   port of the MQ
-   * @param mqUser
-   *   username to connect to the MQ
-   * @param mqPass
-   *   password to connect to the MQ
-   * @param consumptionQueue
-   *   name of the queue to consume messages from
-   * @param replyTo
-   *   reference to the Orchestrator actor
-   *
-   * @return
-   *   a behavior that processes the messages sent to the MqManager
-   */
+  /** This behavior sets up the MqManager actor and then proceeds to process the
+    * messages that are sent to it.
+    *
+    * @param mqHost
+    *   hostname of the MQ
+    * @param mqPort
+    *   port of the MQ
+    * @param mqUser
+    *   username to connect to the MQ
+    * @param mqPass
+    *   password to connect to the MQ
+    * @param consumptionQueue
+    *   name of the queue to consume messages from
+    * @param replyTo
+    *   reference to the Orchestrator actor
+    *
+    * @return
+    *   a behavior that processes the messages sent to the MqManager
+    */
   def setup(
-    mqHost: MqHost,
-    mqPort: MqPort,
-    mqUser: MqUser,
-    mqPass: MqPassword,
-    consumptionQueue: QueueName,
-    maxPrefetchCount: Int,
-    replyTo: ActorRef[Orchestrator.Command],
+      mqHost: MqHost,
+      mqPort: MqPort,
+      mqUser: MqUser,
+      mqPass: MqPassword,
+      consumptionQueue: QueueName,
+      maxPrefetchCount: Int,
+      replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     Behaviors.setup[Command] { context =>
       context.log.info("MqManager started...")
@@ -122,11 +121,11 @@ object MqManager:
         mqHost.value,
         mqPort.value,
         mqUser.value,
-        mqPass.value,
+        mqPass.value
       ) match
         case Success(connection) =>
           context.log.info(
-            s"Connection to broker established. Host --> ${mqHost.value}, Port --> ${mqPort.value}.",
+            s"Connection to broker established. Host --> ${mqHost.value}, Port --> ${mqPort.value}."
           )
 
           val channel = connection.createChannel
@@ -137,7 +136,7 @@ object MqManager:
           // Spawn the MqConsumer actor to be able to consume messages from the MQ
           val _ = context.spawn(
             MqConsumer(channel, consumptionQueue, context.self),
-            "mq-consumer",
+            "mq-consumer"
           )
 
           Behaviors.receiveMessage[Command] { message =>
@@ -149,30 +148,31 @@ object MqManager:
 
               case MqProcessTask(mqMessage) =>
                 context.log.info(
-                  s"MqProcessTask command received. MqMessage --> $mqMessage.",
+                  s"MqProcessTask command received. MqMessage --> $mqMessage."
                 )
                 context.log.info(s"Spawning deserializer...")
                 val deserializer = context.spawnAnonymous(MqMessageConverter())
 
                 context.log.info(s"Deserializer spawned.")
                 context.log.info(
-                  s"Sending mqMessage to deserializer... MqMessage --> $mqMessage",
+                  s"Sending mqMessage to deserializer... MqMessage --> $mqMessage"
                 )
 
                 context
                   .askWithStatus[MqMessageConverter.DeserializeMessage, Task](
                     deserializer,
-                    replyTo => MqMessageConverter.DeserializeMessage(mqMessage, replyTo),
+                    replyTo =>
+                      MqMessageConverter.DeserializeMessage(mqMessage, replyTo)
                   ) {
                     case Success(task) =>
                       context.log.info(
-                        s"Deserialization success response received from deserializer. Task awaiting rerouting to orchestrator. Task --> $task.",
+                        s"Deserialization success response received from deserializer. Task awaiting rerouting to orchestrator. Task --> $task."
                       )
                       DeliverToOrchestrator(task)
 
                     case Failure(exception) =>
                       context.log.info(
-                        s"Deserialization failure response received from deserializer. Message awaiting rejection to MQ. MqMessage --> $mqMessage. Exception thrown: ${exception.getMessage()}",
+                        s"Deserialization failure response received from deserializer. Message awaiting rejection to MQ. MqMessage --> $mqMessage. Exception thrown: ${exception.getMessage()}"
                       )
                       MqRejectTask(mqMessage.mqId)
                   }
@@ -180,7 +180,7 @@ object MqManager:
 
               case MqAcknowledgeTask(mqId, retries) =>
                 context.log.info(
-                  s"MqAcknowledgeTask command received. mqId --> $mqId.",
+                  s"MqAcknowledgeTask command received. mqId --> $mqId."
                 )
                 context.log.info(s"Spawning communicator...")
                 val communicator =
@@ -188,16 +188,16 @@ object MqManager:
 
                 context.log.info(s"Communicator spawned.")
                 context.log.info(
-                  s"Sending mqId to communicator. mqId --> $mqId",
+                  s"Sending mqId to communicator. mqId --> $mqId"
                 )
 
                 context.askWithStatus[MqCommunicator.SendAck, Done](
                   communicator,
-                  replyTo => MqCommunicator.SendAck(mqId, replyTo),
+                  replyTo => MqCommunicator.SendAck(mqId, replyTo)
                 ) {
                   case Success(Done) =>
                     context.log.info(
-                      s"MQ Ack success response received from communicator. mqId --> $mqId.",
+                      s"MQ Ack success response received from communicator. mqId --> $mqId."
                     )
                     NoOp
 
@@ -218,7 +218,7 @@ object MqManager:
 
               case MqRejectTask(mqId, retries) =>
                 context.log.info(
-                  s"MqRejectTask command received. mqId --> $mqId.",
+                  s"MqRejectTask command received. mqId --> $mqId."
                 )
                 context.log.info(s"Spawning communicator...")
                 val communicator =
@@ -226,16 +226,16 @@ object MqManager:
 
                 context.log.info(s"Communicator spawned.")
                 context.log.info(
-                  s"Sending mqId to communicator. mqId --> $mqId",
+                  s"Sending mqId to communicator. mqId --> $mqId"
                 )
 
                 context.askWithStatus[MqCommunicator.SendReject, Done](
                   communicator,
-                  replyTo => MqCommunicator.SendReject(mqId, replyTo),
+                  replyTo => MqCommunicator.SendReject(mqId, replyTo)
                 ) {
                   case Success(Done) =>
                     context.log.info(
-                      s"Reject success response received from communicator. mqId --> $mqId.",
+                      s"Reject success response received from communicator. mqId --> $mqId."
                     )
                     NoOp
 
@@ -256,26 +256,27 @@ object MqManager:
 
               case MqSendMessage(task, exchange, routingKey, retries) =>
                 context.log.info(
-                  s"MqSendMessage command received. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}.",
+                  s"MqSendMessage command received. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}."
                 )
                 context.log.info(s"Spawning serializer...")
                 val serializer = context.spawnAnonymous(MqMessageConverter())
 
                 context.log.info(s"Serializer spawned.")
                 context.log.info(
-                  s"Sending task to serializer. Task --> $task.",
+                  s"Sending task to serializer. Task --> $task."
                 )
 
                 context
                   .askWithStatus[MqMessageConverter.SerializeMessage, Seq[
-                    Byte,
+                    Byte
                   ]](
                     serializer,
-                    replyTo => MqMessageConverter.SerializeMessage(task, replyTo),
+                    replyTo =>
+                      MqMessageConverter.SerializeMessage(task, replyTo)
                   ) {
                     case Success(bytes) =>
                       context.log.info(
-                        s"Serialization success response received from serializer. Message awaiting delivery to MQ. Task --> $task.",
+                        s"Serialization success response received from serializer. Message awaiting delivery to MQ. Task --> $task."
                       )
 
                       context.log.info(s"Spawning communicator...")
@@ -284,18 +285,18 @@ object MqManager:
 
                       context.log.info(s"Communicator spawned.")
                       context.log.info(
-                        s"Sending message to communicator. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}.",
+                        s"Sending message to communicator. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}."
                       )
 
                       context.askWithStatus[MqCommunicator.SendMqMessage, Done](
                         communicator,
                         replyTo =>
                           MqCommunicator
-                            .SendMqMessage(bytes, exchange, routingKey, replyTo),
+                            .SendMqMessage(bytes, exchange, routingKey, replyTo)
                       ) {
                         case Success(Done) =>
                           context.log.info(
-                            s"Send message success response received from communicator. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}.",
+                            s"Send message success response received from communicator. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}."
                           )
                           NoOp
 
@@ -310,14 +311,14 @@ object MqManager:
                               task,
                               exchange,
                               routingKey,
-                              retries - 1,
+                              retries - 1
                             )
                           else
                             context.log.error(
                               s"$failureMessage Retries exhausted." +
                                 s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
                                 s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-                                s"\nCONTACT SYSTEM ADMINISTRATOR!!!.",
+                                s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
                             )
                             NoOp
                           end if
@@ -330,7 +331,7 @@ object MqManager:
                             .getMessage()}." +
                           s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
                           s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-                          s"\nCONTACT SYSTEM ADMINISTRATOR!!!.",
+                          s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
                       )
                       NoOp
                   }
@@ -338,17 +339,17 @@ object MqManager:
 
               case MqSetQosPrefetchCount(prefetchCount) =>
                 context.log.info(
-                  s"MqSetQosPrefetchCount command received. Setting Qos prefetch count to $prefetchCount.",
+                  s"MqSetQosPrefetchCount command received. Setting Qos prefetch count to $prefetchCount."
                 )
 
                 setQosPrefetchCount(channel, prefetchCount) match
                   case Success(_) =>
                     context.log.info(
-                      s"Qos set successfully to $prefetchCount.",
+                      s"Qos set successfully to $prefetchCount."
                     )
                   case Failure(exception) =>
                     context.log.error(
-                      s"Qos set failure. Exception thrown: ${exception.getMessage()}",
+                      s"Qos set failure. Exception thrown: ${exception.getMessage()}"
                     )
                 end match
 
@@ -360,10 +361,10 @@ object MqManager:
 
               case DeliverToOrchestrator(task) =>
                 context.log.info(
-                  s"DeliverToOrchestrator command received. Task --> $task.",
+                  s"DeliverToOrchestrator command received. Task --> $task."
                 )
                 context.log.info(
-                  s"Sending task to orchestrator... Task --> $task.",
+                  s"Sending task to orchestrator... Task --> $task."
                 )
                 replyTo ! Orchestrator.ProcessTask(task)
                 Behaviors.same
@@ -377,7 +378,7 @@ object MqManager:
 
               case GracefulShutdown =>
                 context.log.info(
-                  s"GracefulShutdown command received. Closing channel and connection to broker.",
+                  s"GracefulShutdown command received. Closing channel and connection to broker."
                 )
                 channel.close()
                 connection.close()
@@ -387,27 +388,27 @@ object MqManager:
 
         case Failure(exception) =>
           context.log.error(
-            s"Connection to broker failed. Host --> ${mqHost.value}, Port --> ${mqPort.value}. Exception thrown: ${exception.getMessage()}",
+            s"Connection to broker failed. Host --> ${mqHost.value}, Port --> ${mqPort.value}. Exception thrown: ${exception.getMessage()}"
           )
 
           context.log.error(
             s"Shutting down MqManager. CONTACT SYSTEM ADMINISTRATOR!!!." +
               s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-              s"\nCONTACT SYSTEM ADMINISTRATOR!!!.",
+              s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
           )
 
           replyTo ! Orchestrator.Fail(
-            "Connection to broker failed. CONTACT SYSTEM ADMINISTRATOR!!!.",
+            "Connection to broker failed. CONTACT SYSTEM ADMINISTRATOR!!!."
           )
           Behaviors.stopped
       end match
     }
 
   def brokerConnecton(
-    host: String,
-    port: Int,
-    user: String,
-    pass: String,
+      host: String,
+      port: Int,
+      user: String,
+      pass: String
   ): Try[Connection] =
     val factory = ConnectionFactory()
     factory.setHost(host)
@@ -415,7 +416,6 @@ object MqManager:
     factory.setUsername(user)
     factory.setPassword(pass)
     Try(factory.newConnection())
-
   end brokerConnecton
 
   def setQosPrefetchCount(channel: Channel, prefetchCount: Int): Try[Unit] =

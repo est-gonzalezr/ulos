@@ -1,22 +1,25 @@
 package actors.execution
 
-/**
- * @author
- *   Esteban Gonzalez Ruales
- */
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
+import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
 import executors.CypressExecutor
 import executors.CypressGrammarExecutor
-import executors.GCodeExecutor
 import executors.Executor
+import executors.GCodeExecutor
+import executors.KotlinExecutor
+import executors.MockExecutor
 import types.Task
 import utilities.FileSystemUtil
 
@@ -26,20 +29,23 @@ object ExecutionWorker:
 
   // Public command protocol
   final case class ExecuteTask(
-    task: Task,
-    replyTo: ActorRef[StatusReply[Task]],
+      task: Task,
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
 
   def apply(): Behavior[Command] = processing()
 
-  /**
-   * This behavior represents the processing state of the actor.
-   *
-   * @return
-   *   A behavior that processes a task and then stops.
-   */
+  /** This behavior represents the processing state of the actor.
+    *
+    * @return
+    *   A behavior that processes a task and then stops.
+    */
   def processing(): Behavior[Command] =
-    Behaviors.receive { (_, message) =>
+    Behaviors.receive { (context, message) =>
+      implicit val blockingDispatcher =
+        context.system.classicSystem.dispatchers
+          .lookup("blooking-io-dispatcher")
+
       message match
         /* **********************************************************************
          * Public commands
@@ -51,33 +57,31 @@ object ExecutionWorker:
           // )
 
           val executorOption = task.routingKeys.headOption match
-            case Some("cypress-grammar-checking")   => Some(CypressGrammarExecutor)
+            case Some("cypress-grammar-checking") =>
+              Some(CypressGrammarExecutor)
             case Some("cypress-execution") => Some(CypressExecutor)
-            case Some("gcode-execution") => Some(GCodeExecutor)
-
-            case _                    => None
+            case Some("gcode-execution")   => Some(GCodeExecutor)
+            case Some("kotlin-execution")  => Some(KotlinExecutor)
+            case Some(pattern) if "testing*".r.matches(pattern) =>
+              Some(MockExecutor)
+            case _ => None
 
           executorOption match
             case Some(executor) =>
-              executeTask(executor, task) match
-                case Success(executedTask) =>
-                  // context.log.info(
-                  //   s"Execution success. Task --> $task."
-                  // )
-                  // context.log.info(
-                  //   s"Sending StatusReply.Success to ExecutionManager. Task --> $task."
-                  // )
+              Future {
+                executeTask(executor, task)
+              }(using blockingDispatcher).onComplete {
+                case Success(tryTask) =>
+                  // replyTo ! StatusReply.Success(tryTask)
+                  tryTask match
+                    case Success(_) =>
+                      replyTo ! StatusReply.Ack
+                    case Failure(exception) =>
+                      replyTo ! StatusReply.Error(exception)
 
-                  replyTo ! StatusReply.Success(executedTask)
                 case Failure(exception) =>
-                  // context.log.error(
-                  //   s"Execution failed. Task --> $task. Exception thrown: ${exception.getMessage()}."
-                  // )
-                  // context.log.info(
-                  //   s"Sending StatusReply.Error to ExecutionManager. Task --> $task."
-                  // )
-
                   replyTo ! StatusReply.Error(exception)
+              }
             case None =>
               replyTo ! StatusReply.Error("No executor available")
           end match

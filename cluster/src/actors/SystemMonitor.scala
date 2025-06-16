@@ -1,9 +1,8 @@
 package actors
 
-/**
- * @author
- *   Esteban Gonzalez Ruales
- */
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
 import scala.concurrent.duration.*
 
@@ -22,14 +21,14 @@ object SystemMonitor:
   case object DecrementProcessors
 
   def apply(
-    maxProcessors: Int,
-    replyTo: ActorRef[Orchestrator.Command],
+      maxProcessors: Int,
+      replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     setup(maxProcessors, replyTo)
 
   def setup(
-    maxProcessors: Int,
-    replyTo: ActorRef[Orchestrator.Command],
+      maxProcessors: Int,
+      replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     Behaviors.setup { context =>
       context.log.info("System monitor started...")
@@ -37,8 +36,8 @@ object SystemMonitor:
       val _ = context.scheduleOnce(1.second, context.self, Monitor)
 
       def monitorResources(
-        maxProcessors: Int,
-        activeProcessors: Int,
+          maxProcessors: Int,
+          activeProcessors: Int
       ): Behavior[Command] =
         Behaviors.receiveMessage { message =>
           message match

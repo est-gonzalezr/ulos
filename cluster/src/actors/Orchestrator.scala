@@ -1,9 +1,8 @@
 package actors
 
-/**
- * @author
- *   Esteban Gonzalez Ruales
- */
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
 import scala.concurrent.duration.*
 
@@ -47,21 +46,22 @@ object Orchestrator:
   final case class Fail(reason: String) extends Command
 
   private type CommandOrResponse =
-    Command | ExecutionManager.Response | RemoteFileManager.Response // | MqManager.Response
+    Command | ExecutionManager.Response |
+      RemoteFileManager.Response // | MqManager.Response
 
   implicit val timeout: Timeout = Timeout(10.seconds)
 
   def apply(
-    mqHost: MqHost,
-    mqPort: MqPort,
-    mqUser: MqUser,
-    mqPassword: MqPassword,
-    mqExchangeName: ExchangeName,
-    mqQueueName: QueueName,
-    remoteStorageHost: RemoteStorageHost,
-    remoteStoragePort: RemoteStoragePort,
-    remoteStorageUser: RemoteStorageUser,
-    remoteStoragePassword: RemoteStoragePassword,
+      mqHost: MqHost,
+      mqPort: MqPort,
+      mqUser: MqUser,
+      mqPassword: MqPassword,
+      mqExchangeName: ExchangeName,
+      mqQueueName: QueueName,
+      remoteStorageHost: RemoteStorageHost,
+      remoteStoragePort: RemoteStoragePort,
+      remoteStorageUser: RemoteStorageUser,
+      remoteStoragePassword: RemoteStoragePassword
   ): Behavior[CommandOrResponse] = orchestrating(
     mqHost,
     mqPort,
@@ -72,21 +72,21 @@ object Orchestrator:
     remoteStorageHost,
     remoteStoragePort,
     remoteStorageUser,
-    remoteStoragePassword,
+    remoteStoragePassword
   )
 
   def orchestrating(
-    mqHost: MqHost,
-    mqPort: MqPort,
-    mqUser: MqUser,
-    mqPassword: MqPassword,
-    mqExchangeName: ExchangeName,
-    mqQueueName: QueueName,
-    remoteStorageHost: RemoteStorageHost,
-    remoteStoragePort: RemoteStoragePort,
-    remoteStorageUser: RemoteStorageUser,
-    remoteStoragePassword: RemoteStoragePassword,
-    activeWorkers: Int = 0,
+      mqHost: MqHost,
+      mqPort: MqPort,
+      mqUser: MqUser,
+      mqPassword: MqPassword,
+      mqExchangeName: ExchangeName,
+      mqQueueName: QueueName,
+      remoteStorageHost: RemoteStorageHost,
+      remoteStoragePort: RemoteStoragePort,
+      remoteStorageUser: RemoteStorageUser,
+      remoteStoragePassword: RemoteStoragePassword,
+      activeWorkers: Int = 0
   ): Behavior[CommandOrResponse] =
     Behaviors
       .setup[CommandOrResponse] { context =>
@@ -94,7 +94,7 @@ object Orchestrator:
 
         val executionManager = context.spawn(
           ExecutionManager(context.self),
-          "processing-manager",
+          "processing-manager"
         )
 
         val remoteFileManager = context.spawn(
@@ -103,9 +103,9 @@ object Orchestrator:
             remoteStoragePort,
             remoteStorageUser,
             remoteStoragePassword,
-            context.self,
+            context.self
           ),
-          "ftp-manager",
+          "ftp-manager"
         )
 
         val mqManager = context.spawn(
@@ -116,14 +116,14 @@ object Orchestrator:
             mqPassword,
             mqQueueName,
             DefaultProcessorQuantity,
-            context.self,
+            context.self
           ),
-          "mq-manager",
+          "mq-manager"
         )
 
         val systemMonitor = context.spawn(
           SystemMonitor(DefaultProcessorQuantity, context.self),
-          "system-monitor",
+          "system-monitor"
         )
 
         def orchestrating(activeWorkers: Int): Behavior[CommandOrResponse] =
@@ -137,64 +137,64 @@ object Orchestrator:
 
                 case SetProcessorLimit(limit) =>
                   context.log.info(
-                    s"SetProcessorLimit command received. Limit --> $limit",
+                    s"SetProcessorLimit command received. Limit --> $limit"
                   )
                   mqManager ! MqManager.MqSetQosPrefetchCount(limit)
                   Behaviors.same
 
                 case ProcessTask(task) =>
                   context.log.info(
-                    s"ProcessTask command received. Task --> $task",
+                    s"ProcessTask command received. Task --> $task"
                   )
                   remoteFileManager ! RemoteFileManager.DownloadTaskFiles(task)
                   context.self ! RegisterLog(
                     task,
-                    "Task received for processing.",
+                    "Task received for processing."
                   )
 
                   val numActiveWorkers = activeWorkers + 1
                   systemMonitor ! SystemMonitor.NotifyActiveProcessors(
-                    numActiveWorkers,
+                    numActiveWorkers
                   )
                   orchestrating(numActiveWorkers)
 
                 case GeneralAcknowledgeTask(task) =>
                   context.log.info(
-                    s"GeneralAcknowledgeTask command received. TaskId --> ${task.mqId}.",
+                    s"GeneralAcknowledgeTask command received. TaskId --> ${task.mqId}."
                   )
                   mqManager ! MqManager.MqAcknowledgeTask(task.mqId)
 
                   context.self ! RegisterLog(
                     task,
-                    "Task ack sent to broker.",
+                    "Task ack sent to broker."
                   )
 
                   val numActiveWorkers = activeWorkers - 1
                   systemMonitor ! SystemMonitor.NotifyActiveProcessors(
-                    numActiveWorkers,
+                    numActiveWorkers
                   )
                   orchestrating(numActiveWorkers)
 
                 case GeneralRejectTask(task) =>
                   context.log.info(
-                    s"GeneralRejectTask command received. TaskId --> ${task.mqId}.",
+                    s"GeneralRejectTask command received. TaskId --> ${task.mqId}."
                   )
                   mqManager ! MqManager.MqRejectTask(task.mqId)
 
                   context.self ! RegisterLog(
                     task,
-                    "Task reject sent to broker.",
+                    "Task reject sent to broker."
                   )
 
                   val numActiveWorkers = activeWorkers - 1
                   systemMonitor ! SystemMonitor.NotifyActiveProcessors(
-                    numActiveWorkers,
+                    numActiveWorkers
                   )
                   orchestrating(numActiveWorkers)
 
                 case RegisterLog(task, log) =>
                   context.log.info(
-                    s"RegisterLog command received. Log --> $log.",
+                    s"RegisterLog command received. Log --> $log."
                   )
                   Behaviors.same
 
@@ -204,20 +204,20 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskDownloaded(task) =>
                   context.log.info(
-                    s"TaskDownloaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}.",
+                    s"TaskDownloaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}."
                   )
                   executionManager ! ExecutionManager.ExecuteTask(task)
 
                   context.self ! RegisterLog(
                     task,
-                    "Task files donwloaded for processing.",
+                    "Task files donwloaded for processing."
                   )
 
                   Behaviors.same
 
                 case ExecutionManager.TaskExecuted(task) =>
                   context.log.info(
-                    s"TaskExecuted response received. TaskId --> ${task.taskId}",
+                    s"TaskExecuted response received. TaskId --> ${task.taskId}"
                   )
                   remoteFileManager ! RemoteFileManager.UploadTaskFiles(task)
 
@@ -227,25 +227,25 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskUploaded(task) =>
                   context.log.info(
-                    s"TaskUploaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}.",
+                    s"TaskUploaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}."
                   )
 
                   context.self ! RegisterLog(task, "Task files uploaded.")
 
-                  if !task.routingKeys.tail.isEmpty then
+                  if task.routingKeys.tail.nonEmpty then
                     val taskForNextStage = task.copy(
-                      routingKeys = task.routingKeys.tail,
+                      routingKeys = task.routingKeys.tail
                     )
 
                     mqManager ! MqManager.MqSendMessage(
                       taskForNextStage,
                       mqExchangeName,
-                      RoutingKey(taskForNextStage.routingKeys.head),
+                      RoutingKey(taskForNextStage.routingKeys.head)
                     )
 
                     context.self ! RegisterLog(
                       taskForNextStage,
-                      "Task sent for next processing stage.",
+                      "Task sent for next processing stage."
                     )
                   end if
 
@@ -254,12 +254,12 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskDownloadFailed(task) =>
                   context.log.info(
-                    s"TaskDownloadFailed response received. TaskId --> ${task.taskId}.",
+                    s"TaskDownloadFailed response received. TaskId --> ${task.taskId}."
                   )
 
                   context.self ! RegisterLog(
                     task,
-                    s"Task files download failed with message: ${task.logMessage}",
+                    s"Task files download failed with message: ${task.logMessage}"
                   )
 
                   context.self ! GeneralRejectTask(task)
@@ -267,12 +267,12 @@ object Orchestrator:
 
                 case RemoteFileManager.TaskUploadFailed(task) =>
                   context.log.info(
-                    s"TaskUploadFailed response received. TaskId --> ${task.taskId}, Files --> ${task.filePath.toString}.",
+                    s"TaskUploadFailed response received. TaskId --> ${task.taskId}, Files --> ${task.filePath.toString}."
                   )
 
                   context.self ! RegisterLog(
                     task,
-                    s"Task files upload failed with message: ${task.logMessage}",
+                    s"Task files upload failed with message: ${task.logMessage}"
                   )
 
                   context.self ! GeneralRejectTask(task)
@@ -280,12 +280,12 @@ object Orchestrator:
 
                 case ExecutionManager.TaskExecutionError(task) =>
                   context.log.info(
-                    s"TaskExecutionError response received. TaskId --> ${task.taskId}.",
+                    s"TaskExecutionError response received. TaskId --> ${task.taskId}."
                   )
 
                   context.self ! RegisterLog(
                     task,
-                    s"Task execution failed with message: ${task.logMessage}",
+                    s"Task execution failed with message: ${task.logMessage}"
                   )
 
                   context.self ! GeneralRejectTask(task)
@@ -293,14 +293,14 @@ object Orchestrator:
 
                 case GracefulShutdown(reason) =>
                   context.log.info(
-                    s"GracefulShutdown command received. Reason --> $reason",
+                    s"GracefulShutdown command received. Reason --> $reason"
                   )
                   mqManager ! MqManager.GracefulShutdown
                   Behaviors.stopped
 
                 case Fail(reason) =>
                   context.log.error(
-                    s"Fail command received. Reason --> $reason",
+                    s"Fail command received. Reason --> $reason"
                   )
                   Behaviors.stopped
             }

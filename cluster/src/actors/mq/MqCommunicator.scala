@@ -1,9 +1,8 @@
 package actors.mq
 
-/**
- * @author
- *   Esteban Gonzalez Ruales
- */
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
 import scala.util.Failure
 import scala.util.Success
@@ -24,31 +23,30 @@ object MqCommunicator:
 
   // Public command protocol
   final case class SendMqMessage(
-    bytes: Seq[Byte],
-    exchangeName: ExchangeName,
-    routingKey: RoutingKey,
-    replyTo: ActorRef[StatusReply[Done]],
+      bytes: Seq[Byte],
+      exchangeName: ExchangeName,
+      routingKey: RoutingKey,
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
   final case class SendAck(
-    mqMessageId: Long,
-    replyTo: ActorRef[StatusReply[Done]],
+      mqMessageId: Long,
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
   final case class SendReject(
-    mqMessageId: Long,
-    replyTo: ActorRef[StatusReply[Done]],
+      mqMessageId: Long,
+      replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
 
   def apply(channel: Channel): Behavior[Command] = processing(channel)
 
-  /**
-   * This behavior processes the messages to be sent to the Message Queue.
-   *
-   * @param channel
-   *   The channel to the Message Queue.
-   *
-   * @return
-   *   A behavior that processes the messages to be sent to the Message Queue.
-   */
+  /** This behavior processes the messages to be sent to the Message Queue.
+    *
+    * @param channel
+    *   The channel to the Message Queue.
+    *
+    * @return
+    *   A behavior that processes the messages to be sent to the Message Queue.
+    */
   def processing(channel: Channel): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
@@ -59,14 +57,14 @@ object MqCommunicator:
 
         case SendMqMessage(bytes, exchangeName, routingKey, replyTo) =>
           context.log.info(
-            s"SendMqMessage command received. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey.",
+            s"SendMqMessage command received. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
           )
 
           sendmessage(
             channel,
             exchangeName,
             routingKey,
-            bytes,
+            bytes
           ) match
             case Success(_) =>
               // context.log.info(
@@ -136,61 +134,58 @@ object MqCommunicator:
     }
   end processing
 
-  /**
-   * Sends an ack to the MQ.
-   *
-   * @param channel
-   *   The channel to the MQ.
-   * @param mqMessageId
-   *   The id of the message to ack.
-   *
-   * @return
-   *   A Try[Unit] indicating the result of the operation.
-   */
+  /** Sends an ack to the MQ.
+    *
+    * @param channel
+    *   The channel to the MQ.
+    * @param mqMessageId
+    *   The id of the message to ack.
+    *
+    * @return
+    *   A Try[Unit] indicating the result of the operation.
+    */
   def sendAck(channel: Channel, mqMessageId: Long): Try[Unit] =
     Try(channel.basicAck(mqMessageId, false))
 
-  /**
-   * Sends a reject to the MQ.
-   *
-   * @param channel
-   *   The channel to the MQ.
-   * @param mqMessageId
-   *   The id of the message to reject.
-   *
-   * @return
-   *   A Try[Unit] indicating the result of the operation.
-   */
+  /** Sends a reject to the MQ.
+    *
+    * @param channel
+    *   The channel to the MQ.
+    * @param mqMessageId
+    *   The id of the message to reject.
+    *
+    * @return
+    *   A Try[Unit] indicating the result of the operation.
+    */
   def sendReject(channel: Channel, mqMessageId: Long): Try[Unit] =
     Try(channel.basicReject(mqMessageId, false))
 
-  /**
-   * Sends a message to the MQ.
-   *
-   * @param channel
-   *   The channel to the MQ.
-   * @param exchangeName
-   *   The name of the exchange to send the message to.
-   * @param routingKey
-   *   The routing key to use to send the message.
-   * @param message
-   *   The message to send.
-   *
-   * @return
-   *   A Try[Unit] indicating the result of the operation.
-   */
+  /** Sends a message to the MQ.
+    *
+    * @param channel
+    *   The channel to the MQ.
+    * @param exchangeName
+    *   The name of the exchange to send the message to.
+    * @param routingKey
+    *   The routing key to use to send the message.
+    * @param message
+    *   The message to send.
+    *
+    * @return
+    *   A Try[Unit] indicating the result of the operation.
+    */
   def sendmessage(
-    channel: Channel,
-    exchangeName: ExchangeName,
-    routingKey: RoutingKey,
-    message: Seq[Byte],
+      channel: Channel,
+      exchangeName: ExchangeName,
+      routingKey: RoutingKey,
+      message: Seq[Byte]
   ): Try[Unit] =
     Try {
       channel.basicPublish(
         exchangeName.value,
         routingKey.value,
         null,
-        message.toArray,
+        message.toArray
       )
     }
 

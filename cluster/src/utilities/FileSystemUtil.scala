@@ -1,9 +1,8 @@
 package utilities
 
-/**
- * @author
- *   Esteban Gonzalez Ruales
- */
+/** @author
+  *   Esteban Gonzalez Ruales
+  */
 
 import scala.util.Try
 
@@ -52,16 +51,20 @@ object FileSystemUtil:
       val _ = os.unzip(
         absPath,
         unzipPath,
-        excludePatterns = excludedPatterns,
+        excludePatterns = excludedPatterns
       )
 
       if os.list(unzipPath).length == 1 && os.isDir(os.list(unzipPath).head)
       then
         os.list(unzipPath)
-          .foreach(path => os.move(path, path / os.up / tempDir, replaceExisting = true))
+          .foreach(path =>
+            os.move(path, path / os.up / tempDir, replaceExisting = true)
+          )
 
         os.list(unzipPath / tempDir)
-          .foreach(path => os.move(path, unzipPath / path.last, replaceExisting = true))
+          .foreach(path =>
+            os.move(path, unzipPath / path.last, replaceExisting = true)
+          )
         os.remove.all(unzipPath / tempDir)
       end if
 
@@ -74,7 +77,7 @@ object FileSystemUtil:
     val zipPath = absPath / os.up / absPath.baseName
     val _ = os.remove.all(absPath)
     Try(
-      os.zip(absPath, Seq(zipPath), excludePatterns = excludedPatterns),
+      os.zip(absPath, Seq(zipPath), excludePatterns = excludedPatterns)
     )
   end zipFile
 

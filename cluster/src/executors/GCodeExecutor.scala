@@ -16,7 +16,6 @@ import types.Task
 object GCodeExecutor extends Executor:
   def execute(bindFileLocalPath: Path, task: Task): Try[Task] =
     Try {
-
       val image = "gcode-visualizer"
       val workingDir = "/app/tests/"
       val cmdSeq = List("run")
