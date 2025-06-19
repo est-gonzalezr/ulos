@@ -1,10 +1,14 @@
 package actors
 
+import scala.concurrent.duration.*
+
 import actors.execution.ExecutionManager
 import actors.mq.MqManager
 import actors.storage.RemoteStorageManager
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.ChildFailed
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
 import types.MessageQueueConnectionParams
 import types.OpaqueTypes.MqExchangeName
@@ -13,6 +17,8 @@ import types.OpaqueTypes.RoutingKey
 import types.OrchestratorSetup
 import types.RemoteStorageConnectionParams
 import types.Task
+
+val MaxConsecutiveRestarts = 5
 
 object Orchestrator:
   // Command protocol
@@ -53,27 +59,43 @@ object Orchestrator:
     Behaviors.setup[CommandOrResponse] { context =>
       context.log.info("Orchestrator started...")
 
+      val supervisedExecutionManager = Behaviors
+        .supervise(ExecutionManager(context.self))
+        .onFailure(
+          SupervisorStrategy.restart
+            .withLimit(MaxConsecutiveRestarts, 10.minutes)
+        )
       val executionManager = context.spawn(
-        ExecutionManager(context.self),
+        supervisedExecutionManager,
         "processing-manager"
       )
+      context.watch(executionManager)
 
+      val supervisedRemoteManager = Behaviors
+        .supervise(RemoteStorageManager(rsConnParams, context.self))
+        .onFailure(
+          SupervisorStrategy
+            .restartWithBackoff(1.seconds, 20.seconds, 0.2)
+            .withMaxRestarts(MaxConsecutiveRestarts)
+        )
       val remoteManager = context.spawn(
-        RemoteStorageManager(
-          rsConnParams,
-          context.self
-        ),
+        supervisedRemoteManager,
         "ftp-manager"
       )
+      context.watch(remoteManager)
 
+      val supervisedMqManager = Behaviors
+        .supervise(MqManager(mqConnParams, mqQueueName, context.self))
+        .onFailure(
+          SupervisorStrategy.stop
+            // .restartWithBackoff(1.seconds, 20.seconds, 0.2)
+            // .withMaxRestarts(MaxConsecutiveRestarts)
+        )
       val mqManager = context.spawn(
-        MqManager(
-          mqConnParams,
-          mqQueueName,
-          context.self
-        ),
+        supervisedMqManager,
         "mq-manager"
       )
+      context.watch(mqManager)
 
       val systemMonitor = context.spawn(
         SystemMonitor(1, context.self),
@@ -255,7 +277,7 @@ object Orchestrator:
             context.log.info(
               s"GracefulShutdown command received. Reason --> $reason"
             )
-            orchestratorSetup.messageQueueManager ! MqManager.GracefulShutdown
+            // orchestratorSetup.messageQueueManager ! MqManager.GracefulShutdown
             Behaviors.stopped
 
           case Fail(reason) =>
@@ -263,6 +285,10 @@ object Orchestrator:
               s"Fail command received. Reason --> $reason"
             )
             Behaviors.stopped
+      }
+      .receiveSignal { case (context, ChildFailed(ref)) =>
+        context.log.error(s"Child actor failed: $ref")
+        Behaviors.same
       }
   end orchestrating
 

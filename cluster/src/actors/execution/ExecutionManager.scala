@@ -71,9 +71,7 @@ object ExecutionManager:
       context: ActorContext[Command],
       task: Task
   ): Unit =
-    val executionWorker = context.spawnAnonymous(
-      ExecutionWorker()
-    )
+    val executionWorker = context.spawnAnonymous(ExecutionWorker())
 
     context.askWithStatus[
       ExecutionWorker.ExecuteTask,

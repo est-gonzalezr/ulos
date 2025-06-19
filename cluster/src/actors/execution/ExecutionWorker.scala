@@ -35,10 +35,6 @@ object ExecutionWorker:
     */
   def processing(): Behavior[Command] =
     Behaviors.receive { (context, message) =>
-      // implicit val blockingDispatcher =
-      //   context.system.classicSystem.dispatchers
-      //     .lookup("blooking-io-dispatcher")
-
       message match
         /* **********************************************************************
          * Public commands
@@ -46,10 +42,9 @@ object ExecutionWorker:
 
         case ExecuteTask(task, replyTo) =>
           handleExecuteTask(context, task, replyTo)
-          replyTo ! StatusReply.Ack
-      end match
+          Behaviors.stopped
 
-      Behaviors.stopped
+      end match
     }
   end processing
 

@@ -13,12 +13,9 @@ import com.rabbitmq.client.Connection
   *   The RabbitMQ channel object
   * @param orchestratorRef
   *   The reference to the Orchestrator actor
-  * @param mqConsumerRef
-  *   The reference to the MQConsumer actor
   */
 final case class MqManagerSetup(
     connection: Connection,
     channel: Channel,
-    orchestratorRef: ActorRef[Orchestrator.Command],
-    mqConsumerRef: ActorRef[Nothing]
+    orchestratorRef: ActorRef[Orchestrator.Command]
 )

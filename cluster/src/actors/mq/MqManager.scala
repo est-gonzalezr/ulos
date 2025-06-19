@@ -1,7 +1,6 @@
 package actors.mq
 
 import scala.concurrent.duration.*
-import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -10,12 +9,17 @@ import actors.Orchestrator
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.PreRestart
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
+import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.DefaultConsumer
+import com.rabbitmq.client.Envelope
 import types.MessageQueueConnectionParams
 import types.MqManagerSetup
 import types.MqMessage
@@ -51,7 +55,6 @@ object MqManager:
       routingKey: RoutingKey,
       retries: Int = DefaultMqRetries
   ) extends Command
-  case object GracefulShutdown extends Command
 
   // Internal command protocol
   private final case class DeliverToOrchestrator(task: Task) extends Command
@@ -68,6 +71,7 @@ object MqManager:
       consumptionQueue,
       replyTo
     )
+  end apply
 
   /** Sets up the actor.
     *
@@ -105,11 +109,17 @@ object MqManager:
           Behaviors.stopped
         ,
         (connection, channel) =>
-          val mqConsumer = context.spawn(
-            MqConsumer(channel, consumptionQueue, context.self),
-            "mq-consumer"
-          )
-          val setup = MqManagerSetup(connection, channel, replyTo, mqConsumer)
+          // val supervisedMqConsumer = Behaviors
+          //   .supervise(MqConsumer(channel, consumptionQueue, context.self))
+          //   .onFailure(SupervisorStrategy.restart)
+
+          // val mqConsumer = context.spawn(
+          //   MqConsumer(channel, consumptionQueue, context.self),
+          //   "mq-consumer"
+          // )
+          val consumer = RabbitMqConsumer(channel, context.self)
+          val _ = channel.basicConsume(consumptionQueue.value, false, consumer)
+          val setup = MqManagerSetup(connection, channel, replyTo)
           handleMessages(setup)
       )
 
@@ -126,63 +136,69 @@ object MqManager:
     *   A Behavior that handles messages received by the actor.
     */
   private def handleMessages(setup: MqManagerSetup): Behavior[Command] =
-    Behaviors.receive { (context, message) =>
-      message match
+    Behaviors
+      .receive[Command] { (context, message) =>
+        message match
 
-        /* **********************************************************************
-         * Public commands
-         * ********************************************************************** */
+          /* **********************************************************************
+           * Public commands
+           * ********************************************************************** */
 
-        case MqProcessTask(mqMessage) =>
-          delegateProcessTask(context, mqMessage)
-          Behaviors.same
+          case MqProcessTask(mqMessage) =>
+            delegateProcessTask(context, mqMessage)
+            Behaviors.same
 
-        case MqAckTask(mqId, retries) =>
-          delegateAckTask(context, setup.channel, mqId, retries)
-          Behaviors.same
+          case MqAckTask(mqId, retries) =>
+            delegateAckTask(context, setup.channel, mqId, retries)
+            Behaviors.same
 
-        case MqRejectTask(mqId, retries) =>
-          delegateRejectTask(context, setup.channel, mqId, retries)
-          Behaviors.same
+          case MqRejectTask(mqId, retries) =>
+            delegateRejectTask(context, setup.channel, mqId, retries)
+            Behaviors.same
 
-        case MqSendMessage(task, exchange, routingKey, retries) =>
-          delegatePublishTask(
-            context,
-            setup.channel,
-            exchange,
-            routingKey,
-            task,
-            retries
-          )
-          Behaviors.same
+          case MqSendMessage(task, exchange, routingKey, retries) =>
+            delegatePublishTask(
+              context,
+              setup.channel,
+              exchange,
+              routingKey,
+              task,
+              retries
+            )
+            Behaviors.same
 
-        /* **********************************************************************
-         * Internal commands
-         * ********************************************************************** */
+          /* **********************************************************************
+           * Internal commands
+           * ********************************************************************** */
 
-        case DeliverToOrchestrator(task) =>
-          setup.orchestratorRef ! Orchestrator.ProcessTask(task)
-          Behaviors.same
+          case DeliverToOrchestrator(task) =>
+            setup.orchestratorRef ! Orchestrator.ProcessTask(task)
+            Behaviors.same
 
-        case NoOp =>
-          Behaviors.same
+          case NoOp =>
+            Behaviors.same
 
-        case NotifyFatalFailure(th) =>
-          setup.orchestratorRef ! Orchestrator.Fail(th)
-          Behaviors.same
+          case NotifyFatalFailure(th) =>
+            setup.orchestratorRef ! Orchestrator.Fail(th)
+            Behaviors.same
 
-        /* **********************************************************************
-         * Shutdown command
-         * ********************************************************************** */
-        case GracefulShutdown =>
-          context.log.info(
-            "GracefulShutdown command received. Closing channel and connection to broker."
-          )
-          setup.channel.close()
+        end match
+      }
+      .receiveSignal {
+        case (_, PreRestart) =>
+          // context.log.info(
+          //   "MqManager stopped. Shutting down Connection and Channel"
+          // )
+          println("PreRestart")
           setup.connection.close()
-          Behaviors.stopped
-      end match
-    }
+          setup.channel.close()
+          Behaviors.same
+        case any =>
+          println("what the f")
+          println(any)
+          Behaviors.same
+      }
+  end handleMessages
 
   /** Send a task to the processing cycle.
     *
@@ -198,7 +214,11 @@ object MqManager:
       context: ActorContext[Command],
       mqMessage: MqMessage
   ): Unit =
-    val deserializer = context.spawnAnonymous(MqTranslator())
+    val supervisedDeserializer =
+      Behaviors.supervise(MqTranslator()).onFailure(SupervisorStrategy.stop)
+
+    val deserializer = context.spawnAnonymous(supervisedDeserializer)
+    // context.watchWith(deserializer, MqRejectTask(mqMessage.mqId))
 
     context.askWithStatus[MqTranslator.DeserializeMessage, Task](
       deserializer,
@@ -233,6 +253,8 @@ object MqManager:
       mqId: Long,
       retries: Int
   ): Unit =
+
+    // val supervisedCommunicator = Behaviors.supervise(MqCommunicator(channel)).onFailure(SupervisorStrategy.stop)
     val communicator = context.spawnAnonymous(MqCommunicator(channel))
 
     context.askWithStatus[MqCommunicator.AckMessage, Done](
@@ -403,5 +425,29 @@ object MqManager:
       val channel = connection.createChannel()
       (connection, channel)
     }
+  end initializeBrokerLink
+
+  /** A RabbitMQ consumer that consumes messages from the message queue..
+    *
+    * @param channel
+    *   The channel to the Message Queue.
+    * @param replyTo
+    *   The reference to the MqManager actor.
+    */
+  private class RabbitMqConsumer(
+      channel: Channel,
+      replyTo: ActorRef[MqManager.Command]
+  ) extends DefaultConsumer(channel):
+    override def handleDelivery(
+        consumerTag: String,
+        envelope: Envelope,
+        properties: BasicProperties,
+        body: Array[Byte]
+    ): Unit =
+      replyTo ! MqManager.MqProcessTask(
+        MqMessage(envelope.getDeliveryTag, body.toSeq)
+      )
+    end handleDelivery
+  end RabbitMqConsumer
 
 end MqManager
