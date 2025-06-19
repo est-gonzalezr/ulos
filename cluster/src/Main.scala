@@ -1,27 +1,34 @@
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
 import scala.sys
 
 import actors.Orchestrator
 import akka.actor.typed.ActorSystem
+import types.MessageQueueConnectionParams
 import types.OpaqueTypes.*
+import types.RemoteStorageConnectionParams
 
 @main def main(): Unit =
   getEnvVars() match
     case Right(envMap) =>
+      val mqConnParams = MessageQueueConnectionParams(
+        MqHost(envMap("MQ_HOST")),
+        MqPort(envMap("MQ_PORT").toInt),
+        MqUsername(envMap("MQ_USER")),
+        MqPassword(envMap("MQ_PASSWORD"))
+      )
+
+      val rsConnParams = RemoteStorageConnectionParams(
+        RemoteStorageHost(envMap("REMOTE_STORAGE_HOST")),
+        RemoteStoragePort(envMap("REMOTE_STORAGE_PORT").toInt),
+        RemoteStorageUsername(envMap("REMOTE_STORAGE_USER")),
+        RemoteStoragePassword(envMap("REMOTE_STORAGE_PASSWORD"))
+      )
+
       val _ = ActorSystem(
         Orchestrator(
-          MqHost(envMap("MQ_HOST")),
-          MqPort(envMap("MQ_PORT").toInt),
-          MqUser(envMap("MQ_USER")),
-          MqPassword(envMap("MQ_PASSWORD")),
-          ExchangeName(envMap("MQ_EXCHANGE_NAME")),
-          QueueName(envMap("MQ_QUEUE_NAME")),
-          RemoteStorageHost(envMap("REMOTE_STORAGE_HOST")),
-          RemoteStoragePort(envMap("REMOTE_STORAGE_PORT").toInt),
-          RemoteStorageUser(envMap("REMOTE_STORAGE_USER")),
-          RemoteStoragePassword(envMap("REMOTE_STORAGE_PASSWORD"))
+          MqExchangeName(envMap("MQ_EXCHANGE_NAME")),
+          MqQueueName(envMap("MQ_QUEUE_NAME")),
+          mqConnParams,
+          rsConnParams
         ),
         "task-orchestrator"
       )

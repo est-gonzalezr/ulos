@@ -1,9 +1,5 @@
 package types
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
 /** This class represents a message that can either be received or sent to the
   * Message Queue.
   *

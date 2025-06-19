@@ -1,9 +1,5 @@
 package utilities
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
 import scala.util.Try
 
 import os.Path

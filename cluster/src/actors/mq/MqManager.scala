@@ -1,10 +1,7 @@
 package actors.mq
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
 import scala.concurrent.duration.*
+import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -13,34 +10,36 @@ import actors.Orchestrator
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
+import types.MessageQueueConnectionParams
+import types.MqManagerSetup
 import types.MqMessage
-import types.OpaqueTypes.ExchangeName
-import types.OpaqueTypes.MqHost
-import types.OpaqueTypes.MqPassword
-import types.OpaqueTypes.MqPort
-import types.OpaqueTypes.MqUser
-import types.OpaqueTypes.QueueName
+import types.OpaqueTypes.MqExchangeName
+import types.OpaqueTypes.MqQueueName
 import types.OpaqueTypes.RoutingKey
 import types.Task
+import utilities.MiscUtils
 
 private val DefaultMqRetries = 10
 
-/** This actor manages the actors that are related to the Message Queue. It acts
-  * as the intermediary between the MQ and the system that processes the tasks
-  * that come from the MQ.
+/** A persistent actor responsible for managing actors with message queue
+  * related tasks. It acts as the intermediary between the message queue and the
+  * system that processes the tasks.
   */
 object MqManager:
+  given Timeout = 10.seconds
+
   // Command protocol
   sealed trait Command
 
   // Public command protocol
   final case class MqProcessTask(mqMessage: MqMessage) extends Command
-  final case class MqAcknowledgeTask(
+  final case class MqAckTask(
       id: Long,
       retries: Int = DefaultMqRetries
   ) extends Command
@@ -48,381 +47,361 @@ object MqManager:
       extends Command
   final case class MqSendMessage(
       task: Task,
-      exchange: ExchangeName,
+      exchange: MqExchangeName,
       routingKey: RoutingKey,
       retries: Int = DefaultMqRetries
   ) extends Command
-  final case class MqSetQosPrefetchCount(prefetchCount: Int) extends Command
   case object GracefulShutdown extends Command
 
   // Internal command protocol
   private final case class DeliverToOrchestrator(task: Task) extends Command
+  private final case class NotifyFatalFailure(th: Throwable) extends Command
   private case object NoOp extends Command
 
-  // Response Protocol
-  sealed trait Response
-
-  // Implicit timeout for ask pattern
-  implicit val timeout: Timeout = 10.seconds
-
   def apply(
-      mqHost: MqHost,
-      mqPort: MqPort,
-      mqUser: MqUser,
-      mqPass: MqPassword,
-      consumptionQueue: QueueName,
-      maxPrefetchCount: Int,
+      connParams: MessageQueueConnectionParams,
+      consumptionQueue: MqQueueName,
       replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     setup(
-      mqHost,
-      mqPort,
-      mqUser,
-      mqPass,
+      connParams,
       consumptionQueue,
-      maxPrefetchCount,
       replyTo
     )
 
-  /** This behavior sets up the MqManager actor and then proceeds to process the
-    * messages that are sent to it.
+  /** Sets up the actor.
     *
-    * @param mqHost
-    *   hostname of the MQ
-    * @param mqPort
-    *   port of the MQ
-    * @param mqUser
-    *   username to connect to the MQ
-    * @param mqPass
-    *   password to connect to the MQ
+    * @param connParams
+    *   parameters for connecting to the message queue
     * @param consumptionQueue
     *   name of the queue to consume messages from
     * @param replyTo
     *   reference to the Orchestrator actor
     *
     * @return
-    *   a behavior that processes the messages sent to the MqManager
+    *   a Behavior that processes the messages sent to the actor
     */
-  def setup(
-      mqHost: MqHost,
-      mqPort: MqPort,
-      mqUser: MqUser,
-      mqPass: MqPassword,
-      consumptionQueue: QueueName,
-      maxPrefetchCount: Int,
+  private def setup(
+      connParams: MessageQueueConnectionParams,
+      consumptionQueue: MqQueueName,
       replyTo: ActorRef[Orchestrator.Command]
   ): Behavior[Command] =
     Behaviors.setup[Command] { context =>
       context.log.info("MqManager started...")
 
-      // Create connection and channel to the broker to be handled by the MqManager globally
-
-      brokerConnecton(
-        mqHost.value,
-        mqPort.value,
-        mqUser.value,
-        mqPass.value
-      ) match
-        case Success(connection) =>
-          context.log.info(
-            s"Connection to broker established. Host --> ${mqHost.value}, Port --> ${mqPort.value}."
+      val behavior = initializeBrokerLink(
+        connParams
+      ).fold(
+        th =>
+          context.log.error(
+            s"Connection to broker failed. Host --> ${connParams.host.value}, Port --> ${connParams.port.value}. th: ${th.getMessage}"
           )
-
-          val channel = connection.createChannel
-
-          val _ =
-            setQosPrefetchCount(channel, maxPrefetchCount) // TODO review this
-
-          // Spawn the MqConsumer actor to be able to consume messages from the MQ
-          val _ = context.spawn(
+          context.log.error(
+            "Shutting down MqManager."
+              + "\nCONTACT SYSTEM ADMINISTRATOR!!!"
+              + "\nCONTACT SYSTEM ADMINISTRATOR!!!"
+              + "\nCONTACT SYSTEM ADMINISTRATOR!!!"
+          )
+          Behaviors.stopped
+        ,
+        (connection, channel) =>
+          val mqConsumer = context.spawn(
             MqConsumer(channel, consumptionQueue, context.self),
             "mq-consumer"
           )
+          val setup = MqManagerSetup(connection, channel, replyTo, mqConsumer)
+          handleMessages(setup)
+      )
 
-          Behaviors.receiveMessage[Command] { message =>
-            message match
+      behavior
+    }
+  end setup
 
-              /* **********************************************************************
-               * Public commands
-               * ********************************************************************** */
+  /** Handles messages received by the actor.
+    *
+    * @param setup
+    *   The setup information for the MqManager actor.
+    *
+    * @return
+    *   A Behavior that handles messages received by the actor.
+    */
+  private def handleMessages(setup: MqManagerSetup): Behavior[Command] =
+    Behaviors.receive { (context, message) =>
+      message match
 
-              case MqProcessTask(mqMessage) =>
-                context.log.info(
-                  s"MqProcessTask command received. MqMessage --> $mqMessage."
-                )
-                context.log.info(s"Spawning deserializer...")
-                val deserializer = context.spawnAnonymous(MqMessageConverter())
+        /* **********************************************************************
+         * Public commands
+         * ********************************************************************** */
 
-                context.log.info(s"Deserializer spawned.")
-                context.log.info(
-                  s"Sending mqMessage to deserializer... MqMessage --> $mqMessage"
-                )
+        case MqProcessTask(mqMessage) =>
+          delegateProcessTask(context, mqMessage)
+          Behaviors.same
 
-                context
-                  .askWithStatus[MqMessageConverter.DeserializeMessage, Task](
-                    deserializer,
-                    replyTo =>
-                      MqMessageConverter.DeserializeMessage(mqMessage, replyTo)
-                  ) {
-                    case Success(task) =>
-                      context.log.info(
-                        s"Deserialization success response received from deserializer. Task awaiting rerouting to orchestrator. Task --> $task."
-                      )
-                      DeliverToOrchestrator(task)
+        case MqAckTask(mqId, retries) =>
+          delegateAckTask(context, setup.channel, mqId, retries)
+          Behaviors.same
 
-                    case Failure(exception) =>
-                      context.log.info(
-                        s"Deserialization failure response received from deserializer. Message awaiting rejection to MQ. MqMessage --> $mqMessage. Exception thrown: ${exception.getMessage()}"
-                      )
-                      MqRejectTask(mqMessage.mqId)
-                  }
-                Behaviors.same
+        case MqRejectTask(mqId, retries) =>
+          delegateRejectTask(context, setup.channel, mqId, retries)
+          Behaviors.same
 
-              case MqAcknowledgeTask(mqId, retries) =>
-                context.log.info(
-                  s"MqAcknowledgeTask command received. mqId --> $mqId."
-                )
-                context.log.info(s"Spawning communicator...")
-                val communicator =
-                  context.spawnAnonymous(MqCommunicator(channel))
-
-                context.log.info(s"Communicator spawned.")
-                context.log.info(
-                  s"Sending mqId to communicator. mqId --> $mqId"
-                )
-
-                context.askWithStatus[MqCommunicator.SendAck, Done](
-                  communicator,
-                  replyTo => MqCommunicator.SendAck(mqId, replyTo)
-                ) {
-                  case Success(Done) =>
-                    context.log.info(
-                      s"MQ Ack success response received from communicator. mqId --> $mqId."
-                    )
-                    NoOp
-
-                  case Failure(exception) =>
-                    val failureMessage =
-                      s"MQ Ack failure response received from communicator. mqId --> $mqId. Exception thrown: ${exception
-                          .getMessage()}. $retries retires left."
-
-                    if retries > 0 then
-                      context.log.warn(s"$failureMessage Retrying...")
-                      MqAcknowledgeTask(mqId, retries - 1)
-                    else
-                      context.log.error(s"$failureMessage Retries exhausted.")
-                      NoOp
-                    end if
-                }
-                Behaviors.same
-
-              case MqRejectTask(mqId, retries) =>
-                context.log.info(
-                  s"MqRejectTask command received. mqId --> $mqId."
-                )
-                context.log.info(s"Spawning communicator...")
-                val communicator =
-                  context.spawnAnonymous(MqCommunicator(channel))
-
-                context.log.info(s"Communicator spawned.")
-                context.log.info(
-                  s"Sending mqId to communicator. mqId --> $mqId"
-                )
-
-                context.askWithStatus[MqCommunicator.SendReject, Done](
-                  communicator,
-                  replyTo => MqCommunicator.SendReject(mqId, replyTo)
-                ) {
-                  case Success(Done) =>
-                    context.log.info(
-                      s"Reject success response received from communicator. mqId --> $mqId."
-                    )
-                    NoOp
-
-                  case Failure(exception) =>
-                    val failureMessage =
-                      s"Reject failure response received from communicator. mqId --> $mqId. Exception thrown: ${exception
-                          .getMessage()}. $retries retires left."
-
-                    if retries > 0 then
-                      context.log.warn(s"$failureMessage Retrying...")
-                      MqRejectTask(mqId, retries - 1)
-                    else
-                      context.log.error(s"$failureMessage Retries exhausted.")
-                      NoOp
-                    end if
-                }
-                Behaviors.same
-
-              case MqSendMessage(task, exchange, routingKey, retries) =>
-                context.log.info(
-                  s"MqSendMessage command received. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}."
-                )
-                context.log.info(s"Spawning serializer...")
-                val serializer = context.spawnAnonymous(MqMessageConverter())
-
-                context.log.info(s"Serializer spawned.")
-                context.log.info(
-                  s"Sending task to serializer. Task --> $task."
-                )
-
-                context
-                  .askWithStatus[MqMessageConverter.SerializeMessage, Seq[
-                    Byte
-                  ]](
-                    serializer,
-                    replyTo =>
-                      MqMessageConverter.SerializeMessage(task, replyTo)
-                  ) {
-                    case Success(bytes) =>
-                      context.log.info(
-                        s"Serialization success response received from serializer. Message awaiting delivery to MQ. Task --> $task."
-                      )
-
-                      context.log.info(s"Spawning communicator...")
-                      val communicator =
-                        context.spawnAnonymous(MqCommunicator(channel))
-
-                      context.log.info(s"Communicator spawned.")
-                      context.log.info(
-                        s"Sending message to communicator. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}."
-                      )
-
-                      context.askWithStatus[MqCommunicator.SendMqMessage, Done](
-                        communicator,
-                        replyTo =>
-                          MqCommunicator
-                            .SendMqMessage(bytes, exchange, routingKey, replyTo)
-                      ) {
-                        case Success(Done) =>
-                          context.log.info(
-                            s"Send message success response received from communicator. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}."
-                          )
-                          NoOp
-
-                        case Failure(exception) =>
-                          val failureMessage =
-                            s"Send message failure response received from communicator. Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}. Exception thrown: ${exception
-                                .getMessage()}. $retries retires left."
-
-                          if retries > 0 then
-                            context.log.warn(s"$failureMessage Retrying...")
-                            MqSendMessage(
-                              task,
-                              exchange,
-                              routingKey,
-                              retries - 1
-                            )
-                          else
-                            context.log.error(
-                              s"$failureMessage Retries exhausted." +
-                                s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-                                s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-                                s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
-                            )
-                            NoOp
-                          end if
-                      }
-
-                      NoOp
-                    case Failure(exception) =>
-                      context.log.error(
-                        s"Serialization failure response received from serializer. Task --> $task. Exception thrown: ${exception
-                            .getMessage()}." +
-                          s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-                          s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-                          s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
-                      )
-                      NoOp
-                  }
-                Behaviors.same
-
-              case MqSetQosPrefetchCount(prefetchCount) =>
-                context.log.info(
-                  s"MqSetQosPrefetchCount command received. Setting Qos prefetch count to $prefetchCount."
-                )
-
-                setQosPrefetchCount(channel, prefetchCount) match
-                  case Success(_) =>
-                    context.log.info(
-                      s"Qos set successfully to $prefetchCount."
-                    )
-                  case Failure(exception) =>
-                    context.log.error(
-                      s"Qos set failure. Exception thrown: ${exception.getMessage()}"
-                    )
-                end match
-
-                Behaviors.same
-
-              /* **********************************************************************
-               * Internal commands
-               * ********************************************************************** */
-
-              case DeliverToOrchestrator(task) =>
-                context.log.info(
-                  s"DeliverToOrchestrator command received. Task --> $task."
-                )
-                context.log.info(
-                  s"Sending task to orchestrator... Task --> $task."
-                )
-                replyTo ! Orchestrator.ProcessTask(task)
-                Behaviors.same
-
-              case NoOp =>
-                Behaviors.same
-
-              /* **********************************************************************
-               * Shutdown command
-               * ********************************************************************** */
-
-              case GracefulShutdown =>
-                context.log.info(
-                  s"GracefulShutdown command received. Closing channel and connection to broker."
-                )
-                channel.close()
-                connection.close()
-                Behaviors.stopped
-
-          }
-
-        case Failure(exception) =>
-          context.log.error(
-            s"Connection to broker failed. Host --> ${mqHost.value}, Port --> ${mqPort.value}. Exception thrown: ${exception.getMessage()}"
+        case MqSendMessage(task, exchange, routingKey, retries) =>
+          delegatePublishTask(
+            context,
+            setup.channel,
+            exchange,
+            routingKey,
+            task,
+            retries
           )
+          Behaviors.same
 
-          context.log.error(
-            s"Shutting down MqManager. CONTACT SYSTEM ADMINISTRATOR!!!." +
-              s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-              s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
-          )
+        /* **********************************************************************
+         * Internal commands
+         * ********************************************************************** */
 
-          replyTo ! Orchestrator.Fail(
-            "Connection to broker failed. CONTACT SYSTEM ADMINISTRATOR!!!."
+        case DeliverToOrchestrator(task) =>
+          setup.orchestratorRef ! Orchestrator.ProcessTask(task)
+          Behaviors.same
+
+        case NoOp =>
+          Behaviors.same
+
+        case NotifyFatalFailure(th) =>
+          setup.orchestratorRef ! Orchestrator.Fail(th)
+          Behaviors.same
+
+        /* **********************************************************************
+         * Shutdown command
+         * ********************************************************************** */
+        case GracefulShutdown =>
+          context.log.info(
+            "GracefulShutdown command received. Closing channel and connection to broker."
           )
+          setup.channel.close()
+          setup.connection.close()
           Behaviors.stopped
       end match
     }
 
-  def brokerConnecton(
-      host: String,
-      port: Int,
-      user: String,
-      pass: String
-  ): Try[Connection] =
-    val factory = ConnectionFactory()
-    factory.setHost(host)
-    factory.setPort(port)
-    factory.setUsername(user)
-    factory.setPassword(pass)
-    Try(factory.newConnection())
-  end brokerConnecton
+  /** Send a task to the processing cycle.
+    *
+    * @param context
+    *   The actor context.
+    * @param mqMessage
+    *   The message queue message.
+    *
+    * @return
+    *   Unit
+    */
+  private def delegateProcessTask(
+      context: ActorContext[Command],
+      mqMessage: MqMessage
+  ): Unit =
+    val deserializer = context.spawnAnonymous(MqTranslator())
 
-  def setQosPrefetchCount(channel: Channel, prefetchCount: Int): Try[Unit] =
-    // Since it is not possible to change the prefetch count of a single consumer
-    // in RabbitMQ, we set the global prefetch count to the desired value.
-    // This enables the channel to have a dynamically adjustable prefetch count
-    // regardless of the number of consumers.
-    Try(channel.basicQos(prefetchCount, true))
+    context.askWithStatus[MqTranslator.DeserializeMessage, Task](
+      deserializer,
+      replyTo => MqTranslator.DeserializeMessage(mqMessage, replyTo)
+    ) {
+      case Success(task) =>
+        DeliverToOrchestrator(task)
+
+      case Failure(_) =>
+        MqRejectTask(mqMessage.mqId)
+    }
+  end delegateProcessTask
+
+  /** Delegate the acknowledgement of a task received from the message queue and
+    * handle any errors.
+    *
+    * @param context
+    *   The actor context.
+    * @param channel
+    *   The channel to communicate with.
+    * @param mqId
+    *   The message queue ID.
+    * @param retries
+    *   The number of retries.
+    *
+    * @return
+    *   Unit
+    */
+  private def delegateAckTask(
+      context: ActorContext[Command],
+      channel: Channel,
+      mqId: Long,
+      retries: Int
+  ): Unit =
+    val communicator = context.spawnAnonymous(MqCommunicator(channel))
+
+    context.askWithStatus[MqCommunicator.AckMessage, Done](
+      communicator,
+      replyTo => MqCommunicator.AckMessage(mqId, replyTo)
+    ) {
+      case Success(Done) =>
+        NoOp
+
+      case Failure(th) =>
+        val failureMessage =
+          s"MQ Ack failure for mqId --> $mqId: ${th.getMessage()}"
+
+        MiscUtils.defineRetryCommand(
+          context,
+          retries,
+          failureMessage,
+          MqAckTask(mqId, retries - 1),
+          NotifyFatalFailure(th)
+        )
+    }
+  end delegateAckTask
+
+  /** Delegate the rejection of a task received from the message queue and
+    * handle any errors.
+    *
+    * @param context
+    *   The actor context.
+    * @param channel
+    *   The channel to communicate with.
+    * @param mqId
+    *   The message queue ID.
+    * @param retries
+    *   The number of retries.
+    *
+    * @return
+    *   Unit
+    */
+  private def delegateRejectTask(
+      context: ActorContext[Command],
+      channel: Channel,
+      mqId: Long,
+      retries: Int
+  ): Unit =
+    val communicator = context.spawnAnonymous(MqCommunicator(channel))
+
+    context.askWithStatus[MqCommunicator.RejectMessage, Done](
+      communicator,
+      replyTo => MqCommunicator.RejectMessage(mqId, replyTo)
+    ) {
+      case Success(Done) =>
+        NoOp
+
+      case Failure(th) =>
+        val failureMessage =
+          s"MQ Reject failure for mqId --> $mqId: ${th.getMessage()}"
+
+        MiscUtils.defineRetryCommand(
+          context,
+          retries,
+          failureMessage,
+          MqRejectTask(mqId, retries - 1),
+          NotifyFatalFailure(th)
+        )
+    }
+  end delegateRejectTask
+
+  /** Delegate the publishing of a task to a message queue and handle any
+    * errors.
+    *
+    * @param context
+    *   The actor context.
+    * @param channel
+    *   The channel to communicate with.
+    * @param exchange
+    *   The exchange name.
+    * @param routingKey
+    *   The routing key.
+    * @param task
+    *   The task to publish.
+    * @param retries
+    *   The number of retries.
+    *
+    * @return
+    *   Unit
+    */
+  private def delegatePublishTask(
+      context: ActorContext[Command],
+      channel: Channel,
+      exchange: MqExchangeName,
+      routingKey: RoutingKey,
+      task: Task,
+      retries: Int
+  ): Unit =
+    val serializer = context.spawnAnonymous(MqTranslator())
+
+    context.askWithStatus[MqTranslator.SerializeMessage, Seq[Byte]](
+      serializer,
+      replyTo => MqTranslator.SerializeMessage(task, replyTo)
+    ) {
+      case Success(bytes) =>
+        val communicator = context.spawnAnonymous(MqCommunicator(channel))
+
+        context.askWithStatus[MqCommunicator.PublishMessage, Done](
+          communicator,
+          replyTo =>
+            MqCommunicator.PublishMessage(
+              bytes,
+              exchange,
+              routingKey,
+              replyTo
+            )
+        ) {
+          case Success(Done) =>
+            NoOp
+
+          case Failure(th) =>
+            val failureMessage =
+              s"MQ Publish failure for Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}: ${th.getMessage()}"
+
+            MiscUtils.defineRetryCommand(
+              context,
+              retries,
+              failureMessage,
+              MqSendMessage(
+                task,
+                exchange,
+                routingKey,
+                retries - 1
+              ),
+              NotifyFatalFailure(th)
+            )
+        }
+
+        NoOp
+      case Failure(th) =>
+        context.log.error(
+          s"Serialization failure. Task --> $task. th: ${th
+              .getMessage()}." +
+            s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
+            s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
+            s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
+        )
+
+        NotifyFatalFailure(th)
+    }
+  end delegatePublishTask
+
+  /** Initializes the broker link.
+    *
+    * @param connParams
+    *   The connection parameters.
+    *
+    * @return
+    *   A Try containing the initialized connection and channel.
+    */
+  private def initializeBrokerLink(
+      connParams: MessageQueueConnectionParams
+  ): Try[(Connection, Channel)] =
+    Try {
+      val factory = ConnectionFactory()
+      factory.setHost(connParams.host.value)
+      factory.setPort(connParams.port.value)
+      factory.setUsername(connParams.username.value)
+      factory.setPassword(connParams.password.value)
+      factory.newConnection()
+    }.map { connection =>
+      val channel = connection.createChannel()
+      (connection, channel)
+    }
 
 end MqManager

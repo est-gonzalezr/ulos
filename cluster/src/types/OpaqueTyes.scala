@@ -1,9 +1,5 @@
 package types
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
 /** Provides the opaque types for the messaging system elements. This is a way
   * to provide a type-safe way to handle the different elements of the messaging
   * system without exposing the actual type of the elements. This makes the code
@@ -39,55 +35,55 @@ object OpaqueTypes:
 
   /** Represents the exchange name for the messaging system.
     */
-  opaque type ExchangeName = String
-  object ExchangeName:
-    /** Creates a new ExchangeName.
+  opaque type MqExchangeName = String
+  object MqExchangeName:
+    /** Creates a new MqExchangeName.
       *
       * @param value
       *   The value to use
       *
       * @return
-      *   A new ExchangeName
+      *   A new MqExchangeName
       */
-    def apply(value: String): ExchangeName = value
+    def apply(value: String): MqExchangeName = value
 
-    /** Returns the value of the ExchangeName.
+    /** Returns the value of the MqExchangeName.
       *
       * @param routingKey
-      *   The ExchangeName
+      *   The MqExchangeName
       *
       * @return
       *   The value
       */
-    extension (routingKey: ExchangeName) def value: String = routingKey
+    extension (routingKey: MqExchangeName) def value: String = routingKey
     end extension
-  end ExchangeName
+  end MqExchangeName
 
   /** Represents the queue name for the messaging system.
     */
-  opaque type QueueName = String
-  object QueueName:
-    /** Creates a new QueueName.
+  opaque type MqQueueName = String
+  object MqQueueName:
+    /** Creates a new MqQueueName.
       *
       * @param value
       *   The value to use
       *
       * @return
-      *   A new QueueName
+      *   A new MqQueueName
       */
-    def apply(value: String): QueueName = value
+    def apply(value: String): MqQueueName = value
 
-    /** Returns the value of the QueueName.
+    /** Returns the value of the MqQueueName.
       *
       * @param queueName
-      *   The QueueName
+      *   The MqQueueName
       *
       * @return
       *   The value
       */
-    extension (queueName: QueueName) def value: String = queueName
+    extension (queueName: MqQueueName) def value: String = queueName
     end extension
-  end QueueName
+  end MqQueueName
 
   /** Represents the message id for the messaging system.
     */
@@ -190,8 +186,8 @@ object OpaqueTypes:
 
   /** Represents the user for the messaging system.
     */
-  opaque type MqUser = String
-  object MqUser:
+  opaque type MqUsername = String
+  object MqUsername:
     /** Creates a new MqUser.
       *
       * @param value
@@ -199,7 +195,7 @@ object OpaqueTypes:
       * @return
       *   A new MqUser
       */
-    def apply(value: String): MqUser = value
+    def apply(value: String): MqUsername = value
 
     /** Returns the value of the MqUser.
       *
@@ -208,9 +204,9 @@ object OpaqueTypes:
       * @return
       *   The value
       */
-    extension (mqUser: MqUser) def value: String = mqUser
+    extension (mqUser: MqUsername) def value: String = mqUser
     end extension
-  end MqUser
+  end MqUsername
 
   /** Represents the password for the messaging system.
     */
@@ -290,8 +286,8 @@ object OpaqueTypes:
 
   /** Represents the remote storage user for the messaging system.
     */
-  opaque type RemoteStorageUser = String
-  object RemoteStorageUser:
+  opaque type RemoteStorageUsername = String
+  object RemoteStorageUsername:
     /** Creates a new RemoteStorageUser.
       *
       * @param value
@@ -299,7 +295,7 @@ object OpaqueTypes:
       * @return
       *   A new RemoteStorageUser
       */
-    def apply(value: String): RemoteStorageUser = value
+    def apply(value: String): RemoteStorageUsername = value
 
     /** Returns the value of the RemoteStorageUser.
       *
@@ -308,11 +304,11 @@ object OpaqueTypes:
       * @return
       *   The value
       */
-    extension (remoteStorageUser: RemoteStorageUser)
+    extension (remoteStorageUser: RemoteStorageUsername)
       def value: String =
         remoteStorageUser
     end extension
-  end RemoteStorageUser
+  end RemoteStorageUsername
 
   /** Represents the remote storage password for the messaging system.
     */

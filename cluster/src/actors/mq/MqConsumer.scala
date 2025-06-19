@@ -1,9 +1,5 @@
 package actors.mq
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
@@ -12,24 +8,20 @@ import com.rabbitmq.client.Channel
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import types.MqMessage
-import types.OpaqueTypes.QueueName
+import types.OpaqueTypes.MqQueueName
 
-// import scala.concurrent.duration.*
-
-/** This actor conusmes from the Message Queue and sends the messages to the
-  * system.
+/** A persistent actor responsible for consuming messages from the message queue
+  * and redirecting them to the system.
   */
 object MqConsumer:
   def apply(
       channel: Channel,
-      consumptionQueue: QueueName,
+      consumptionQueue: MqQueueName,
       replyTo: ActorRef[MqManager.Command]
   ): Behavior[Nothing] =
     consuming(channel, consumptionQueue, replyTo)
 
-  /** This behavior consumes messages from the Message Queue. Since the
-    * "basicConsume" method is blocking, the behavior remains blocked until the
-    * connection is closed but the actor still sends the messages to the system.
+  /** Consumes messages from the message queue.
     *
     * @param channel
     *   The channel to the Message Queue.
@@ -39,11 +31,11 @@ object MqConsumer:
     *   The reference to the MqManager actor.
     *
     * @return
-    *   A behavior that consumes messages from the Message Queue.
+    *   A Behavior that consumes messages from the Message Queue.
     */
   private def consuming(
       channel: Channel,
-      consumptionQueue: QueueName,
+      consumptionQueue: MqQueueName,
       replyTo: ActorRef[MqManager.Command]
   ): Behavior[Nothing] =
     Behaviors.setup[Nothing] { context =>
@@ -55,14 +47,14 @@ object MqConsumer:
     }
   end consuming
 
-  /** This class is a RabbitMQ consumer that sends the messages to the system.
+  /** A RabbitMQ consumer that consumes messages from the message queue..
     *
     * @param channel
     *   The channel to the Message Queue.
     * @param replyTo
     *   The reference to the MqManager actor.
     */
-  private case class RabbitMqConsumer(
+  private class RabbitMqConsumer(
       channel: Channel,
       replyTo: ActorRef[MqManager.Command]
   ) extends DefaultConsumer(channel):

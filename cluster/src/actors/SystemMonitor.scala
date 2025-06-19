@@ -1,9 +1,5 @@
 package actors
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
 import scala.concurrent.duration.*
 
 import akka.actor.typed.ActorRef
@@ -34,6 +30,7 @@ object SystemMonitor:
       context.log.info("System monitor started...")
 
       val _ = context.scheduleOnce(1.second, context.self, Monitor)
+      println(replyTo)
 
       def monitorResources(
           maxProcessors: Int,
@@ -62,22 +59,22 @@ object SystemMonitor:
               if cpuUsage > 90 || ramUsage > 90 then
                 val newProcessorQuantity = maxProcessors - 1
 
-                if newProcessorQuantity > 0 then
-                  // context.log.info("Decrementing maxProcessors")
-                  replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
-                // else
-                //   // context.log.info(
-                //   //   "No processors available. Recommending shutdown.",
-                //   // )
-                //   replyTo ! Orchestrator.GracefulShutdown(
-                //     "Processing power exhausted.",
-                //   )
-                end if
+                // if newProcessorQuantity > 0 then
+                //   // context.log.info("Decrementing maxProcessors")
+                //   // replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
+                // // else
+                // //   // context.log.info(
+                // //   //   "No processors available. Recommending shutdown.",
+                // //   // )
+                // //   replyTo ! Orchestrator.GracefulShutdown(
+                // //     "Processing power exhausted.",
+                // //   )
+                // end if
                 monitorResources(newProcessorQuantity, activeProcessors)
               else if cpuUsage < 50 && activeProcessors == maxProcessors then
                 // context.log.info("Incrementing maxProcessors")
                 val newProcessorQuantity = maxProcessors + 1
-                replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
+                // replyTo ! Orchestrator.SetProcessorLimit(newProcessorQuantity)
                 monitorResources(newProcessorQuantity, activeProcessors)
               else monitorResources(maxProcessors, activeProcessors)
               end if

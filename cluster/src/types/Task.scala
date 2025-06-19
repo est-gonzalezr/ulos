@@ -1,9 +1,5 @@
 package types
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
 import scala.concurrent.duration.*
 
 import akka.util.Timeout

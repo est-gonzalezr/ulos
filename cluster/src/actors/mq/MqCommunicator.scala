@@ -1,11 +1,5 @@
 package actors.mq
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
-import scala.util.Failure
-import scala.util.Success
 import scala.util.Try
 
 import akka.Done
@@ -14,125 +8,84 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.StatusReply
 import com.rabbitmq.client.Channel
-import types.OpaqueTypes.ExchangeName
+import types.OpaqueTypes.MqExchangeName
 import types.OpaqueTypes.RoutingKey
 
+/** A stateless actor responsible for communicating outbound messages to the
+  * message queue.
+  */
 object MqCommunicator:
   // Command protocol
   sealed trait Command
 
   // Public command protocol
-  final case class SendMqMessage(
+  final case class PublishMessage(
       bytes: Seq[Byte],
-      exchangeName: ExchangeName,
+      exchangeName: MqExchangeName,
       routingKey: RoutingKey,
       replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
-  final case class SendAck(
+  final case class AckMessage(
       mqMessageId: Long,
       replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
-  final case class SendReject(
+  final case class RejectMessage(
       mqMessageId: Long,
       replyTo: ActorRef[StatusReply[Done]]
   ) extends Command
+  final case class SetPrefetchCount(
+      prefetchCount: Int,
+      replyTo: ActorRef[StatusReply[Done]]
+  ) extends Command
 
-  def apply(channel: Channel): Behavior[Command] = processing(channel)
+  def apply(channel: Channel): Behavior[Command] = handleMessages(channel)
 
-  /** This behavior processes the messages to be sent to the Message Queue.
+  /** Handles outgoing messages for the message queue.
     *
     * @param channel
-    *   The channel to the Message Queue.
+    *   The channel used to publish messages.
     *
     * @return
-    *   A behavior that processes the messages to be sent to the Message Queue.
+    *   A Behavior that tries to send the desired action to the message queue.
     */
-  def processing(channel: Channel): Behavior[Command] =
-    Behaviors.receive { (context, message) =>
+  private def handleMessages(channel: Channel): Behavior[Command] =
+    Behaviors.receive { (_, message) =>
       message match
 
         /* **********************************************************************
          * Public commands
          * ********************************************************************** */
 
-        case SendMqMessage(bytes, exchangeName, routingKey, replyTo) =>
-          context.log.info(
-            s"SendMqMessage command received. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
+        case PublishMessage(bytes, exchangeName, routingKey, replyTo) =>
+          replyTo ! toStatusReply(
+            publishMessage(
+              channel,
+              exchangeName,
+              routingKey,
+              bytes
+            )
           )
 
-          sendmessage(
-            channel,
-            exchangeName,
-            routingKey,
-            bytes
-          ) match
-            case Success(_) =>
-              // context.log.info(
-              //   s"Send message success response received from MQ. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Ack to MqManager. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
-              // )
-              replyTo ! StatusReply.Ack
+        case AckMessage(mqMessageId, replyTo) =>
+          replyTo ! toStatusReply(
+            ackMessage(channel, mqMessageId)
+          )
 
-            case Failure(exception) =>
-              // context.log.error(
-              //   s"Send message failure response received from MQ. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey. Exception thrown: ${exception.getMessage}."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Error to MqManager. Bytes --> ..., ExchangeName --> $exchangeName, RoutingKey --> $routingKey."
-              // )
-              replyTo ! StatusReply.Error(exception.getMessage())
-          end match
+        case RejectMessage(mqMessageId, replyTo) =>
+          replyTo ! toStatusReply(
+            rejectMessage(channel, mqMessageId)
+          )
 
-        case SendAck(mqMessageId, replyTo) =>
-          context.log.info(s"SendAck command received. MqId: $mqMessageId.")
+        case SetPrefetchCount(prefetchCount, replyTo) =>
+          replyTo ! toStatusReply(
+            setPrefetchCount(channel, prefetchCount)
+          )
 
-          sendAck(channel, mqMessageId) match
-            case Success(_) =>
-              // context.log.info(
-              //   s"Ack success reponse received from MQ. MqId: $mqMessageId."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Ack to MqManager. MqId: $mqMessageId."
-              // )
-              replyTo ! StatusReply.Ack
-            case Failure(exception) =>
-              // context.log.error(
-              //   s"Ack failure response received from MQ. MqId: $mqMessageId. Exception thrown: ${exception.getMessage}."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Error to MqManager. MqId: $mqMessageId."
-              // )
-              replyTo ! StatusReply.Error(exception)
-          end match
-
-        case SendReject(mqMessageId, replyTo) =>
-          context.log.info(s"SendReject command received. MqId: $mqMessageId.")
-
-          sendReject(channel, mqMessageId) match
-            case Success(_) =>
-              // context.log.info(
-              //   s"Reject success response received from MQ. MqId: $mqMessageId."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Ack to MqManager. MqId: $mqMessageId."
-              // )
-              replyTo ! StatusReply.Ack
-            case Failure(exception) =>
-              // context.log.error(
-              //   s"Reject failure response received from MQ. MqId: $mqMessageId. Exception thrown: ${exception.getMessage}."
-              // )
-              // context.log.info(
-              //   s"Sending StatusReply.Error to MqManager. MqId: $mqMessageId."
-              // )
-              replyTo ! StatusReply.Error(exception.getMessage())
-          end match
       end match
 
       Behaviors.stopped
     }
-  end processing
+  end handleMessages
 
   /** Sends an ack to the MQ.
     *
@@ -142,9 +95,9 @@ object MqCommunicator:
     *   The id of the message to ack.
     *
     * @return
-    *   A Try[Unit] indicating the result of the operation.
+    *   A Try indicating the result of the operation.
     */
-  def sendAck(channel: Channel, mqMessageId: Long): Try[Unit] =
+  private def ackMessage(channel: Channel, mqMessageId: Long): Try[Unit] =
     Try(channel.basicAck(mqMessageId, false))
 
   /** Sends a reject to the MQ.
@@ -155,12 +108,12 @@ object MqCommunicator:
     *   The id of the message to reject.
     *
     * @return
-    *   A Try[Unit] indicating the result of the operation.
+    *   A Try indicating the result of the operation.
     */
-  def sendReject(channel: Channel, mqMessageId: Long): Try[Unit] =
+  private def rejectMessage(channel: Channel, mqMessageId: Long): Try[Unit] =
     Try(channel.basicReject(mqMessageId, false))
 
-  /** Sends a message to the MQ.
+  /** Publishes a message to the MQ.
     *
     * @param channel
     *   The channel to the MQ.
@@ -172,21 +125,50 @@ object MqCommunicator:
     *   The message to send.
     *
     * @return
-    *   A Try[Unit] indicating the result of the operation.
+    *   A Try indicating the result of the operation.
     */
-  def sendmessage(
+  private def publishMessage(
       channel: Channel,
-      exchangeName: ExchangeName,
+      exchangeName: MqExchangeName,
       routingKey: RoutingKey,
       message: Seq[Byte]
   ): Try[Unit] =
-    Try {
+    Try(
       channel.basicPublish(
         exchangeName.value,
         routingKey.value,
         null,
         message.toArray
       )
-    }
+    )
+
+  /** Sets the prefetch count for the channel.
+    *
+    * @param channel
+    *   The channel to the MQ.
+    * @param count
+    *   The prefetch count to set.
+    *
+    * @return
+    *   A Try indicating the result of the operation.
+    */
+  private def setPrefetchCount(channel: Channel, count: Int): Try[Unit] =
+    Try(channel.basicQos(count, false))
+
+    /** Covnverts the result of a Try action into a StatusReply.
+      *
+      * @param actionResult
+      *   The result of the action.
+      *
+      * @return
+      *   A StatusReply indicating the result of the operation.
+      */
+  private def toStatusReply[T](
+      actionResult: Try[T]
+  ): StatusReply[Done] =
+    actionResult.fold(
+      StatusReply.Error(_),
+      _ => StatusReply.Ack
+    )
 
 end MqCommunicator

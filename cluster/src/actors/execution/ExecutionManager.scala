@@ -1,15 +1,12 @@
 package actors.execution
 
-/** @author
-  *   Esteban Gonzalez Ruales
-  */
-
 import scala.util.Failure
 import scala.util.Success
 
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import types.Task
 
@@ -29,8 +26,6 @@ object ExecutionManager:
   final case class TaskExecuted(task: Task) extends Response
   final case class TaskExecutionError(task: Task) extends Response
 
-  // implicit val timeout: Timeout = 300.seconds
-
   def apply(
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
@@ -42,76 +37,57 @@ object ExecutionManager:
   ): Behavior[Command] =
     Behaviors.setup { context =>
       context.log.info("ExecutionManager started...")
-
-      Behaviors.receiveMessage { message =>
-        message match
-
-          /* **********************************************************************
-           * Public commands
-           * ********************************************************************** */
-
-          case ExecuteTask(task) =>
-            context.log.info(s"ExecuteTask command received. Task --> $task.")
-
-            context.log.info(s"Spawning execution worker...")
-            val executionWorker =
-              context.spawnAnonymous(
-                ExecutionWorker()
-              )
-
-            context.log.info(s"Execution worker spawned.")
-            context.log.info(
-              s"Sending task to execution worker. Task --> $task."
-            )
-
-            context.askWithStatus[
-              ExecutionWorker.ExecuteTask,
-              Done
-            ](
-              executionWorker,
-              replyTo => ExecutionWorker.ExecuteTask(task, replyTo)
-            ) {
-              case Success(Done) =>
-                context.log.info(
-                  s"Task execution success. Task awaiting rerouting to orchestrator. Task --> $task."
-                )
-                ReportTaskExecuted(task)
-              case Failure(exception) =>
-                context.log.error(
-                  s"Task execution failure. Task awaiting rejection to MQ. Task --> $task."
-                )
-                ReportTaskFailed(
-                  task.copy(logMessage = Some(exception.getMessage))
-                )
-            }(using task.timeout)
-
-            Behaviors.same
-
-          /* **********************************************************************
-           * Internal commands
-           * ********************************************************************** */
-
-          case ReportTaskExecuted(task) =>
-            context.log.info(
-              s"ReportTaskExecuted command received. Task --> $task."
-            )
-            context.log.info(
-              s"Sending task to orchestrator... Task --> $task."
-            )
-
-            replyTo ! TaskExecuted(task)
-            Behaviors.same
-
-          case ReportTaskFailed(task) =>
-            context.log.info(
-              s"ReportTaskFailed command received. Task --> $task."
-            )
-            context.log.info(
-              s"Sending task to orchestrator... Task --> $task."
-            )
-            replyTo ! TaskExecutionError(task)
-            Behaviors.same
-      }
+      handleMessages(replyTo)
     }
   end setup
+
+  def handleMessages(replyTo: ActorRef[Response]): Behavior[Command] =
+    Behaviors.receive { (context, message) =>
+      message match
+
+        /* **********************************************************************
+         * Public commands
+         * ********************************************************************** */
+
+        case ExecuteTask(task) =>
+          delegateTaskExecution(context, task)
+          Behaviors.same
+
+        /* **********************************************************************
+         * Internal commands
+         * ********************************************************************** */
+
+        case ReportTaskExecuted(task) =>
+          replyTo ! TaskExecuted(task)
+          Behaviors.same
+
+        case ReportTaskFailed(task) =>
+          replyTo ! TaskExecutionError(task)
+          Behaviors.same
+    }
+  end handleMessages
+
+  private def delegateTaskExecution(
+      context: ActorContext[Command],
+      task: Task
+  ): Unit =
+    val executionWorker = context.spawnAnonymous(
+      ExecutionWorker()
+    )
+
+    context.askWithStatus[
+      ExecutionWorker.ExecuteTask,
+      Done
+    ](
+      executionWorker,
+      replyTo => ExecutionWorker.ExecuteTask(task, replyTo)
+    ) {
+      case Success(Done) =>
+        ReportTaskExecuted(task)
+      case Failure(exception) =>
+        ReportTaskFailed(
+          task.copy(logMessage = Some(exception.getMessage))
+        )
+    }(using task.timeout)
+  end delegateTaskExecution
 end ExecutionManager
