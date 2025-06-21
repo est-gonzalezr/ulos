@@ -1,0 +1,7 @@
+{
+  "taskId": "12345",
+  "taskOwnerId": "67",
+  "filePath": "/ftp/one/cypress-test-light.zip",
+  "timeout": 500,
+  "routingKeys": ["cypress-grammar", "cypress-execution"]
+}
