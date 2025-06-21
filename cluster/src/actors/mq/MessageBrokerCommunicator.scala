@@ -4,23 +4,23 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import com.rabbitmq.client.Channel
-import types.OpaqueTypes.MqExchangeName
-import types.OpaqueTypes.RoutingKey
+import types.OpaqueTypes.MessageBrokerExchangeName
+import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.Task
 
 /** A stateless actor responsible for communicating outbound messages to the
   * message queue.
   */
-object MqCommunicator:
+object MessageBrokerCommunicator:
   // Command protocol
   sealed trait Command
 
   // Public command protocol
-  final case class PublishMessage(
+  final case class PublishTask(
       task: Task,
       bytes: Seq[Byte],
-      exchangeName: MqExchangeName,
-      routingKey: RoutingKey
+      exchangeName: MessageBrokerExchangeName,
+      routingKey: MessageBrokerRoutingKey
   ) extends Command
   final case class AckMessage(mqMessageId: Long) extends Command
   final case class RejectMessage(mqMessageId: Long) extends Command
@@ -28,9 +28,9 @@ object MqCommunicator:
   // Response protocol
   sealed trait Response
 
-  final case class MessagePublished(task: Task) extends Response
-  final case class MessageRejected(mqMessageId: Long) extends Response
+  final case class TaskPublished(task: Task) extends Response
   final case class MessageAcknowledged(mqMessageId: Long) extends Response
+  final case class MessageRejected(mqMessageId: Long) extends Response
 
   def apply(channel: Channel, replyTo: ActorRef[Response]): Behavior[Command] =
     handleMessages(channel, replyTo)
@@ -54,7 +54,7 @@ object MqCommunicator:
          * Public commands
          * ********************************************************************** */
 
-        case PublishMessage(task, bytes, exchangeName, routingKey) =>
+        case PublishTask(task, bytes, exchangeName, routingKey) =>
           publishMessage(
             channel,
             exchangeName,
@@ -62,7 +62,7 @@ object MqCommunicator:
             bytes
           )
 
-          replyTo ! MessagePublished(task)
+          replyTo ! TaskPublished(task)
 
         case AckMessage(mqMessageId) =>
           ackMessage(channel, mqMessageId)
@@ -120,8 +120,8 @@ object MqCommunicator:
     */
   private def publishMessage(
       channel: Channel,
-      exchangeName: MqExchangeName,
-      routingKey: RoutingKey,
+      exchangeName: MessageBrokerExchangeName,
+      routingKey: MessageBrokerRoutingKey,
       message: Seq[Byte]
   ): Unit =
     channel.basicPublish(
@@ -130,5 +130,4 @@ object MqCommunicator:
       null,
       message.toArray
     )
-
-end MqCommunicator
+end MessageBrokerCommunicator

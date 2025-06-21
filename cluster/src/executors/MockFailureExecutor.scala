@@ -3,7 +3,7 @@ package executors
 import os.Path
 import types.Task
 
-object MockExecutor extends Executor:
+object MockFailureExecutor extends Executor:
   def execute(bindFileLocalPath: Path, task: Task): Boolean =
     println(
       s"[${Thread.currentThread().getName}] Simulating execution delay..."
@@ -16,7 +16,7 @@ object MockExecutor extends Executor:
       s"Mock execution through ${task.routingKeys.head}."
     )
 
-    true
+    false
   end execute
 
-end MockExecutor
+end MockFailureExecutor

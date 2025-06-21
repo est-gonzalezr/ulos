@@ -22,16 +22,16 @@ import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import types.MessageQueueConnectionParams
 import types.MqMessage
-import types.OpaqueTypes.MqExchangeName
-import types.OpaqueTypes.MqQueueName
-import types.OpaqueTypes.RoutingKey
+import types.OpaqueTypes.MessageBrokerExchangeName
+import types.OpaqueTypes.MessageBrokerQueueName
+import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.Task
 
 /** A persistent actor responsible for managing actors with message queue
   * related tasks. It acts as the intermediary between the message queue and the
   * system that processes the tasks.
   */
-object MqManager:
+object MessageBrokerManager:
   given Timeout = 10.seconds
 
   // Command protocol
@@ -39,20 +39,20 @@ object MqManager:
 
   // Public command protocol
   final case class ProcessTask(mqMessage: MqMessage) extends Command
-  final case class AckTask(mqMessageId: Long) extends Command
-  final case class RejectTask(mqMessageId: Long) extends Command
+  final case class AckTask(task: Task) extends Command
+  final case class RejectTask(task: Task) extends Command
   final case class PublishTask(
       task: Task,
-      exchange: MqExchangeName,
-      routingKey: RoutingKey
+      exchange: MessageBrokerExchangeName,
+      routingKey: MessageBrokerRoutingKey
   ) extends Command
 
   // Private command protocol
   private final case class PublishSerializedTask(
       task: Task,
       bytes: Seq[Byte],
-      exchange: MqExchangeName,
-      routingKey: RoutingKey
+      exchange: MessageBrokerExchangeName,
+      routingKey: MessageBrokerRoutingKey
   ) extends Command
   private final case class DeliverToOrchestrator(task: Task) extends Command
   private case object NoOp extends Command
@@ -67,21 +67,21 @@ object MqManager:
   sealed trait Response
   sealed trait FailureResponse extends Response
 
-  final case class MessagePublished(task: Task) extends Response
-  final case class MessagePublishFailed(task: Task, reason: Throwable)
+  final case class TaskPublished(task: Task) extends Response
+  final case class TaskAcknowledged(task: Task) extends Response
+  final case class TaskRejected(task: Task) extends Response
+  final case class TaskPublishFailed(task: Task, reason: Throwable)
+      extends FailureResponse
+  final case class TaskAckFailed(task: Task, reason: Throwable)
+      extends FailureResponse
+  final case class TaskRejectFailed(task: Task, reason: Throwable)
       extends FailureResponse
 
-  private enum FailType: // esto lo tengo que hacer hoy
-    case AckFailure
-    case RejectFailure
-    case PublishFailure
-  end FailType
-
-  private type CommandOrResponse = Command | MqCommunicator.Response
+  private type CommandOrResponse = Command | MessageBrokerCommunicator.Response
 
   def apply(
       connParams: MessageQueueConnectionParams,
-      consumptionQueue: MqQueueName,
+      consumptionQueue: MessageBrokerQueueName,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     setup(
@@ -105,7 +105,7 @@ object MqManager:
     */
   private def setup(
       connParams: MessageQueueConnectionParams,
-      consumptionQueue: MqQueueName,
+      consumptionQueue: MessageBrokerQueueName,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     Behaviors
@@ -144,7 +144,8 @@ object MqManager:
       connection: Connection,
       channel: Channel,
       replyTo: ActorRef[Orchestrator.Command | Response],
-      failureResponse: Map[ActorRef[Nothing], Task] = Map()
+      failureResponse: Map[ActorRef[Nothing], Throwable => FailureResponse] =
+        Map()
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -155,48 +156,74 @@ object MqManager:
            * ********************************************************************** */
 
           case ProcessTask(mqMessage) =>
-            val deserializer = context.spawnAnonymous(MqTranslator())
+            val deserializer = context.spawnAnonymous(MessageBrokerTranslator())
 
-            context.askWithStatus[MqTranslator.DeserializeMessage, Task](
-              deserializer,
-              replyTo => MqTranslator.DeserializeMessage(mqMessage, replyTo)
-            ) {
-              case Success(task) =>
-                DeliverToOrchestrator(task)
+            context
+              .askWithStatus[MessageBrokerTranslator.DeserializeMessage, Task](
+                deserializer,
+                replyTo =>
+                  MessageBrokerTranslator.DeserializeMessage(mqMessage, replyTo)
+              ) {
+                case Success(task) =>
+                  DeliverToOrchestrator(task)
 
-              case Failure(_) =>
-                RejectTask(mqMessage.mqId)
-            }
+                case Failure(_) =>
+                  RejectTask(
+                    Task(
+                      taskId = "",
+                      taskOwnerId = "",
+                      filePath = os.Path("/"),
+                      timeout = 0.seconds,
+                      routingKeys = List.empty[String],
+                      logMessage = Some("Failed to deserialize message"),
+                      mqId = mqMessage.mqId
+                    )
+                  )
+              }
             Behaviors.same
 
-          case AckTask(mqMessageId) =>
+          case AckTask(task) =>
             val supervisedWorker =
               Behaviors
-                .supervise(MqCommunicator(channel, context.self))
+                .supervise(MessageBrokerCommunicator(channel, context.self))
                 .onFailure(SupervisorStrategy.stop)
-            val communicator = context.spawnAnonymous(supervisedWorker)
+            val worker = context.spawnAnonymous(supervisedWorker)
+            context.watch(worker)
 
-            communicator ! MqCommunicator.AckMessage(mqMessageId)
+            worker ! MessageBrokerCommunicator.AckMessage(task.mqId)
 
-            Behaviors.same
+            handleMessages(
+              connection,
+              channel,
+              replyTo,
+              failureResponse + (worker -> (th => TaskAckFailed(task, th)))
+            )
 
-          case RejectTask(mqMessageId) =>
+          case RejectTask(task) =>
             val supervisedWorker =
               Behaviors
-                .supervise(MqCommunicator(channel, context.self))
+                .supervise(MessageBrokerCommunicator(channel, context.self))
                 .onFailure(SupervisorStrategy.stop)
-            val communicator = context.spawnAnonymous(supervisedWorker)
+            val worker = context.spawnAnonymous(supervisedWorker)
+            context.watch(worker)
 
-            communicator ! MqCommunicator.RejectMessage(mqMessageId)
+            worker ! MessageBrokerCommunicator.RejectMessage(task.mqId)
 
-            Behaviors.same
+            handleMessages(
+              connection,
+              channel,
+              replyTo,
+              failureResponse + (worker -> (th => TaskRejectFailed(task, th)))
+            )
 
           case PublishTask(task, exchange, routingKey) =>
-            val serializer = context.spawnAnonymous(MqTranslator())
+            val serializer = context.spawnAnonymous(MessageBrokerTranslator())
 
-            context.askWithStatus[MqTranslator.SerializeMessage, Seq[Byte]](
+            context.askWithStatus[MessageBrokerTranslator.SerializeMessage, Seq[
+              Byte
+            ]](
               serializer,
-              replyTo => MqTranslator.SerializeMessage(task, replyTo)
+              replyTo => MessageBrokerTranslator.SerializeMessage(task, replyTo)
             ) {
               case Success(bytes) =>
                 PublishSerializedTask(task, bytes, exchange, routingKey)
@@ -213,13 +240,13 @@ object MqManager:
           case PublishSerializedTask(task, bytes, exchange, routingKey) =>
             val supervisedWorker =
               Behaviors
-                .supervise(MqCommunicator(channel, context.self))
+                .supervise(MessageBrokerCommunicator(channel, context.self))
                 .onFailure(SupervisorStrategy.stop)
             val worker =
               context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
 
-            worker ! MqCommunicator.PublishTask(
+            worker ! MessageBrokerCommunicator.PublishTask(
               task,
               bytes,
               exchange,
@@ -230,7 +257,7 @@ object MqManager:
               connection,
               channel,
               replyTo,
-              failureResponse + (worker -> task)
+              failureResponse + (worker -> (th => TaskPublishFailed(task, th)))
             )
 
           case DeliverToOrchestrator(task) =>
@@ -242,8 +269,8 @@ object MqManager:
 
           case ChildCrashed(ref, reason) =>
             failureResponse.get(ref) match
-              case Some(task) =>
-                replyTo ! MessagePublishFailed(task, reason)
+              case Some(errorApplicationFunction) =>
+                replyTo ! errorApplicationFunction(reason)
                 handleMessages(
                   connection,
                   channel,
@@ -272,14 +299,14 @@ object MqManager:
            * Responses
            * ********************************************************************** */
 
-          case MqCommunicator.MessageAcknowledged(_) =>
+          case MessageBrokerCommunicator.MessageAcknowledged(_) =>
             Behaviors.same
 
-          case MqCommunicator.MessageRejected(_) =>
+          case MessageBrokerCommunicator.MessageRejected(_) =>
             Behaviors.same
 
-          case MqCommunicator.MessagePublished(task) =>
-            replyTo ! MessagePublished(task)
+          case MessageBrokerCommunicator.TaskPublished(task) =>
+            replyTo ! TaskPublished(task)
             Behaviors.same
 
         end match
@@ -335,7 +362,7 @@ object MqManager:
     */
   private class RabbitMqConsumer(
       channel: Channel,
-      replyTo: ActorRef[MqManager.Command]
+      replyTo: ActorRef[MessageBrokerManager.Command]
   ) extends DefaultConsumer(channel):
     override def handleDelivery(
         consumerTag: String,
@@ -343,10 +370,9 @@ object MqManager:
         properties: BasicProperties,
         body: Array[Byte]
     ): Unit =
-      replyTo ! MqManager.ProcessTask(
+      replyTo ! MessageBrokerManager.ProcessTask(
         MqMessage(envelope.getDeliveryTag, body.toSeq)
       )
     end handleDelivery
   end RabbitMqConsumer
-
-end MqManager
+end MessageBrokerManager

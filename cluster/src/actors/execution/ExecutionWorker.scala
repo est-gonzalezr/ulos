@@ -55,27 +55,30 @@ object ExecutionWorker:
     //     .lookup("akka.actor.default-blocking-io-dispatcher")
 
     val executorOption = task.routingKeys.headOption match
+      case Some("pass")                     => Some(MockSuccessExecutor)
+      case Some("fail")                     => Some(MockFailureExecutor)
+      case Some("crash")                    => Some(MockCrashExecutor)
       case Some("cypress-grammar-checking") => Some(CypressGrammarExecutor)
       case Some("cypress-execution")        => Some(CypressExecutor)
       case Some("gcode-execution")          => Some(GCodeExecutor)
       case Some("kotlin-execution")         => Some(KotlinExecutor)
       case Some(pattern) if "testing*".r.matches(pattern) =>
-        Some(MockExecutor)
+        Some(MockSuccessExecutor)
       case _ => None
 
     executorOption match
       case Some(executor) =>
         executeTask(executor, task)
       case None =>
-        throw new IllegalArgumentException("No executor available")
+        throw new IllegalArgumentException(
+          s"No executor available for routing key ${task.routingKeys.headOption.getOrElse("unknown")}"
+        )
     end match
   end handleExecuteTask
 
   private def executeTask(executor: Executor, task: Task): Boolean =
-    println("------------------------ Entering execution")
     val dir = FileSystemUtil.unzipFile(task.relTaskFilePath)
     val canContinue = executor.execute(dir, task)
-
     val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
 
     canContinue

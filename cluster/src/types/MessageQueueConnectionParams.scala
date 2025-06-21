@@ -1,15 +1,15 @@
 package types
 
-import types.OpaqueTypes.MqHost
-import types.OpaqueTypes.MqPassword
-import types.OpaqueTypes.MqPort
-import types.OpaqueTypes.MqUsername
+import types.OpaqueTypes.MessageBrokerHost
+import types.OpaqueTypes.MessageBrokerPort
+import types.OpaqueTypes.MessageBrokerUsername
+import types.OpaqueTypes.MessageBrokerPassword
 
 /** Connection parameters for the message queue.
   */
 final case class MessageQueueConnectionParams(
-    host: MqHost,
-    port: MqPort,
-    username: MqUsername,
-    password: MqPassword
+    host: MessageBrokerHost,
+    port: MessageBrokerPort,
+    username: MessageBrokerUsername,
+    password: MessageBrokerPassword
 )

@@ -49,11 +49,6 @@ object RemoteStorageManager:
   final case class TaskUploadFailed(task: Task, reason: Throwable)
       extends FailureResponse
 
-  private enum FailType:
-    case DownloadFailure
-    case UploadFailure
-  end FailType
-
   private type CommandOrResponse = Command | RemoteStorageWorker.Response
 
   def apply(
@@ -97,7 +92,7 @@ object RemoteStorageManager:
   private def handleMessages(
       connParams: RemoteStorageConnectionParams,
       replyTo: ActorRef[Response],
-      failureResponse: Map[ActorRef[?], (Task, FailType)] = Map()
+      failureResponse: Map[ActorRef[?], Throwable => FailureResponse] = Map()
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -121,7 +116,7 @@ object RemoteStorageManager:
             handleMessages(
               connParams,
               replyTo,
-              failureResponse + (worker -> (task, FailType.DownloadFailure))
+              failureResponse + (worker -> (th => TaskDownloadFailed(task, th)))
             )
 
           case UploadTaskFiles(task) =>
@@ -138,7 +133,7 @@ object RemoteStorageManager:
             handleMessages(
               connParams,
               replyTo,
-              failureResponse + (worker -> (task, FailType.UploadFailure))
+              failureResponse + (worker -> (th => TaskUploadFailed(task, th)))
             )
 
           /* **********************************************************************
@@ -147,12 +142,8 @@ object RemoteStorageManager:
 
           case ChildCrashed(ref, reason) =>
             failureResponse.get(ref) match
-              case Some((task, FailType.DownloadFailure)) =>
-                replyTo ! TaskDownloadFailed(task, reason)
-                handleMessages(connParams, replyTo, failureResponse - ref)
-
-              case Some((task, FailType.UploadFailure)) =>
-                replyTo ! TaskUploadFailed(task, reason)
+              case Some(errorApplicationFunction) =>
+                replyTo ! errorApplicationFunction(reason)
                 handleMessages(connParams, replyTo, failureResponse - ref)
 
               case None =>

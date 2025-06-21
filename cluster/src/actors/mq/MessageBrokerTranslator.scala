@@ -11,7 +11,7 @@ import zio.json.*
 /** A stateless actor responsible for serializing and deserializing messages
   * received from the message queue. A new instance is created for each message.
   */
-object MqTranslator:
+object MessageBrokerTranslator:
   // Command protocol
   sealed trait Command
 
@@ -88,4 +88,4 @@ object MqTranslator:
       .fromJson[Task]
       .map(task => task.copy(mqId = mqMessage.mqId))
 
-end MqTranslator
+end MessageBrokerTranslator

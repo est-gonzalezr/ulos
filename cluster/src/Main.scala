@@ -10,10 +10,10 @@ import types.RemoteStorageConnectionParams
   getEnvVars() match
     case Right(envMap) =>
       val mqConnParams = MessageQueueConnectionParams(
-        MqHost(envMap("MQ_HOST")),
-        MqPort(envMap("MQ_PORT").toInt),
-        MqUsername(envMap("MQ_USER")),
-        MqPassword(envMap("MQ_PASSWORD"))
+        MessageBrokerHost(envMap("MQ_HOST")),
+        MessageBrokerPort(envMap("MQ_PORT").toInt),
+        MessageBrokerUsername(envMap("MQ_USER")),
+        MessageBrokerPassword(envMap("MQ_PASSWORD"))
       )
 
       val rsConnParams = RemoteStorageConnectionParams(
@@ -25,8 +25,8 @@ import types.RemoteStorageConnectionParams
 
       val _ = ActorSystem(
         Orchestrator(
-          MqExchangeName(envMap("MQ_EXCHANGE_NAME")),
-          MqQueueName(envMap("MQ_QUEUE_NAME")),
+          MessageBrokerExchangeName(envMap("MQ_EXCHANGE_NAME")),
+          MessageBrokerQueueName(envMap("MQ_QUEUE_NAME")),
           mqConnParams,
           rsConnParams
         ),

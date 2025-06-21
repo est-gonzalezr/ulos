@@ -14,7 +14,6 @@ import types.Task
 
 object CypressExecutor extends Executor:
   def execute(bindFileLocalPath: Path, task: Task): Boolean =
-
     val image = "cypress-executor"
     val workingDir = "/mnt/tests/"
     val cmdSeq = List("run")

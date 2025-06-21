@@ -29,7 +29,7 @@ object ExecutionManager:
 
   final case class TaskPass(task: Task) extends Response
   final case class TaskHalt(task: Task) extends Response
-  final case class TaskError(task: Task, reason: Throwable)
+  final case class TaskExecutionError(task: Task, reason: Throwable)
       extends FailureResponse
 
   private type CommandOrResponse = Command | ExecutionWorker.Response
@@ -51,7 +51,8 @@ object ExecutionManager:
 
   def handleMessages(
       replyTo: ActorRef[Response],
-      failureResponse: Map[ActorRef[Nothing], Task] = Map()
+      failureResponse: Map[ActorRef[Nothing], Throwable => FailureResponse] =
+        Map()
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -75,7 +76,7 @@ object ExecutionManager:
 
             handleMessages(
               replyTo,
-              failureResponse + (worker -> task)
+              failureResponse + (worker -> (th => TaskExecutionError(task, th)))
             )
 
           /* **********************************************************************
@@ -84,8 +85,8 @@ object ExecutionManager:
 
           case ChildCrashed(ref, reason) =>
             failureResponse.get(ref) match
-              case Some(task) =>
-                replyTo ! TaskError(task, reason)
+              case Some(errorApplicationFunction) =>
+                replyTo ! errorApplicationFunction(reason)
                 handleMessages(replyTo, failureResponse - ref)
               case None =>
                 context.log.error(s"Reference $ref not found.")

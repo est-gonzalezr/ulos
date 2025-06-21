@@ -2,7 +2,7 @@ package types
 
 import actors.SystemMonitor
 import actors.execution.ExecutionManager
-import actors.mq.MqManager
+import actors.mq.MessageBrokerManager
 import actors.storage.RemoteStorageManager
 import akka.actor.typed.ActorRef
 
@@ -17,7 +17,7 @@ import akka.actor.typed.ActorRef
   *   The system monitor actor reference.
   */
 final case class OrchestratorSetup(
-    messageQueueManager: ActorRef[MqManager.Command],
+    messageQueueManager: ActorRef[MessageBrokerManager.Command],
     remoteStorageManager: ActorRef[RemoteStorageManager.Command],
     executionManager: ActorRef[ExecutionManager.Command],
     systemMonitor: ActorRef[SystemMonitor.Command]

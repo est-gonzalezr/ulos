@@ -3,7 +3,9 @@ package actors
 import scala.concurrent.duration.*
 
 import actors.execution.ExecutionManager
-import actors.mq.MqManager
+import actors.mq.MessageBrokerManager
+import actors.mq.MessageBrokerManager.TaskAckFailed
+import actors.mq.MessageBrokerManager.TaskPublishFailed
 import actors.storage.RemoteStorageManager
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -11,9 +13,9 @@ import akka.actor.typed.ChildFailed
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
 import types.MessageQueueConnectionParams
-import types.OpaqueTypes.MqExchangeName
-import types.OpaqueTypes.MqQueueName
-import types.OpaqueTypes.RoutingKey
+import types.OpaqueTypes.MessageBrokerExchangeName
+import types.OpaqueTypes.MessageBrokerQueueName
+import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.OrchestratorSetup
 import types.RemoteStorageConnectionParams
 import types.Task
@@ -30,11 +32,11 @@ object Orchestrator:
 
   private type CommandOrResponse =
     Command | ExecutionManager.Response | RemoteStorageManager.Response |
-      MqManager.Response
+      MessageBrokerManager.Response
 
   def apply(
-      mqExchangeName: MqExchangeName,
-      mqQueueName: MqQueueName,
+      mqExchangeName: MessageBrokerExchangeName,
+      mqQueueName: MessageBrokerQueueName,
       mqConnParams: MessageQueueConnectionParams,
       rsConnParams: RemoteStorageConnectionParams
   ): Behavior[CommandOrResponse] = setup(
@@ -45,8 +47,8 @@ object Orchestrator:
   )
 
   def setup(
-      mqExchangeName: MqExchangeName,
-      mqQueueName: MqQueueName,
+      mqExchangeName: MessageBrokerExchangeName,
+      mqQueueName: MessageBrokerQueueName,
       mqConnParams: MessageQueueConnectionParams,
       rsConnParams: RemoteStorageConnectionParams
   ): Behavior[CommandOrResponse] =
@@ -79,7 +81,9 @@ object Orchestrator:
       context.watch(rsManager)
 
       val supervisedMqManager = Behaviors
-        .supervise(MqManager(mqConnParams, mqQueueName, context.self))
+        .supervise(
+          MessageBrokerManager(mqConnParams, mqQueueName, context.self)
+        )
         .onFailure(
           SupervisorStrategy
             .restartWithBackoff(1.seconds, 5.seconds, 0.2)
@@ -110,7 +114,7 @@ object Orchestrator:
 
   def orchestrating(
       setup: OrchestratorSetup,
-      mqExchangeName: MqExchangeName
+      mqExchangeName: MessageBrokerExchangeName
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -122,7 +126,7 @@ object Orchestrator:
 
           case ProcessTask(task) =>
             context.log.info(
-              s"ProcessTask command received. Task --> $task"
+              s"ProcessTask command received. Task --> $task."
             )
             setup.remoteStorageManager ! RemoteStorageManager
               .DownloadTaskFiles(
@@ -136,121 +140,208 @@ object Orchestrator:
             Behaviors.same
 
           case RegisterLog(task, log) =>
+            val taskWithLog = task.copy(logMessage = Some(log))
+
             context.log.info(
-              s"Have to implement!!! RegisterLog command received. Log --> $log."
+              s"RegisterLog command received. Task --> $taskWithLog."
+            )
+
+            setup.messageQueueManager ! MessageBrokerManager.PublishTask(
+              taskWithLog,
+              mqExchangeName,
+              MessageBrokerRoutingKey("updates")
             )
             Behaviors.same
 
           /* **********************************************************************
-           * Responses
+           * Responses from RemoteStorageManager
            * ********************************************************************** */
 
           case RemoteStorageManager.TaskDownloaded(task) =>
             context.log.info(
-              s"TaskDownloaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}."
+              s"TaskDownloaded response received. Task --> $task."
             )
             context.self ! RegisterLog(
               task,
               "Task files donwloaded for processing."
             )
 
-            setup.executionManager ! ExecutionManager.ExecuteTask(
-              task
-            )
-
-            Behaviors.same
-
-          case ExecutionManager.TaskPass(task) =>
-            context.log.info(
-              s"TaskExecuted response received. TaskId --> ${task.taskId}"
-            )
-            context.self ! RegisterLog(task, "Task processing completed.")
-
-            setup.remoteStorageManager ! RemoteStorageManager
-              .UploadTaskFiles(task)
+            setup.executionManager ! ExecutionManager.ExecuteTask(task)
 
             Behaviors.same
 
           case RemoteStorageManager.TaskUploaded(task) =>
             context.log.info(
-              s"TaskUploaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}."
+              s"TaskUploaded response received. Task --> $task."
             )
-            context.self ! RegisterLog(task, "Task files uploaded.")
+            context.self ! RegisterLog(task, "Task execution files uploaded.")
 
             if task.routingKeys.tail.nonEmpty then
               val taskForNextStage = task.copy(
                 routingKeys = task.routingKeys.tail
               )
 
-              setup.messageQueueManager ! MqManager.PublishTask(
+              setup.messageQueueManager ! MessageBrokerManager.PublishTask(
                 taskForNextStage,
                 mqExchangeName,
-                RoutingKey(taskForNextStage.routingKeys.head)
+                MessageBrokerRoutingKey(taskForNextStage.routingKeys.head)
               )
-
-              context.self ! RegisterLog(
-                taskForNextStage,
-                "Task sent for next processing stage."
-              )
-            else
-              setup.messageQueueManager ! MqManager.AckTask(
-                task.mqId
-              )
+            else setup.messageQueueManager ! MessageBrokerManager.AckTask(task)
             end if
 
             Behaviors.same
 
           case RemoteStorageManager.TaskDownloadFailed(task, reason) =>
             context.log.info(
-              s"TaskDownloadFailed response received. TaskId --> ${task.taskId}."
-            )
-
-            context.self ! RegisterLog(
-              task.copy(logMessage = Some(reason.getMessage())),
-              s"Task files download failed with reason: ${reason}"
-            )
-
-            setup.messageQueueManager ! MqManager.RejectTask(task)
-            Behaviors.same
-
-          case RemoteStorageManager.TaskUploadFailed(task) =>
-            context.log.info(
-              s"TaskUploadFailed response received. TaskId --> ${task.taskId}, Files --> ${task.filePath.toString}."
+              s"TaskDownloadFailed response received. Task --> $task."
             )
 
             context.self ! RegisterLog(
               task,
-              s"Task files upload failed with message: ${task.logMessage}"
+              s"Task files download failed with reason - ${reason.getMessage()}."
             )
 
-            context.self ! GeneralRejectTask(task)
+            setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
             Behaviors.same
 
-          case ExecutionManager.TaskExecutionError(task) =>
+          case RemoteStorageManager.TaskUploadFailed(task, reason) =>
             context.log.info(
-              s"TaskExecutionError response received. TaskId --> ${task.taskId}."
+              s"TaskUploadFailed response received. Task --> $task."
             )
 
             context.self ! RegisterLog(
               task,
-              s"Task execution failed with message: ${task.logMessage}"
+              s"Task files upload failed with reason - ${reason.getMessage()}."
             )
 
-            context.self ! GeneralRejectTask(task)
+            setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
             Behaviors.same
 
-          case GracefulShutdown(reason) =>
-            context.log.info(
-              s"GracefulShutdown command received. Reason --> $reason"
-            )
-            // setup.messageQueueManager ! MqManager.GracefulShutdown
-            Behaviors.stopped
+          /* **********************************************************************
+           * Responses from ExecutionManager
+           * ********************************************************************** */
 
-          case Fail(reason) =>
+          case ExecutionManager.TaskPass(task) =>
+            context.log.info(
+              s"TaskExecuted response received. Task --> $task."
+            )
+            context.self ! RegisterLog(
+              task,
+              "Task processing completed successfully."
+            )
+
+            setup.remoteStorageManager ! RemoteStorageManager
+              .UploadTaskFiles(task)
+
+            Behaviors.same
+
+          case ExecutionManager.TaskHalt(task) =>
+            context.log.info(
+              s"TaskHalt response received. Task --> $task."
+            )
+            context.self ! RegisterLog(
+              task,
+              "Task processing completed unsuccessfully."
+            )
+
+            val taskWithoutStages = task.copy(routingKeys = Nil)
+
+            setup.remoteStorageManager ! RemoteStorageManager
+              .UploadTaskFiles(taskWithoutStages)
+
+            Behaviors.same
+
+          case ExecutionManager.TaskExecutionError(task, reason) =>
+            context.log.info(
+              s"TaskExecutionError response received. Task --> $task."
+            )
+
+            context.self ! RegisterLog(
+              task,
+              s"Task execution failed with reason - ${reason.getMessage()}"
+            )
+
+            setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
+            Behaviors.same
+
+          /* **********************************************************************
+           * Responses from MqManager
+           * ********************************************************************** */
+
+          case MessageBrokerManager.TaskPublished(task) =>
+            context.log.info(
+              s"TaskPublished response received. Task --> $task."
+            )
+
+            context.self ! RegisterLog(
+              task,
+              "Task sent for next processing stage."
+            )
+
+            setup.messageQueueManager ! MessageBrokerManager.AckTask(task)
+
+            Behaviors.same
+
+          case MessageBrokerManager.TaskAcknowledged(task) =>
+            context.log.info(
+              s"TaskAcknowledged response received. Task --> $task."
+            )
+
+            context.self ! RegisterLog(
+              task,
+              "Task acknowledged by message queue manager."
+            )
+
+            Behaviors.same
+
+          case MessageBrokerManager.TaskRejected(task) =>
+            context.log.info(
+              s"TaskRejected response received. Task --> $task."
+            )
+
+            context.self ! RegisterLog(
+              task,
+              "Task rejected by message queue manager."
+            )
+
+            Behaviors.same
+
+          case MessageBrokerManager.TaskPublishFailed(task, reason) =>
             context.log.error(
-              s"Fail command received. Reason --> $reason"
+              s"TaskPublishFailed response received. Task --> $task."
             )
-            Behaviors.stopped
+
+            context.self ! RegisterLog(
+              task,
+              "Task publish failed."
+            )
+
+            Behaviors.same
+
+          case MessageBrokerManager.TaskAckFailed(task, reason) =>
+            context.log.error(
+              s"TaskAckFailed response received. Task --> $task."
+            )
+
+            context.self ! RegisterLog(
+              task,
+              "Task acknowledgement failed."
+            )
+
+            Behaviors.same
+
+          case MessageBrokerManager.TaskRejectFailed(task, reason) =>
+            context.log.error(
+              s"TaskRejectFailed response received. Task --> $task."
+            )
+
+            context.self ! RegisterLog(
+              task,
+              "Task rejection failed."
+            )
+
+            Behaviors.same
+
         end match
       }
       .receiveSignal { case (context, ChildFailed(ref)) =>

@@ -16,7 +16,7 @@ final case class Task(
     taskId: String,
     taskOwnerId: String,
     filePath: Path,
-    timeout: Timeout = 300.seconds,
+    timeout: Timeout,
     routingKeys: List[String],
     logMessage: Option[String],
     mqId: Long = -1
