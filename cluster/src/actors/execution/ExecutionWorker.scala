@@ -1,17 +1,8 @@
 package actors.execution
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-
-import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.pattern.StatusReply
 import executors.*
 import types.Task
 import utilities.FileSystemUtil
@@ -23,8 +14,14 @@ object ExecutionWorker:
   // Public command protocol
   final case class ExecuteTask(
       task: Task,
-      replyTo: ActorRef[StatusReply[Done]]
+      replyTo: ActorRef[Response]
   ) extends Command
+
+  // Response protocol
+  sealed trait Response
+
+  final case class TaskPass(task: Task) extends Response
+  final case class TaskHalt(task: Task) extends Response
 
   def apply(): Behavior[Command] = processing()
 
@@ -34,14 +31,16 @@ object ExecutionWorker:
     *   A behavior that processes a task and then stops.
     */
   def processing(): Behavior[Command] =
-    Behaviors.receive { (context, message) =>
+    Behaviors.receive { (_, message) =>
       message match
         /* **********************************************************************
          * Public commands
          * ********************************************************************** */
 
         case ExecuteTask(task, replyTo) =>
-          handleExecuteTask(context, task, replyTo)
+          if handleExecuteTask(task) then replyTo ! TaskPass(task)
+          else replyTo ! TaskHalt(task)
+          end if
           Behaviors.stopped
 
       end match
@@ -49,13 +48,11 @@ object ExecutionWorker:
   end processing
 
   private def handleExecuteTask(
-      context: ActorContext[Command],
-      task: Task,
-      replyTo: ActorRef[StatusReply[Done]]
-  ): Unit =
-    given blockingDispatcher: ExecutionContext =
-      context.system.classicSystem.dispatchers
-        .lookup("akka.actor.default-blocking-io-dispatcher")
+      task: Task
+  ): Boolean =
+    // given blockingDispatcher: ExecutionContext =
+    //   context.system.classicSystem.dispatchers
+    //     .lookup("akka.actor.default-blocking-io-dispatcher")
 
     val executorOption = task.routingKeys.headOption match
       case Some("cypress-grammar-checking") => Some(CypressGrammarExecutor)
@@ -68,37 +65,20 @@ object ExecutionWorker:
 
     executorOption match
       case Some(executor) =>
-        Future {
-          executeTask(executor, task)
-        }(using blockingDispatcher).onComplete {
-          case Success(tryTask) =>
-            tryTask match
-              case Success(_) =>
-                replyTo ! StatusReply.Ack
-              case Failure(th) =>
-                replyTo ! StatusReply.Error(th)
-
-          case Failure(th) =>
-            replyTo ! StatusReply.Error(th)
-        }
+        executeTask(executor, task)
       case None =>
-        replyTo ! StatusReply.Error("No executor available")
+        throw new IllegalArgumentException("No executor available")
     end match
   end handleExecuteTask
 
-  private def executeTask(executor: Executor, task: Task): Try[Task] =
+  private def executeTask(executor: Executor, task: Task): Boolean =
     println("------------------------ Entering execution")
-    FileSystemUtil.unzipFile(task.relTaskFilePath) match
-      case Success(dir) =>
-        val executedTask = executor.execute(dir, task)
+    val dir = FileSystemUtil.unzipFile(task.relTaskFilePath)
+    val canContinue = executor.execute(dir, task)
 
-        val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
+    val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
 
-        executedTask
+    canContinue
 
-      case Failure(th) =>
-        println(th)
-        Failure(Throwable("Could not unzip file"))
-    end match
   end executeTask
 end ExecutionWorker

@@ -1,7 +1,6 @@
 package executors
 
 import scala.collection.mutable.ListBuffer
-import scala.util.Try
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
@@ -14,78 +13,73 @@ import os.Path
 import types.Task
 
 object CypressExecutor extends Executor:
-  def execute(bindFileLocalPath: Path, task: Task): Try[Task] =
-    Try {
+  def execute(bindFileLocalPath: Path, task: Task): Boolean =
 
-      val image = "cypress-executor"
-      val workingDir = "/mnt/tests/"
-      val cmdSeq = List("run")
+    val image = "cypress-executor"
+    val workingDir = "/mnt/tests/"
+    val cmdSeq = List("run")
 
-      val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
+    val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
 
-      val container = dockerClient
-        .createContainerCmd(image)
-        .withCmd(cmdSeq*)
-        .withWorkingDir(workingDir)
-        .withHostConfig(
-          HostConfig()
-            .withBinds(
-              Bind.parse(
-                s"${bindFileLocalPath.toString}:$workingDir"
-              )
+    val container = dockerClient
+      .createContainerCmd(image)
+      .withCmd(cmdSeq*)
+      .withWorkingDir(workingDir)
+      .withHostConfig(
+        HostConfig()
+          .withBinds(
+            Bind.parse(
+              s"${bindFileLocalPath.toString}:$workingDir"
             )
-            .withAutoRemove(true)
-        )
-        .exec()
-
-      dockerClient.startContainerCmd(container.getId()).exec()
-
-      val logBuffer = ListBuffer[String]()
-      val logCallback = new ResultCallback.Adapter[Frame]:
-        override def onNext(frame: Frame): Unit =
-          val logLine = String(frame.getPayload)
-          logBuffer += logLine
-          println(logLine)
-        end onNext
-
-      val logStream = dockerClient
-        .logContainerCmd(container.getId)
-        .withStdOut(true)
-        .withStdErr(true)
-        .withFollowStream(true)
-        .exec(logCallback)
-
-      @volatile var exitCode = 0
-      try
-        // Wait for container to finish and capture exit code
-        val waitCallback = new ResultCallback.Adapter[WaitResponse]:
-          override def onNext(response: WaitResponse): Unit =
-            exitCode = response.getStatusCode()
-
-        dockerClient.waitContainerCmd(container.getId()).exec(waitCallback)
-        waitCallback.awaitCompletion()
-
-      finally logStream.close()
-      end try
-      // println("------------------------------------------")
-      // println("Here is a container for start")
-      // println(containerId)
-      // println(exitCode)
-      // println(output)
-      // println("here is a container for stop")
-      // println("------------------------------------------")
-
-      os.write.over(
-        bindFileLocalPath / s"output_${task.routingKeys.head}.txt",
-        logBuffer.mkString("\n")
+          )
+          .withAutoRemove(true)
       )
+      .exec()
 
-      if exitCode != 0 then
-        throw new RuntimeException(s"Container exited with code $exitCode")
-      end if
+    dockerClient.startContainerCmd(container.getId()).exec()
 
-      task
-    }
+    val logBuffer = ListBuffer[String]()
+    val logCallback = new ResultCallback.Adapter[Frame]:
+      override def onNext(frame: Frame): Unit =
+        val logLine = String(frame.getPayload)
+        logBuffer += logLine
+        println(logLine)
+      end onNext
+
+    val logStream = dockerClient
+      .logContainerCmd(container.getId)
+      .withStdOut(true)
+      .withStdErr(true)
+      .withFollowStream(true)
+      .exec(logCallback)
+
+    @volatile var exitCode = 0
+    try
+      // Wait for container to finish and capture exit code
+      val waitCallback = new ResultCallback.Adapter[WaitResponse]:
+        override def onNext(response: WaitResponse): Unit =
+          exitCode = response.getStatusCode()
+
+      dockerClient.waitContainerCmd(container.getId()).exec(waitCallback)
+      waitCallback.awaitCompletion()
+
+    finally logStream.close()
+    end try
+    // println("------------------------------------------")
+    // println("Here is a container for start")
+    // println(containerId)
+    // println(exitCode)
+    // println(output)
+    // println("here is a container for stop")
+    // println("------------------------------------------")
+
+    os.write.over(
+      bindFileLocalPath / s"output_${task.routingKeys.head}.txt",
+      logBuffer.mkString("\n")
+    )
+
+    exitCode == 0
+
   end execute
 
 end CypressExecutor

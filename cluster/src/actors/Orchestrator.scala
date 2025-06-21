@@ -28,15 +28,9 @@ object Orchestrator:
   final case class ProcessTask(task: Task) extends Command
   final case class RegisterLog(task: Task, log: String) extends Command
 
-  // Internal command protocol
-  final case class GeneralAcknowledgeTask(task: Task) extends Command
-  final case class GeneralRejectTask(task: Task) extends Command
-  final case class GracefulShutdown(reason: String) extends Command
-  final case class Fail(th: Throwable) extends Command
-
   private type CommandOrResponse =
-    Command | ExecutionManager.Response |
-      RemoteStorageManager.Response // | MqManager.Response
+    Command | ExecutionManager.Response | RemoteStorageManager.Response |
+      MqManager.Response
 
   def apply(
       mqExchangeName: MqExchangeName,
@@ -67,29 +61,29 @@ object Orchestrator:
         )
       val executionManager = context.spawn(
         supervisedExecutionManager,
-        "processing-manager"
+        "execution-manager"
       )
       context.watch(executionManager)
 
-      val supervisedRemoteManager = Behaviors
+      val supervisedRsManager = Behaviors
         .supervise(RemoteStorageManager(rsConnParams, context.self))
         .onFailure(
           SupervisorStrategy
-            .restartWithBackoff(1.seconds, 20.seconds, 0.2)
+            .restartWithBackoff(1.seconds, 5.seconds, 0.2)
             .withMaxRestarts(MaxConsecutiveRestarts)
         )
-      val remoteManager = context.spawn(
-        supervisedRemoteManager,
+      val rsManager = context.spawn(
+        supervisedRsManager,
         "ftp-manager"
       )
-      context.watch(remoteManager)
+      context.watch(rsManager)
 
       val supervisedMqManager = Behaviors
         .supervise(MqManager(mqConnParams, mqQueueName, context.self))
         .onFailure(
-          SupervisorStrategy.stop
-            // .restartWithBackoff(1.seconds, 20.seconds, 0.2)
-            // .withMaxRestarts(MaxConsecutiveRestarts)
+          SupervisorStrategy
+            .restartWithBackoff(1.seconds, 5.seconds, 0.2)
+            .withMaxRestarts(MaxConsecutiveRestarts)
         )
       val mqManager = context.spawn(
         supervisedMqManager,
@@ -102,20 +96,20 @@ object Orchestrator:
         "system-monitor"
       )
 
-      val orchestratorSetup = OrchestratorSetup(
+      val setup = OrchestratorSetup(
         mqManager,
-        remoteManager,
+        rsManager,
         executionManager,
         systemMonitor
       )
 
-      orchestrating(orchestratorSetup, mqExchangeName)
+      orchestrating(setup, mqExchangeName)
     }
 
   end setup
 
   def orchestrating(
-      orchestratorSetup: OrchestratorSetup,
+      setup: OrchestratorSetup,
       mqExchangeName: MqExchangeName
   ): Behavior[CommandOrResponse] =
     Behaviors
@@ -130,7 +124,7 @@ object Orchestrator:
             context.log.info(
               s"ProcessTask command received. Task --> $task"
             )
-            orchestratorSetup.remoteStorageManager ! RemoteStorageManager
+            setup.remoteStorageManager ! RemoteStorageManager
               .DownloadTaskFiles(
                 task
               )
@@ -141,69 +135,39 @@ object Orchestrator:
 
             Behaviors.same
 
-          case GeneralAcknowledgeTask(task) =>
-            context.log.info(
-              s"GeneralAcknowledgeTask command received. TaskId --> ${task.mqId}."
-            )
-            orchestratorSetup.messageQueueManager ! MqManager.MqAckTask(
-              task.mqId
-            )
-
-            context.self ! RegisterLog(
-              task,
-              "Task ack sent to broker."
-            )
-
-            Behaviors.same
-
-          case GeneralRejectTask(task) =>
-            context.log.info(
-              s"GeneralRejectTask command received. TaskId --> ${task.mqId}."
-            )
-            orchestratorSetup.messageQueueManager ! MqManager.MqRejectTask(
-              task.mqId
-            )
-
-            context.self ! RegisterLog(
-              task,
-              "Task reject sent to broker."
-            )
-
-            Behaviors.same
-
           case RegisterLog(task, log) =>
             context.log.info(
-              s"RegisterLog command received. Log --> $log."
+              s"Have to implement!!! RegisterLog command received. Log --> $log."
             )
             Behaviors.same
 
           /* **********************************************************************
-           * Responses from other actors
+           * Responses
            * ********************************************************************** */
 
           case RemoteStorageManager.TaskDownloaded(task) =>
             context.log.info(
               s"TaskDownloaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}."
             )
-            orchestratorSetup.executionManager ! ExecutionManager.ExecuteTask(
-              task
-            )
-
             context.self ! RegisterLog(
               task,
               "Task files donwloaded for processing."
             )
 
+            setup.executionManager ! ExecutionManager.ExecuteTask(
+              task
+            )
+
             Behaviors.same
 
-          case ExecutionManager.TaskExecuted(task) =>
+          case ExecutionManager.TaskPass(task) =>
             context.log.info(
               s"TaskExecuted response received. TaskId --> ${task.taskId}"
             )
-            orchestratorSetup.remoteStorageManager ! RemoteStorageManager
-              .UploadTaskFiles(task)
-
             context.self ! RegisterLog(task, "Task processing completed.")
+
+            setup.remoteStorageManager ! RemoteStorageManager
+              .UploadTaskFiles(task)
 
             Behaviors.same
 
@@ -211,7 +175,6 @@ object Orchestrator:
             context.log.info(
               s"TaskUploaded response received. TaskId --> ${task.mqId}, Files --> ${task.filePath.toString}."
             )
-
             context.self ! RegisterLog(task, "Task files uploaded.")
 
             if task.routingKeys.tail.nonEmpty then
@@ -219,7 +182,7 @@ object Orchestrator:
                 routingKeys = task.routingKeys.tail
               )
 
-              orchestratorSetup.messageQueueManager ! MqManager.MqSendMessage(
+              setup.messageQueueManager ! MqManager.PublishTask(
                 taskForNextStage,
                 mqExchangeName,
                 RoutingKey(taskForNextStage.routingKeys.head)
@@ -229,22 +192,25 @@ object Orchestrator:
                 taskForNextStage,
                 "Task sent for next processing stage."
               )
+            else
+              setup.messageQueueManager ! MqManager.AckTask(
+                task.mqId
+              )
             end if
 
-            context.self ! GeneralAcknowledgeTask(task)
             Behaviors.same
 
-          case RemoteStorageManager.TaskDownloadFailed(task) =>
+          case RemoteStorageManager.TaskDownloadFailed(task, reason) =>
             context.log.info(
               s"TaskDownloadFailed response received. TaskId --> ${task.taskId}."
             )
 
             context.self ! RegisterLog(
-              task,
-              s"Task files download failed with message: ${task.logMessage}"
+              task.copy(logMessage = Some(reason.getMessage())),
+              s"Task files download failed with reason: ${reason}"
             )
 
-            context.self ! GeneralRejectTask(task)
+            setup.messageQueueManager ! MqManager.RejectTask(task)
             Behaviors.same
 
           case RemoteStorageManager.TaskUploadFailed(task) =>
@@ -277,7 +243,7 @@ object Orchestrator:
             context.log.info(
               s"GracefulShutdown command received. Reason --> $reason"
             )
-            // orchestratorSetup.messageQueueManager ! MqManager.GracefulShutdown
+            // setup.messageQueueManager ! MqManager.GracefulShutdown
             Behaviors.stopped
 
           case Fail(reason) =>
@@ -285,6 +251,7 @@ object Orchestrator:
               s"Fail command received. Reason --> $reason"
             )
             Behaviors.stopped
+        end match
       }
       .receiveSignal { case (context, ChildFailed(ref)) =>
         context.log.error(s"Child actor failed: $ref")

@@ -12,15 +12,14 @@ import zio.json.*
   * received from the message queue. A new instance is created for each message.
   */
 object MqTranslator:
-  // command protocol
+  // Command protocol
   sealed trait Command
 
-  // public command protocol
+  // Public command protocol
   final case class SerializeMessage(
       task: Task,
       replyTo: ActorRef[StatusReply[Seq[Byte]]]
   ) extends Command
-
   final case class DeserializeMessage(
       mqMessage: MqMessage,
       replyTo: ActorRef[StatusReply[Task]]

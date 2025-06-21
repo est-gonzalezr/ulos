@@ -1,21 +1,16 @@
 package actors.storage
 
 import scala.concurrent.duration.*
-import scala.util.Failure
-import scala.util.Success
 
-import actors.Orchestrator
-import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.ChildFailed
+import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import types.RemoteStorageConnectionParams
 import types.Task
-import utilities.MiscUtils
-
-private val DefaultRemoteOpsRetries = 5
 
 /** A persistent actor responsible for managing actors with remote storage
   * related tasks. It acts as the intermediary between the remote storage and
@@ -29,32 +24,42 @@ object RemoteStorageManager:
 
   // Public command protocol
   final case class DownloadTaskFiles(
-      task: Task,
-      retries: Int = DefaultRemoteOpsRetries
+      task: Task
   ) extends Command
   final case class UploadTaskFiles(
-      task: Task,
-      retries: Int = DefaultRemoteOpsRetries
+      task: Task
   ) extends Command
 
-  // Internal command protocol
-  private final case class ReportTaskDownloaded(task: Task) extends Command
-  private final case class ReportTaskUploaded(task: Task) extends Command
-  private final case class ReportTaskDownloadFailed(task: Task) extends Command
-  private final case class ReportTaskUploadFailed(task: Task) extends Command
-  private final case class NotifyFatalFailure(th: Throwable) extends Command
+  // Private command protocol
+  private final case class ChildCrashed(
+      ref: ActorRef[Nothing],
+      reason: Throwable
+  ) extends Command
+  private final case class ChildTerminated(ref: ActorRef[Nothing])
+      extends Command
 
   // Response protocol
   sealed trait Response
+  sealed trait FailureResponse extends Response
+
   final case class TaskDownloaded(task: Task) extends Response
   final case class TaskUploaded(task: Task) extends Response
-  final case class TaskDownloadFailed(task: Task) extends Response
-  final case class TaskUploadFailed(task: Task) extends Response
+  final case class TaskDownloadFailed(task: Task, reason: Throwable)
+      extends FailureResponse
+  final case class TaskUploadFailed(task: Task, reason: Throwable)
+      extends FailureResponse
+
+  private enum FailType:
+    case DownloadFailure
+    case UploadFailure
+  end FailType
+
+  private type CommandOrResponse = Command | RemoteStorageWorker.Response
 
   def apply(
       connParams: RemoteStorageConnectionParams,
-      replyTo: ActorRef[Response | Orchestrator.Fail]
-  ): Behavior[Command] =
+      replyTo: ActorRef[Response]
+  ): Behavior[CommandOrResponse] =
     setup(
       connParams,
       replyTo
@@ -69,8 +74,8 @@ object RemoteStorageManager:
       */
   private def setup(
       connParams: RemoteStorageConnectionParams,
-      replyTo: ActorRef[Response | Orchestrator.Fail]
-  ): Behavior[Command] = Behaviors.setup { context =>
+      replyTo: ActorRef[Response]
+  ): Behavior[CommandOrResponse] = Behaviors.setup { context =>
     context.log.info("RemoteFileManager started...")
 
     handleMessages(
@@ -91,153 +96,100 @@ object RemoteStorageManager:
     */
   private def handleMessages(
       connParams: RemoteStorageConnectionParams,
-      replyTo: ActorRef[Response | Orchestrator.Fail]
-  ): Behavior[Command] =
-    Behaviors.receive { (context, message) =>
-      message match
+      replyTo: ActorRef[Response],
+      failureResponse: Map[ActorRef[?], (Task, FailType)] = Map()
+  ): Behavior[CommandOrResponse] =
+    Behaviors
+      .receive[CommandOrResponse] { (context, message) =>
+        message match
 
-        /* **********************************************************************
-         * Public commands
-         * ********************************************************************** */
+          /* **********************************************************************
+           * Public commands
+           * ********************************************************************** */
 
-        case DownloadTaskFiles(task, retries) =>
-          val _ = delegateDownloadTaskFiles(
-            context,
-            connParams,
-            task,
-            retries
-          )
+          case DownloadTaskFiles(task) =>
+            val supervisedWorker = Behaviors
+              .supervise(RemoteStorageWorker(connParams))
+              .onFailure(
+                SupervisorStrategy.stop
+              )
+            val worker = context.spawnAnonymous(supervisedWorker)
+            context.watch(worker)
+
+            worker ! RemoteStorageWorker.DownloadFiles(task, context.self)
+
+            handleMessages(
+              connParams,
+              replyTo,
+              failureResponse + (worker -> (task, FailType.DownloadFailure))
+            )
+
+          case UploadTaskFiles(task) =>
+            val supervisedWorker = Behaviors
+              .supervise(RemoteStorageWorker(connParams))
+              .onFailure(
+                SupervisorStrategy.stop
+              )
+            val worker = context.spawnAnonymous(supervisedWorker)
+            context.watch(worker)
+
+            worker ! RemoteStorageWorker.UploadFiles(task, context.self)
+
+            handleMessages(
+              connParams,
+              replyTo,
+              failureResponse + (worker -> (task, FailType.UploadFailure))
+            )
+
+          /* **********************************************************************
+           * Private commands
+           * ********************************************************************** */
+
+          case ChildCrashed(ref, reason) =>
+            failureResponse.get(ref) match
+              case Some((task, FailType.DownloadFailure)) =>
+                replyTo ! TaskDownloadFailed(task, reason)
+                handleMessages(connParams, replyTo, failureResponse - ref)
+
+              case Some((task, FailType.UploadFailure)) =>
+                replyTo ! TaskUploadFailed(task, reason)
+                handleMessages(connParams, replyTo, failureResponse - ref)
+
+              case None =>
+                context.log.error(s"Reference $ref not found.")
+                Behaviors.same
+            end match
+
+          case ChildTerminated(ref) =>
+            if failureResponse.contains(ref) then
+              handleMessages(connParams, replyTo, failureResponse - ref)
+            else
+              context.log.error(s"Reference $ref not found.")
+              Behaviors.same
+            end if
+
+          /* **********************************************************************
+           * Responses
+           * ********************************************************************** */
+
+          case RemoteStorageWorker.TaskDownloaded(task) =>
+            replyTo ! TaskDownloaded(task)
+            Behaviors.same
+
+          case RemoteStorageWorker.TaskUploaded(task) =>
+            replyTo ! TaskUploaded(task)
+            Behaviors.same
+
+        end match
+      }
+      .receiveSignal {
+        case (context, ChildFailed(ref, reason)) =>
+          context.self ! ChildCrashed(ref, reason)
           Behaviors.same
 
-        case UploadTaskFiles(task, retries) =>
-          val _ = delegateUploadTaskFiles(
-            context,
-            connParams,
-            task,
-            retries
-          )
+        case (context, Terminated(ref)) =>
+          context.self ! ChildTerminated(ref)
           Behaviors.same
-
-        /* **********************************************************************
-         * Internal commands
-         * ********************************************************************** */
-
-        case ReportTaskDownloaded(task) =>
-          replyTo ! TaskDownloaded(task)
-          Behaviors.same
-
-        case ReportTaskUploaded(task) =>
-          replyTo ! TaskUploaded(task)
-          Behaviors.same
-
-        case ReportTaskDownloadFailed(task) =>
-          replyTo ! TaskDownloadFailed(task)
-          Behaviors.same
-
-        case ReportTaskUploadFailed(task) =>
-          replyTo ! TaskUploadFailed(task)
-          Behaviors.same
-
-        case NotifyFatalFailure(message) =>
-          replyTo ! Orchestrator.Fail(message)
-          Behaviors.same
-
-      end match
-
-    }
+      }
   end handleMessages
-
-  /** Delegate the download of files for a task to a remote storage worker and
-    * handle any errors.
-    *
-    * @param context
-    *   The actor context.
-    * @param connParams
-    *   The connection parameters for the remote storage worker.
-    * @param task
-    *   The task to download files for.
-    * @param retries
-    *   The number of retries left.
-    *
-    * @return
-    *   Unit
-    */
-  private def delegateDownloadTaskFiles(
-      context: ActorContext[Command],
-      connParams: RemoteStorageConnectionParams,
-      task: Task,
-      retries: Int
-  ): Unit =
-    val downloader = context.spawnAnonymous(RemoteStorageWorker(connParams))
-
-    context.askWithStatus[RemoteStorageWorker.DownloadFiles, Done](
-      downloader,
-      replyTo =>
-        RemoteStorageWorker.DownloadFiles(
-          task,
-          replyTo
-        )
-    ) {
-      case Success(Done) =>
-        ReportTaskDownloaded(task)
-      case Failure(th) =>
-        val failureMessage =
-          s"Download failure for Task --> $task: ${th.getMessage}"
-
-        MiscUtils.defineRetryCommand(
-          context,
-          retries,
-          failureMessage,
-          DownloadTaskFiles(task, retries - 1),
-          NotifyFatalFailure(th)
-        )
-    }
-  end delegateDownloadTaskFiles
-
-  /** Delegate the download of files for a task to a remote storage worker and
-    * handle any errors.
-    *
-    * @param context
-    *   The actor context.
-    * @param connParams
-    *   The connection parameters for the remote storage worker.
-    * @param task
-    *   The task to download files for.
-    * @param retries
-    *   The number of retries remaining.
-    *
-    * @return
-    *   Unit
-    */
-  private def delegateUploadTaskFiles(
-      context: ActorContext[Command],
-      connParams: RemoteStorageConnectionParams,
-      task: Task,
-      retries: Int
-  ): Unit =
-    val uploader = context.spawnAnonymous(RemoteStorageWorker(connParams))
-
-    context.askWithStatus[RemoteStorageWorker.UploadFiles, Done](
-      uploader,
-      replyTo =>
-        RemoteStorageWorker.UploadFiles(
-          task,
-          replyTo
-        )
-    ) {
-      case Success(Done) =>
-        ReportTaskUploaded(task)
-      case Failure(th) =>
-        val failureMessage =
-          s"Upload failure for Task --> $task: ${th.getMessage}"
-
-        MiscUtils.defineRetryCommand(
-          context,
-          retries,
-          failureMessage,
-          UploadTaskFiles(task, retries - 1),
-          NotifyFatalFailure(th)
-        )
-    }
-  end delegateUploadTaskFiles
 end RemoteStorageManager

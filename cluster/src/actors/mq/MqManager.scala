@@ -6,12 +6,12 @@ import scala.util.Success
 import scala.util.Try
 
 import actors.Orchestrator
-import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.ChildFailed
 import akka.actor.typed.PreRestart
 import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import com.rabbitmq.client.AMQP.BasicProperties
@@ -21,15 +21,11 @@ import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import types.MessageQueueConnectionParams
-import types.MqManagerSetup
 import types.MqMessage
 import types.OpaqueTypes.MqExchangeName
 import types.OpaqueTypes.MqQueueName
 import types.OpaqueTypes.RoutingKey
 import types.Task
-import utilities.MiscUtils
-
-private val DefaultMqRetries = 10
 
 /** A persistent actor responsible for managing actors with message queue
   * related tasks. It acts as the intermediary between the message queue and the
@@ -42,30 +38,52 @@ object MqManager:
   sealed trait Command
 
   // Public command protocol
-  final case class MqProcessTask(mqMessage: MqMessage) extends Command
-  final case class MqAckTask(
-      id: Long,
-      retries: Int = DefaultMqRetries
-  ) extends Command
-  final case class MqRejectTask(id: Long, retries: Int = DefaultMqRetries)
-      extends Command
-  final case class MqSendMessage(
+  final case class ProcessTask(mqMessage: MqMessage) extends Command
+  final case class AckTask(mqMessageId: Long) extends Command
+  final case class RejectTask(mqMessageId: Long) extends Command
+  final case class PublishTask(
       task: Task,
       exchange: MqExchangeName,
-      routingKey: RoutingKey,
-      retries: Int = DefaultMqRetries
+      routingKey: RoutingKey
   ) extends Command
 
-  // Internal command protocol
+  // Private command protocol
+  private final case class PublishSerializedTask(
+      task: Task,
+      bytes: Seq[Byte],
+      exchange: MqExchangeName,
+      routingKey: RoutingKey
+  ) extends Command
   private final case class DeliverToOrchestrator(task: Task) extends Command
-  private final case class NotifyFatalFailure(th: Throwable) extends Command
   private case object NoOp extends Command
+  private final case class ChildCrashed(
+      ref: ActorRef[Nothing],
+      reason: Throwable
+  ) extends Command
+  private final case class ChildTerminated(ref: ActorRef[Nothing])
+      extends Command
+
+  // Response protocol
+  sealed trait Response
+  sealed trait FailureResponse extends Response
+
+  final case class MessagePublished(task: Task) extends Response
+  final case class MessagePublishFailed(task: Task, reason: Throwable)
+      extends FailureResponse
+
+  private enum FailType: // esto lo tengo que hacer hoy
+    case AckFailure
+    case RejectFailure
+    case PublishFailure
+  end FailType
+
+  private type CommandOrResponse = Command | MqCommunicator.Response
 
   def apply(
       connParams: MessageQueueConnectionParams,
       consumptionQueue: MqQueueName,
-      replyTo: ActorRef[Orchestrator.Command]
-  ): Behavior[Command] =
+      replyTo: ActorRef[Orchestrator.Command | Response]
+  ): Behavior[CommandOrResponse] =
     setup(
       connParams,
       consumptionQueue,
@@ -88,43 +106,30 @@ object MqManager:
   private def setup(
       connParams: MessageQueueConnectionParams,
       consumptionQueue: MqQueueName,
-      replyTo: ActorRef[Orchestrator.Command]
-  ): Behavior[Command] =
-    Behaviors.setup[Command] { context =>
-      context.log.info("MqManager started...")
+      replyTo: ActorRef[Orchestrator.Command | Response]
+  ): Behavior[CommandOrResponse] =
+    Behaviors
+      .setup[CommandOrResponse] { context =>
+        context.log.info("MqManager started...")
 
-      val behavior = initializeBrokerLink(
-        connParams
-      ).fold(
-        th =>
-          context.log.error(
-            s"Connection to broker failed. Host --> ${connParams.host.value}, Port --> ${connParams.port.value}. th: ${th.getMessage}"
-          )
-          context.log.error(
-            "Shutting down MqManager."
-              + "\nCONTACT SYSTEM ADMINISTRATOR!!!"
-              + "\nCONTACT SYSTEM ADMINISTRATOR!!!"
-              + "\nCONTACT SYSTEM ADMINISTRATOR!!!"
-          )
-          Behaviors.stopped
-        ,
-        (connection, channel) =>
-          // val supervisedMqConsumer = Behaviors
-          //   .supervise(MqConsumer(channel, consumptionQueue, context.self))
-          //   .onFailure(SupervisorStrategy.restart)
+        val behavior = initializeBrokerLink(
+          connParams
+        ).fold(
+          th =>
+            context.log.error(
+              s"Connection to broker failed. Host --> ${connParams.host.value}, Port --> ${connParams.port.value}. th: ${th.getMessage}"
+            )
+            Behaviors.stopped
+          ,
+          (connection, channel) =>
+            val consumer = RabbitMqConsumer(channel, context.self)
+            val _ =
+              channel.basicConsume(consumptionQueue.value, false, consumer)
+            handleMessages(connection, channel, replyTo)
+        )
 
-          // val mqConsumer = context.spawn(
-          //   MqConsumer(channel, consumptionQueue, context.self),
-          //   "mq-consumer"
-          // )
-          val consumer = RabbitMqConsumer(channel, context.self)
-          val _ = channel.basicConsume(consumptionQueue.value, false, consumer)
-          val setup = MqManagerSetup(connection, channel, replyTo)
-          handleMessages(setup)
-      )
-
-      behavior
-    }
+        behavior
+      }
   end setup
 
   /** Handles messages received by the actor.
@@ -135,273 +140,167 @@ object MqManager:
     * @return
     *   A Behavior that handles messages received by the actor.
     */
-  private def handleMessages(setup: MqManagerSetup): Behavior[Command] =
+  private def handleMessages(
+      connection: Connection,
+      channel: Channel,
+      replyTo: ActorRef[Orchestrator.Command | Response],
+      failureResponse: Map[ActorRef[Nothing], Task] = Map()
+  ): Behavior[CommandOrResponse] =
     Behaviors
-      .receive[Command] { (context, message) =>
+      .receive[CommandOrResponse] { (context, message) =>
         message match
 
           /* **********************************************************************
            * Public commands
            * ********************************************************************** */
 
-          case MqProcessTask(mqMessage) =>
-            delegateProcessTask(context, mqMessage)
+          case ProcessTask(mqMessage) =>
+            val deserializer = context.spawnAnonymous(MqTranslator())
+
+            context.askWithStatus[MqTranslator.DeserializeMessage, Task](
+              deserializer,
+              replyTo => MqTranslator.DeserializeMessage(mqMessage, replyTo)
+            ) {
+              case Success(task) =>
+                DeliverToOrchestrator(task)
+
+              case Failure(_) =>
+                RejectTask(mqMessage.mqId)
+            }
             Behaviors.same
 
-          case MqAckTask(mqId, retries) =>
-            delegateAckTask(context, setup.channel, mqId, retries)
+          case AckTask(mqMessageId) =>
+            val supervisedWorker =
+              Behaviors
+                .supervise(MqCommunicator(channel, context.self))
+                .onFailure(SupervisorStrategy.stop)
+            val communicator = context.spawnAnonymous(supervisedWorker)
+
+            communicator ! MqCommunicator.AckMessage(mqMessageId)
+
             Behaviors.same
 
-          case MqRejectTask(mqId, retries) =>
-            delegateRejectTask(context, setup.channel, mqId, retries)
+          case RejectTask(mqMessageId) =>
+            val supervisedWorker =
+              Behaviors
+                .supervise(MqCommunicator(channel, context.self))
+                .onFailure(SupervisorStrategy.stop)
+            val communicator = context.spawnAnonymous(supervisedWorker)
+
+            communicator ! MqCommunicator.RejectMessage(mqMessageId)
+
             Behaviors.same
 
-          case MqSendMessage(task, exchange, routingKey, retries) =>
-            delegatePublishTask(
-              context,
-              setup.channel,
-              exchange,
-              routingKey,
-              task,
-              retries
-            )
+          case PublishTask(task, exchange, routingKey) =>
+            val serializer = context.spawnAnonymous(MqTranslator())
+
+            context.askWithStatus[MqTranslator.SerializeMessage, Seq[Byte]](
+              serializer,
+              replyTo => MqTranslator.SerializeMessage(task, replyTo)
+            ) {
+              case Success(bytes) =>
+                PublishSerializedTask(task, bytes, exchange, routingKey)
+              case Failure(_) => // this case will never happen
+                NoOp
+            }
+
             Behaviors.same
 
           /* **********************************************************************
-           * Internal commands
+           * Private commands
            * ********************************************************************** */
 
+          case PublishSerializedTask(task, bytes, exchange, routingKey) =>
+            val supervisedWorker =
+              Behaviors
+                .supervise(MqCommunicator(channel, context.self))
+                .onFailure(SupervisorStrategy.stop)
+            val worker =
+              context.spawnAnonymous(supervisedWorker)
+            context.watch(worker)
+
+            worker ! MqCommunicator.PublishTask(
+              task,
+              bytes,
+              exchange,
+              routingKey
+            )
+
+            handleMessages(
+              connection,
+              channel,
+              replyTo,
+              failureResponse + (worker -> task)
+            )
+
           case DeliverToOrchestrator(task) =>
-            setup.orchestratorRef ! Orchestrator.ProcessTask(task)
+            replyTo ! Orchestrator.ProcessTask(task)
             Behaviors.same
 
           case NoOp =>
             Behaviors.same
 
-          case NotifyFatalFailure(th) =>
-            setup.orchestratorRef ! Orchestrator.Fail(th)
+          case ChildCrashed(ref, reason) =>
+            failureResponse.get(ref) match
+              case Some(task) =>
+                replyTo ! MessagePublishFailed(task, reason)
+                handleMessages(
+                  connection,
+                  channel,
+                  replyTo,
+                  failureResponse - ref
+                )
+              case None =>
+                context.log.error(s"Reference $ref not found.")
+                Behaviors.same
+            end match
+
+          case ChildTerminated(ref) =>
+            if failureResponse.contains(ref) then
+              handleMessages(
+                connection,
+                channel,
+                replyTo,
+                failureResponse - ref
+              )
+            else
+              context.log.error(s"Reference $ref not found.")
+              Behaviors.same
+            end if
+
+          /* **********************************************************************
+           * Responses
+           * ********************************************************************** */
+
+          case MqCommunicator.MessageAcknowledged(_) =>
+            Behaviors.same
+
+          case MqCommunicator.MessageRejected(_) =>
+            Behaviors.same
+
+          case MqCommunicator.MessagePublished(task) =>
+            replyTo ! MessagePublished(task)
             Behaviors.same
 
         end match
       }
       .receiveSignal {
-        case (_, PreRestart) =>
-          // context.log.info(
-          //   "MqManager stopped. Shutting down Connection and Channel"
-          // )
-          println("PreRestart")
-          setup.connection.close()
-          setup.channel.close()
+        case (context, ChildFailed(ref, reason)) =>
+          context.self ! ChildCrashed(ref, reason)
           Behaviors.same
-        case any =>
-          println("what the f")
-          println(any)
+
+        case (context, Terminated(ref)) =>
+          context.self ! ChildTerminated(ref)
+          Behaviors.same
+
+        case (_, PreRestart) =>
+          println("PreRestart")
+          connection.close()
+          channel.close()
           Behaviors.same
       }
+
   end handleMessages
-
-  /** Send a task to the processing cycle.
-    *
-    * @param context
-    *   The actor context.
-    * @param mqMessage
-    *   The message queue message.
-    *
-    * @return
-    *   Unit
-    */
-  private def delegateProcessTask(
-      context: ActorContext[Command],
-      mqMessage: MqMessage
-  ): Unit =
-    val supervisedDeserializer =
-      Behaviors.supervise(MqTranslator()).onFailure(SupervisorStrategy.stop)
-
-    val deserializer = context.spawnAnonymous(supervisedDeserializer)
-    // context.watchWith(deserializer, MqRejectTask(mqMessage.mqId))
-
-    context.askWithStatus[MqTranslator.DeserializeMessage, Task](
-      deserializer,
-      replyTo => MqTranslator.DeserializeMessage(mqMessage, replyTo)
-    ) {
-      case Success(task) =>
-        DeliverToOrchestrator(task)
-
-      case Failure(_) =>
-        MqRejectTask(mqMessage.mqId)
-    }
-  end delegateProcessTask
-
-  /** Delegate the acknowledgement of a task received from the message queue and
-    * handle any errors.
-    *
-    * @param context
-    *   The actor context.
-    * @param channel
-    *   The channel to communicate with.
-    * @param mqId
-    *   The message queue ID.
-    * @param retries
-    *   The number of retries.
-    *
-    * @return
-    *   Unit
-    */
-  private def delegateAckTask(
-      context: ActorContext[Command],
-      channel: Channel,
-      mqId: Long,
-      retries: Int
-  ): Unit =
-
-    // val supervisedCommunicator = Behaviors.supervise(MqCommunicator(channel)).onFailure(SupervisorStrategy.stop)
-    val communicator = context.spawnAnonymous(MqCommunicator(channel))
-
-    context.askWithStatus[MqCommunicator.AckMessage, Done](
-      communicator,
-      replyTo => MqCommunicator.AckMessage(mqId, replyTo)
-    ) {
-      case Success(Done) =>
-        NoOp
-
-      case Failure(th) =>
-        val failureMessage =
-          s"MQ Ack failure for mqId --> $mqId: ${th.getMessage()}"
-
-        MiscUtils.defineRetryCommand(
-          context,
-          retries,
-          failureMessage,
-          MqAckTask(mqId, retries - 1),
-          NotifyFatalFailure(th)
-        )
-    }
-  end delegateAckTask
-
-  /** Delegate the rejection of a task received from the message queue and
-    * handle any errors.
-    *
-    * @param context
-    *   The actor context.
-    * @param channel
-    *   The channel to communicate with.
-    * @param mqId
-    *   The message queue ID.
-    * @param retries
-    *   The number of retries.
-    *
-    * @return
-    *   Unit
-    */
-  private def delegateRejectTask(
-      context: ActorContext[Command],
-      channel: Channel,
-      mqId: Long,
-      retries: Int
-  ): Unit =
-    val communicator = context.spawnAnonymous(MqCommunicator(channel))
-
-    context.askWithStatus[MqCommunicator.RejectMessage, Done](
-      communicator,
-      replyTo => MqCommunicator.RejectMessage(mqId, replyTo)
-    ) {
-      case Success(Done) =>
-        NoOp
-
-      case Failure(th) =>
-        val failureMessage =
-          s"MQ Reject failure for mqId --> $mqId: ${th.getMessage()}"
-
-        MiscUtils.defineRetryCommand(
-          context,
-          retries,
-          failureMessage,
-          MqRejectTask(mqId, retries - 1),
-          NotifyFatalFailure(th)
-        )
-    }
-  end delegateRejectTask
-
-  /** Delegate the publishing of a task to a message queue and handle any
-    * errors.
-    *
-    * @param context
-    *   The actor context.
-    * @param channel
-    *   The channel to communicate with.
-    * @param exchange
-    *   The exchange name.
-    * @param routingKey
-    *   The routing key.
-    * @param task
-    *   The task to publish.
-    * @param retries
-    *   The number of retries.
-    *
-    * @return
-    *   Unit
-    */
-  private def delegatePublishTask(
-      context: ActorContext[Command],
-      channel: Channel,
-      exchange: MqExchangeName,
-      routingKey: RoutingKey,
-      task: Task,
-      retries: Int
-  ): Unit =
-    val serializer = context.spawnAnonymous(MqTranslator())
-
-    context.askWithStatus[MqTranslator.SerializeMessage, Seq[Byte]](
-      serializer,
-      replyTo => MqTranslator.SerializeMessage(task, replyTo)
-    ) {
-      case Success(bytes) =>
-        val communicator = context.spawnAnonymous(MqCommunicator(channel))
-
-        context.askWithStatus[MqCommunicator.PublishMessage, Done](
-          communicator,
-          replyTo =>
-            MqCommunicator.PublishMessage(
-              bytes,
-              exchange,
-              routingKey,
-              replyTo
-            )
-        ) {
-          case Success(Done) =>
-            NoOp
-
-          case Failure(th) =>
-            val failureMessage =
-              s"MQ Publish failure for Task --> $task, exchange --> ${exchange.value}, routingKey --> ${routingKey.value}: ${th.getMessage()}"
-
-            MiscUtils.defineRetryCommand(
-              context,
-              retries,
-              failureMessage,
-              MqSendMessage(
-                task,
-                exchange,
-                routingKey,
-                retries - 1
-              ),
-              NotifyFatalFailure(th)
-            )
-        }
-
-        NoOp
-      case Failure(th) =>
-        context.log.error(
-          s"Serialization failure. Task --> $task. th: ${th
-              .getMessage()}." +
-            s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-            s"\nCONTACT SYSTEM ADMINISTRATOR!!!." +
-            s"\nCONTACT SYSTEM ADMINISTRATOR!!!."
-        )
-
-        NotifyFatalFailure(th)
-    }
-  end delegatePublishTask
 
   /** Initializes the broker link.
     *
@@ -444,7 +343,7 @@ object MqManager:
         properties: BasicProperties,
         body: Array[Byte]
     ): Unit =
-      replyTo ! MqManager.MqProcessTask(
+      replyTo ! MqManager.ProcessTask(
         MqMessage(envelope.getDeliveryTag, body.toSeq)
       )
     end handleDelivery
