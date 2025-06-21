@@ -1,0 +1,7 @@
+{
+  "taskId": "98478572",
+  "taskOwnerId": "24",
+  "filePath": "/ftp/one/testing.zip",
+  "timeout": 500,
+  "routingKeys": ["crash"]
+}

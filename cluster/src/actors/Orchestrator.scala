@@ -56,10 +56,7 @@ object Orchestrator:
 
       val supervisedExecutionManager = Behaviors
         .supervise(ExecutionManager(context.self))
-        .onFailure(
-          SupervisorStrategy.restart
-            .withLimit(MaxConsecutiveRestarts, 10.minutes)
-        )
+        .onFailure(SupervisorStrategy.resume)
       val executionManager = context.spawn(
         supervisedExecutionManager,
         "execution-manager"
@@ -93,10 +90,16 @@ object Orchestrator:
       )
       context.watch(mqManager)
 
+      val supervisedSystemMonitor = Behaviors
+        .supervise(SystemMonitor(context.self))
+        .onFailure(
+          SupervisorStrategy.restart.withLimit(MaxConsecutiveRestarts, 1.minute)
+        )
       val systemMonitor = context.spawn(
-        SystemMonitor(1, context.self),
+        supervisedSystemMonitor,
         "system-monitor"
       )
+      context.watch(systemMonitor)
 
       val setup = OrchestratorSetup(
         mqManager,

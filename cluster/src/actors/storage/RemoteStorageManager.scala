@@ -1,14 +1,11 @@
 package actors.storage
 
-import scala.concurrent.duration.*
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.ChildFailed
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Timeout
 import types.RemoteStorageConnectionParams
 import types.Task
 
@@ -17,7 +14,6 @@ import types.Task
   * the system that processes the tasks.
   */
 object RemoteStorageManager:
-  given Timeout = 20.seconds
 
   // Command protocol
   sealed trait Command
