@@ -49,6 +49,14 @@ object ExecutionManager:
     }
   end setup
 
+  /** Handles messages received by the actor.
+    *
+    * @param replyTo
+    *   Reference to reply to.
+    * @param failureResponse
+    *   Map of child references to failure response functions in case of a child
+    *   failure.
+    */
   def handleMessages(
       replyTo: ActorRef[Response],
       failureResponse: Map[ActorRef[Nothing], Throwable => FailureResponse] =

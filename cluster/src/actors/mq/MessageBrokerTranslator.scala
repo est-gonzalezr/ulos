@@ -31,7 +31,7 @@ object MessageBrokerTranslator:
     *
     * @return
     *   A Behavior that handles message translation by serializing or
-    *   deserializing data and forwarding it to the MQManager.
+    *   deserializing data and returning the result.
     */
   private def translate(): Behavior[Command] =
     Behaviors.receive[Command] { (_, message) =>
@@ -87,5 +87,4 @@ object MessageBrokerTranslator:
       .mkString
       .fromJson[Task]
       .map(task => task.copy(mqId = mqMessage.mqId))
-
 end MessageBrokerTranslator

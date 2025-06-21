@@ -9,6 +9,7 @@ import actors.Orchestrator
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.ChildFailed
+import akka.actor.typed.PostStop
 import akka.actor.typed.PreRestart
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.Terminated
@@ -94,14 +95,14 @@ object MessageBrokerManager:
   /** Sets up the actor.
     *
     * @param connParams
-    *   parameters for connecting to the message queue
+    *   Parameters for connecting to the message broker.
     * @param consumptionQueue
-    *   name of the queue to consume messages from
+    *   Name of the queue to consume messages from.
     * @param replyTo
-    *   reference to the Orchestrator actor
+    *   Reference to reply to with messages.
     *
     * @return
-    *   a Behavior that processes the messages sent to the actor
+    *   A Behavior that processes the messages sent to the actor.
     */
   private def setup(
       connParams: MessageQueueConnectionParams,
@@ -134,8 +135,15 @@ object MessageBrokerManager:
 
   /** Handles messages received by the actor.
     *
-    * @param setup
-    *   The setup information for the MqManager actor.
+    * @param connection
+    *   The connection to the message broker.
+    * @param channel
+    *   The channel to the message broker.
+    * @param replyTo
+    *   Reference to reply to with messages.
+    * @param failureResponse
+    *   Map of child references to failure response functions in case of a child
+    *   failure.
     *
     * @return
     *   A Behavior that handles messages received by the actor.
@@ -190,7 +198,7 @@ object MessageBrokerManager:
             val worker = context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
 
-            worker ! MessageBrokerCommunicator.AckMessage(task.mqId)
+            worker ! MessageBrokerCommunicator.AckTask(task)
 
             handleMessages(
               connection,
@@ -207,7 +215,7 @@ object MessageBrokerManager:
             val worker = context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
 
-            worker ! MessageBrokerCommunicator.RejectMessage(task.mqId)
+            worker ! MessageBrokerCommunicator.RejectTask(task)
 
             handleMessages(
               connection,
@@ -299,10 +307,12 @@ object MessageBrokerManager:
            * Responses
            * ********************************************************************** */
 
-          case MessageBrokerCommunicator.MessageAcknowledged(_) =>
+          case MessageBrokerCommunicator.TaskAcknowledged(task) =>
+            replyTo ! TaskAcknowledged(task)
             Behaviors.same
 
-          case MessageBrokerCommunicator.MessageRejected(_) =>
+          case MessageBrokerCommunicator.TaskRejected(task) =>
+            replyTo ! TaskRejected(task)
             Behaviors.same
 
           case MessageBrokerCommunicator.TaskPublished(task) =>
@@ -320,11 +330,18 @@ object MessageBrokerManager:
           context.self ! ChildTerminated(ref)
           Behaviors.same
 
-        case (_, PreRestart) =>
-          println("PreRestart")
+        case (context, PreRestart) =>
+          context.log.info("PreRestart for MessageBrokerManager")
           connection.close()
           channel.close()
           Behaviors.same
+
+        case (context, PostStop) =>
+          context.log.info("PostStop for MessageBrokerManager")
+          connection.close()
+          channel.close()
+          Behaviors.same
+
       }
 
   end handleMessages

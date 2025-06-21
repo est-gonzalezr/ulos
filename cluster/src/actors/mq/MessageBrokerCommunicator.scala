@@ -9,7 +9,7 @@ import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.Task
 
 /** A stateless actor responsible for communicating outbound messages to the
-  * message queue.
+  * message broker.
   */
 object MessageBrokerCommunicator:
   // Command protocol
@@ -22,26 +22,26 @@ object MessageBrokerCommunicator:
       exchangeName: MessageBrokerExchangeName,
       routingKey: MessageBrokerRoutingKey
   ) extends Command
-  final case class AckMessage(mqMessageId: Long) extends Command
-  final case class RejectMessage(mqMessageId: Long) extends Command
+  final case class AckTask(task: Task) extends Command
+  final case class RejectTask(task: Task) extends Command
 
   // Response protocol
   sealed trait Response
 
   final case class TaskPublished(task: Task) extends Response
-  final case class MessageAcknowledged(mqMessageId: Long) extends Response
-  final case class MessageRejected(mqMessageId: Long) extends Response
+  final case class TaskAcknowledged(task: Task) extends Response
+  final case class TaskRejected(task: Task) extends Response
 
   def apply(channel: Channel, replyTo: ActorRef[Response]): Behavior[Command] =
     handleMessages(channel, replyTo)
 
-  /** Handles outgoing messages for the message queue.
+  /** Handles outgoing messages for the message broker.
     *
     * @param channel
     *   The channel used to publish messages.
     *
     * @return
-    *   A Behavior that tries to send the desired action to the message queue.
+    *   A Behavior that tries to send the desired action to the message broker.
     */
   private def handleMessages(
       channel: Channel,
@@ -55,79 +55,26 @@ object MessageBrokerCommunicator:
          * ********************************************************************** */
 
         case PublishTask(task, bytes, exchangeName, routingKey) =>
-          publishMessage(
-            channel,
-            exchangeName,
-            routingKey,
-            bytes
+          channel.basicPublish(
+            exchangeName.value,
+            routingKey.value,
+            null,
+            bytes.toArray
           )
 
           replyTo ! TaskPublished(task)
 
-        case AckMessage(mqMessageId) =>
-          ackMessage(channel, mqMessageId)
-          replyTo ! MessageAcknowledged(mqMessageId)
+        case AckTask(task) =>
+          channel.basicAck(task.mqId, false)
+          replyTo ! TaskAcknowledged(task)
 
-        case RejectMessage(mqMessageId) =>
-          rejectMessage(channel, mqMessageId)
-          replyTo ! MessageRejected(mqMessageId)
+        case RejectTask(task) =>
+          channel.basicReject(task.mqId, true)
+          replyTo ! TaskRejected(task)
 
       end match
 
       Behaviors.stopped
     }
   end handleMessages
-
-  /** Sends an ack to the MQ.
-    *
-    * @param channel
-    *   The channel to the MQ.
-    * @param mqMessageId
-    *   The id of the message to ack.
-    *
-    * @return
-    *   Unit
-    */
-  private def ackMessage(channel: Channel, mqMessageId: Long): Unit =
-    channel.basicAck(mqMessageId, false)
-
-  /** Sends a reject to the MQ.
-    *
-    * @param channel
-    *   The channel to the MQ.
-    * @param mqMessageId
-    *   The id of the message to reject.
-    *
-    * @return
-    *   Unit
-    */
-  private def rejectMessage(channel: Channel, mqMessageId: Long): Unit =
-    channel.basicReject(mqMessageId, false)
-
-  /** Publishes a message to the MQ.
-    *
-    * @param channel
-    *   The channel to the MQ.
-    * @param exchangeName
-    *   The name of the exchange to send the message to.
-    * @param routingKey
-    *   The routing key to use to send the message.
-    * @param message
-    *   The message to send.
-    *
-    * @return
-    *   Unit
-    */
-  private def publishMessage(
-      channel: Channel,
-      exchangeName: MessageBrokerExchangeName,
-      routingKey: MessageBrokerRoutingKey,
-      message: Seq[Byte]
-  ): Unit =
-    channel.basicPublish(
-      exchangeName.value,
-      routingKey.value,
-      null,
-      message.toArray
-    )
 end MessageBrokerCommunicator

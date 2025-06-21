@@ -1,7 +1,13 @@
 package actors.execution
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import executors.*
 import types.Task
@@ -17,6 +23,13 @@ object ExecutionWorker:
       replyTo: ActorRef[Response]
   ) extends Command
 
+  // Private command protocol
+  private case class TaskExecutedResult(
+      task: Task,
+      bool: Boolean,
+      replyTo: ActorRef[Response]
+  ) extends Command
+
   // Response protocol
   sealed trait Response
 
@@ -28,17 +41,28 @@ object ExecutionWorker:
   /** This behavior represents the processing state of the actor.
     *
     * @return
-    *   A behavior that processes a task and then stops.
+    *   A Behavior that processes a task and then stops.
     */
   def processing(): Behavior[Command] =
-    Behaviors.receive { (_, message) =>
+    Behaviors.receive { (context, message) =>
       message match
         /* **********************************************************************
          * Public commands
          * ********************************************************************** */
 
         case ExecuteTask(task, replyTo) =>
-          if handleExecuteTask(task) then replyTo ! TaskPass(task)
+          context.pipeToSelf(handleExecuteTask(context, task)) {
+            case Success(bool) => TaskExecutedResult(task, bool, replyTo)
+            case Failure(th)   => throw th
+          }
+          Behaviors.same
+
+        /* **********************************************************************
+         * Private commands
+         * ********************************************************************** */
+
+        case TaskExecutedResult(task, bool, replyTo) =>
+          if bool then replyTo ! TaskPass(task)
           else replyTo ! TaskHalt(task)
           end if
           Behaviors.stopped
@@ -48,30 +72,31 @@ object ExecutionWorker:
   end processing
 
   private def handleExecuteTask(
+      context: ActorContext[Command],
       task: Task
-  ): Boolean =
-    // given blockingDispatcher: ExecutionContext =
-    //   context.system.classicSystem.dispatchers
-    //     .lookup("akka.actor.default-blocking-io-dispatcher")
+  ): Future[Boolean] =
+    given blockingDispatcher: ExecutionContext =
+      context.system.classicSystem.dispatchers
+        .lookup("akka.actor.default-blocking-io-dispatcher")
 
     val executorOption = task.routingKeys.headOption match
-      case Some("pass")                     => Some(MockSuccessExecutor)
-      case Some("fail")                     => Some(MockFailureExecutor)
-      case Some("crash")                    => Some(MockCrashExecutor)
-      case Some("cypress-grammar-checking") => Some(CypressGrammarExecutor)
-      case Some("cypress-execution")        => Some(CypressExecutor)
-      case Some("gcode-execution")          => Some(GCodeExecutor)
-      case Some("kotlin-execution")         => Some(KotlinExecutor)
+      case Some("pass")              => Some(MockSuccessExecutor)
+      case Some("fail")              => Some(MockFailureExecutor)
+      case Some("crash")             => Some(MockCrashExecutor)
+      case Some("cypress-grammar")   => Some(CypressGrammarExecutor)
+      case Some("cypress-execution") => Some(CypressExecutor)
+      case Some("gcode-execution")   => Some(GCodeExecutor)
+      case Some("kotlin-execution")  => Some(KotlinExecutor)
       case Some(pattern) if "testing*".r.matches(pattern) =>
         Some(MockSuccessExecutor)
       case _ => None
 
     executorOption match
       case Some(executor) =>
-        executeTask(executor, task)
+        Future(executeTask(executor, task))(using blockingDispatcher)
       case None =>
         throw new IllegalArgumentException(
-          s"No executor available for routing key ${task.routingKeys.headOption.getOrElse("unknown")}"
+          s"No executor available for routing key: ${task.routingKeys.headOption}"
         )
     end match
   end handleExecuteTask

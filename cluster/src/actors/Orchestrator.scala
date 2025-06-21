@@ -30,9 +30,8 @@ object Orchestrator:
   final case class ProcessTask(task: Task) extends Command
   final case class RegisterLog(task: Task, log: String) extends Command
 
-  private type CommandOrResponse =
-    Command | ExecutionManager.Response | RemoteStorageManager.Response |
-      MessageBrokerManager.Response
+  private type CommandOrResponse = Command | ExecutionManager.Response |
+    RemoteStorageManager.Response | MessageBrokerManager.Response
 
   def apply(
       mqExchangeName: MessageBrokerExchangeName,
@@ -70,9 +69,8 @@ object Orchestrator:
       val supervisedRsManager = Behaviors
         .supervise(RemoteStorageManager(rsConnParams, context.self))
         .onFailure(
-          SupervisorStrategy
-            .restartWithBackoff(1.seconds, 5.seconds, 0.2)
-            .withMaxRestarts(MaxConsecutiveRestarts)
+          SupervisorStrategy.restart
+            .withLimit(MaxConsecutiveRestarts, 5.minutes)
         )
       val rsManager = context.spawn(
         supervisedRsManager,
@@ -109,7 +107,6 @@ object Orchestrator:
 
       orchestrating(setup, mqExchangeName)
     }
-
   end setup
 
   def orchestrating(
@@ -244,7 +241,7 @@ object Orchestrator:
               "Task processing completed unsuccessfully."
             )
 
-            val taskWithoutStages = task.copy(routingKeys = Nil)
+            val taskWithoutStages = task.copy(routingKeys = List.empty[String])
 
             setup.remoteStorageManager ! RemoteStorageManager
               .UploadTaskFiles(taskWithoutStages)
@@ -289,7 +286,7 @@ object Orchestrator:
 
             context.self ! RegisterLog(
               task,
-              "Task acknowledged by message queue manager."
+              "Task acknowledged by message broker."
             )
 
             Behaviors.same
@@ -301,7 +298,7 @@ object Orchestrator:
 
             context.self ! RegisterLog(
               task,
-              "Task rejected by message queue manager."
+              "Task rejected by message broker."
             )
 
             Behaviors.same
@@ -311,10 +308,10 @@ object Orchestrator:
               s"TaskPublishFailed response received. Task --> $task."
             )
 
-            context.self ! RegisterLog(
-              task,
-              "Task publish failed."
-            )
+            // context.self ! RegisterLog(
+            //   task,
+            //   "Task publish failed."
+            // )
 
             Behaviors.same
 
@@ -323,10 +320,10 @@ object Orchestrator:
               s"TaskAckFailed response received. Task --> $task."
             )
 
-            context.self ! RegisterLog(
-              task,
-              "Task acknowledgement failed."
-            )
+            // context.self ! RegisterLog(
+            //   task,
+            //   "Task acknowledgement failed."
+            // )
 
             Behaviors.same
 
@@ -335,10 +332,10 @@ object Orchestrator:
               s"TaskRejectFailed response received. Task --> $task."
             )
 
-            context.self ! RegisterLog(
-              task,
-              "Task rejection failed."
-            )
+            // context.self ! RegisterLog(
+            //   task,
+            //   "Task rejection failed."
+            // )
 
             Behaviors.same
 

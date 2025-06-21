@@ -82,9 +82,12 @@ object RemoteStorageManager:
   /** Handles messages received by the actor.
     *
     * @param connParams
-    *   parameters for connecting to the remote storage
+    *   Parameters for connecting to the remote storage
     * @param replyTo
-    *   reference to the Orchestrator actor
+    *   Reference to reply to.
+    * @param failureResponse
+    *   Map of child references to failure response functions in case of a child
+    *   failure.
     *
     * @return
     *   A Behavior that handles messages received by the actor.
@@ -105,9 +108,7 @@ object RemoteStorageManager:
           case DownloadTaskFiles(task) =>
             val supervisedWorker = Behaviors
               .supervise(RemoteStorageWorker(connParams))
-              .onFailure(
-                SupervisorStrategy.stop
-              )
+              .onFailure(SupervisorStrategy.stop)
             val worker = context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
 
@@ -122,9 +123,7 @@ object RemoteStorageManager:
           case UploadTaskFiles(task) =>
             val supervisedWorker = Behaviors
               .supervise(RemoteStorageWorker(connParams))
-              .onFailure(
-                SupervisorStrategy.stop
-              )
+              .onFailure(SupervisorStrategy.stop)
             val worker = context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
 
