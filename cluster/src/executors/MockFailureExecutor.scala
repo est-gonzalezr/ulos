@@ -13,7 +13,7 @@ object MockFailureExecutor extends Executor:
     println(s"[${Thread.currentThread().getName}] Finished simulating delay.")
 
     val _ = FileSystemUtil.saveFile(
-      task.relTaskFilePath / s"output_${task.routingKeys.head}.txt",
+      task.relTaskFileDir / s"output_${task.routingKeys.head}.txt",
       s"Mock execution through ${task.routingKeys.head}.".getBytes().toSeq
     )
 

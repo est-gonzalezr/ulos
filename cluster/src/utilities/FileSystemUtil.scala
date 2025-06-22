@@ -8,6 +8,7 @@ val excludedPatterns = Seq("__MACOSX".r, ".DS_Store".r)
 object FileSystemUtil:
   def saveFile(relPath: RelPath, file: Seq[Byte]): Path =
     val absPath = localPath(relPath)
+    println(absPath)
     os.write.over(absPath, file.toArray, createFolders = true)
     absPath
 
