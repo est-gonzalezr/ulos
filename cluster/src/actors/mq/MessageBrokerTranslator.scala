@@ -1,9 +1,9 @@
 package actors.mq
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
-import akka.pattern.StatusReply
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.pattern.StatusReply
 import types.MqMessage
 import types.Task
 import zio.json.*

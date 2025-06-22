@@ -4,7 +4,7 @@ import actors.SystemMonitor
 import actors.execution.ExecutionManager
 import actors.mq.MessageBrokerManager
 import actors.storage.RemoteStorageManager
-import akka.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.ActorRef
 
 /** Represents the setup of the Orchestrator.
   * @param mqManager

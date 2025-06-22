@@ -3,31 +3,30 @@ package actors.mq
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
-import scala.util.Try
 
 import actors.Orchestrator
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.ChildFailed
-import akka.actor.typed.PostStop
-import akka.actor.typed.PreRestart
-import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.Terminated
-import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Timeout
+import org.apache.pekko.util.Timeout
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.ChildFailed
+import org.apache.pekko.actor.typed.PostStop
+import org.apache.pekko.actor.typed.PreRestart
+import org.apache.pekko.actor.typed.SupervisorStrategy
+import org.apache.pekko.actor.typed.Terminated
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import types.MessageQueueConnectionParams
 import types.MqMessage
 import types.OpaqueTypes.MessageBrokerExchangeName
 import types.OpaqueTypes.MessageBrokerQueueName
 import types.OpaqueTypes.MessageBrokerRoutingKey
-import types.Task
 import types.PublishTarget
+import types.Task
 
 /** A persistent actor responsible for managing actors with message queue
   * related tasks. It acts as the intermediary between the message queue and the
@@ -113,28 +112,14 @@ object MessageBrokerManager:
       consumptionQueue: MessageBrokerQueueName,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
-    Behaviors
-      .setup[CommandOrResponse] { context =>
-        context.log.info("MessageBrokerManager started...")
+    Behaviors.setup[CommandOrResponse] { context =>
+      context.log.info("MessageBrokerManager started...")
 
-        val behavior = initializeBrokerLink(
-          connParams
-        ).fold(
-          th =>
-            context.log.error(
-              s"Connection to broker failed. Host --> ${connParams.host.value}, Port --> ${connParams.port.value}. th: ${th.getMessage}"
-            )
-            Behaviors.stopped
-          ,
-          (connection, channel) =>
-            val consumer = RabbitMqConsumer(channel, context.self)
-            val _ =
-              channel.basicConsume(consumptionQueue.value, false, consumer)
-            handleMessages(connection, channel, replyTo)
-        )
-
-        behavior
-      }
+      val (connection, channel) = initializeBrokerLink(connParams)
+      val consumer = RabbitMqConsumer(channel, context.self)
+      val _ = channel.basicConsume(consumptionQueue.value, false, consumer)
+      handleMessages(connection, channel, replyTo)
+    }
   end setup
 
   /** Handles messages received by the actor.
@@ -373,18 +358,15 @@ object MessageBrokerManager:
     */
   private def initializeBrokerLink(
       connParams: MessageQueueConnectionParams
-  ): Try[(Connection, Channel)] =
-    Try {
-      val factory = ConnectionFactory()
-      factory.setHost(connParams.host.value)
-      factory.setPort(connParams.port.value)
-      factory.setUsername(connParams.username.value)
-      factory.setPassword(connParams.password.value)
-      factory.newConnection()
-    }.map { connection =>
-      val channel = connection.createChannel()
-      (connection, channel)
-    }
+  ): (Connection, Channel) =
+    val factory = ConnectionFactory()
+    factory.setHost(connParams.host.value)
+    factory.setPort(connParams.port.value)
+    factory.setUsername(connParams.username.value)
+    factory.setPassword(connParams.password.value)
+    val connection = factory.newConnection()
+    val channel = connection.createChannel()
+    (connection, channel)
   end initializeBrokerLink
 
   /** A RabbitMQ consumer that consumes messages from the message queue..

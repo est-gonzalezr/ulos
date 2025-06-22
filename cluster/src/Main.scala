@@ -1,12 +1,24 @@
 import scala.sys
 
 import actors.Orchestrator
-import akka.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.ActorSystem
 import types.MessageQueueConnectionParams
 import types.OpaqueTypes.*
 import types.RemoteStorageConnectionParams
 
 @main def main(): Unit =
+
+  setup() match
+    case Right(_) =>
+    // guardian.terminate()
+    case Left(error) =>
+      println(s"An error was encountered reading environment variables: $error")
+  end match
+
+  println("Cluster application started successfully!")
+end main
+
+def setup(): Either[String, ActorSystem[?]] =
   getEnvVars() match
     case Right(envMap) =>
       val mqConnParams = MessageQueueConnectionParams(
@@ -23,31 +35,22 @@ import types.RemoteStorageConnectionParams
         RemoteStoragePassword(envMap("REMOTE_STORAGE_PASSWORD"))
       )
 
-      val _ = ActorSystem(
-        Orchestrator(
-          MessageBrokerExchangeName(envMap("MQ_EXCHANGE_NAME")),
-          MessageBrokerQueueName(envMap("MQ_QUEUE_NAME")),
-          mqConnParams,
-          rsConnParams
-        ),
-        "task-orchestrator"
+      Right(
+        ActorSystem(
+          Orchestrator(
+            MessageBrokerExchangeName(envMap("MQ_EXCHANGE_NAME")),
+            MessageBrokerQueueName(envMap("MQ_QUEUE_NAME")),
+            mqConnParams,
+            rsConnParams
+          ),
+          "task-orchestrator"
+        )
       )
     case Left(error, errorVars) =>
       println(s"An error was encountered reading environment variales:")
-      println(s"$error: $errorVars")
+      Left(s"$error: $errorVars")
   end match
-  // guardian.terminate()
-
-  // val path = Path("/Users/estebangonzalezruales/Downloads/ulos/ftp/one/task1")
-  // println(
-  //   os.zip(
-  //     Path("/Users/estebangonzalezruales/Downloads/ulos/ftp/one/task1.zip"),
-  //     Seq(Path("/Users/estebangonzalezruales/Downloads/ulos/ftp/one/task1"))
-  //   )
-  // )
-  // val _ = os.remove.all(path)
-  println("Cluster application started successfully!")
-end main
+end setup
 
 def getEnvVars(): Either[(String, List[String]), Map[String, String]] =
   val requiredEnvVars = List(

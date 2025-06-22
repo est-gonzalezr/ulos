@@ -1,13 +1,13 @@
 package actors.mq
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
 import com.rabbitmq.client.Channel
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import types.OpaqueTypes.MessageBrokerExchangeName
 import types.OpaqueTypes.MessageBrokerRoutingKey
-import types.Task
 import types.PublishTarget
+import types.Task
 
 /** A stateless actor responsible for communicating outbound messages to the
   * message broker.

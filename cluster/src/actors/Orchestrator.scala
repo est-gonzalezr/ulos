@@ -7,11 +7,11 @@ import actors.mq.MessageBrokerManager
 import actors.mq.MessageBrokerManager.TaskAckFailed
 import actors.mq.MessageBrokerManager.TaskPublishFailed
 import actors.storage.RemoteStorageManager
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.ChildFailed
-import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.ChildFailed
+import org.apache.pekko.actor.typed.SupervisorStrategy
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import types.MessageQueueConnectionParams
 import types.OpaqueTypes.MessageBrokerExchangeName
 import types.OpaqueTypes.MessageBrokerQueueName

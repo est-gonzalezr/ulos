@@ -2,9 +2,9 @@ package actors
 
 import scala.concurrent.duration.*
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import oshi.SystemInfo
 
 object SystemMonitor:
@@ -23,7 +23,6 @@ object SystemMonitor:
       context.log.info("System monitor started..")
 
       val _ = context.scheduleOnce(1.second, context.self, Monitor)
-      println(replyTo)
       monitorResources(replyTo)
     }
   end setup

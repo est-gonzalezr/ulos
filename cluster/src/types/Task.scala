@@ -2,7 +2,7 @@ package types
 
 import scala.concurrent.duration.*
 
-import akka.util.Timeout
+import org.apache.pekko.util.Timeout
 import os.Path
 import os.RelPath
 import zio.json.DeriveJsonDecoder
