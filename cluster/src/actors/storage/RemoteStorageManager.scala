@@ -67,7 +67,7 @@ object RemoteStorageManager:
       connParams: RemoteStorageConnectionParams,
       replyTo: ActorRef[Response]
   ): Behavior[CommandOrResponse] = Behaviors.setup { context =>
-    context.log.info("RemoteFileManager started...")
+    context.log.info("RemoteStorageManager started...")
 
     handleMessages(
       connParams,

@@ -7,6 +7,7 @@ import com.rabbitmq.client.Channel
 import types.OpaqueTypes.MessageBrokerExchangeName
 import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.Task
+import types.PublishTarget
 
 /** A stateless actor responsible for communicating outbound messages to the
   * message broker.
@@ -20,7 +21,8 @@ object MessageBrokerCommunicator:
       task: Task,
       bytes: Seq[Byte],
       exchangeName: MessageBrokerExchangeName,
-      routingKey: MessageBrokerRoutingKey
+      routingKey: MessageBrokerRoutingKey,
+      publishTarget: PublishTarget
   ) extends Command
   final case class AckTask(task: Task) extends Command
   final case class RejectTask(task: Task) extends Command
@@ -28,7 +30,8 @@ object MessageBrokerCommunicator:
   // Response protocol
   sealed trait Response
 
-  final case class TaskPublished(task: Task) extends Response
+  final case class TaskPublished(task: Task, publishTarget: PublishTarget)
+      extends Response
   final case class TaskAcknowledged(task: Task) extends Response
   final case class TaskRejected(task: Task) extends Response
 
@@ -54,7 +57,13 @@ object MessageBrokerCommunicator:
          * Public commands
          * ********************************************************************** */
 
-        case PublishTask(task, bytes, exchangeName, routingKey) =>
+        case PublishTask(
+              task,
+              bytes,
+              exchangeName,
+              routingKey,
+              publishTarget
+            ) =>
           channel.basicPublish(
             exchangeName.value,
             routingKey.value,
@@ -62,14 +71,14 @@ object MessageBrokerCommunicator:
             bytes.toArray
           )
 
-          replyTo ! TaskPublished(task)
+          replyTo ! TaskPublished(task, publishTarget)
 
         case AckTask(task) =>
           channel.basicAck(task.mqId, false)
           replyTo ! TaskAcknowledged(task)
 
         case RejectTask(task) =>
-          channel.basicReject(task.mqId, true)
+          channel.basicReject(task.mqId, false)
           replyTo ! TaskRejected(task)
 
       end match

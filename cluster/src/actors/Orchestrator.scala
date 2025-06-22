@@ -17,6 +17,7 @@ import types.OpaqueTypes.MessageBrokerExchangeName
 import types.OpaqueTypes.MessageBrokerQueueName
 import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.OrchestratorSetup
+import types.PublishTarget
 import types.RemoteStorageConnectionParams
 import types.Task
 
@@ -149,7 +150,8 @@ object Orchestrator:
             setup.messageQueueManager ! MessageBrokerManager.PublishTask(
               taskWithLog,
               mqExchangeName,
-              MessageBrokerRoutingKey("updates")
+              MessageBrokerRoutingKey("updates"),
+              PublishTarget.Reporting
             )
             Behaviors.same
 
@@ -176,17 +178,21 @@ object Orchestrator:
             )
             context.self ! RegisterLog(task, "Task execution files uploaded.")
 
-            if task.routingKeys.tail.nonEmpty then
-              val taskForNextStage = task.copy(
-                routingKeys = task.routingKeys.tail
-              )
+            val taskForNextStage = task.copy(
+              routingKeys = task.routingKeys.tail
+            )
 
+            if taskForNextStage.routingKeys.nonEmpty then
               setup.messageQueueManager ! MessageBrokerManager.PublishTask(
                 taskForNextStage,
                 mqExchangeName,
-                MessageBrokerRoutingKey(taskForNextStage.routingKeys.head)
+                MessageBrokerRoutingKey(taskForNextStage.routingKeys.head),
+                PublishTarget.Processing
               )
-            else setup.messageQueueManager ! MessageBrokerManager.AckTask(task)
+            else
+              setup.messageQueueManager ! MessageBrokerManager.AckTask(
+                taskForNextStage
+              )
             end if
 
             Behaviors.same
@@ -244,7 +250,8 @@ object Orchestrator:
               "Task processing completed unsuccessfully."
             )
 
-            val taskWithoutStages = task.copy(routingKeys = List.empty[String])
+            val taskWithoutStages =
+              task.copy(routingKeys = task.routingKeys.head :: Nil)
 
             setup.remoteStorageManager ! RemoteStorageManager
               .UploadTaskFiles(taskWithoutStages)
@@ -265,20 +272,21 @@ object Orchestrator:
             Behaviors.same
 
           /* **********************************************************************
-           * Responses from MqManager
+           * Responses from MessageBrokerManager
            * ********************************************************************** */
 
-          case MessageBrokerManager.TaskPublished(task) =>
+          case MessageBrokerManager.TaskPublished(task, publishTarget) =>
             context.log.info(
-              s"TaskPublished response received. Task --> $task."
+              s"TaskPublished ($publishTarget) response received. Task --> $task."
             )
 
-            context.self ! RegisterLog(
-              task,
-              "Task sent for next processing stage."
-            )
-
-            setup.messageQueueManager ! MessageBrokerManager.AckTask(task)
+            if publishTarget == PublishTarget.Processing then
+              context.self ! RegisterLog(
+                task,
+                "Task sent for next processing stage."
+              )
+              setup.messageQueueManager ! MessageBrokerManager.AckTask(task)
+            end if
 
             Behaviors.same
 
@@ -289,7 +297,7 @@ object Orchestrator:
 
             context.self ! RegisterLog(
               task,
-              "Task acknowledged by message broker."
+              "Task acknowledged to message broker."
             )
 
             Behaviors.same
@@ -301,7 +309,7 @@ object Orchestrator:
 
             context.self ! RegisterLog(
               task,
-              "Task rejected by message broker."
+              "Task rejected to message broker."
             )
 
             Behaviors.same
@@ -346,7 +354,11 @@ object Orchestrator:
       }
       .receiveSignal { case (context, ChildFailed(ref)) =>
         context.log.error(s"Child actor failed: $ref")
-        Behaviors.same
+        context.stop(setup.messageQueueManager)
+        context.stop(setup.executionManager)
+        context.stop(setup.remoteStorageManager)
+        context.stop(setup.systemMonitor)
+        Behaviors.stopped
       }
   end orchestrating
 

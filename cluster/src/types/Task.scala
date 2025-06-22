@@ -21,9 +21,8 @@ final case class Task(
     logMessage: Option[String],
     mqId: Long = -1
 ):
-
   override def toString: String =
-    s"Task(taskId=$taskId, taskOwnerId=$taskOwnerId, filePath=$filePath, queueRoutingKeys=$routingKeys, logMessage=$logMessage, mqId=$mqId)"
+    s"Task(taskId=$taskId, taskOwnerId=$taskOwnerId, filePath=$filePath, routingKeys=$routingKeys, logMessage=$logMessage, mqId=$mqId)"
 
   def relTaskFilePath: RelPath = filePath.relativeTo(os.root)
 end Task

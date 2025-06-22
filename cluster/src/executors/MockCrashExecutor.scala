@@ -16,6 +16,8 @@ object MockCrashExecutor extends Executor:
       s"Mock execution through ${task.routingKeys.head}."
     )
 
+    throw new RuntimeException("Mock crash")
+
     true
   end execute
 

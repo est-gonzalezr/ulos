@@ -2,6 +2,7 @@ package executors
 
 import os.Path
 import types.Task
+import utilities.FileSystemUtil
 
 object MockSuccessExecutor extends Executor:
   def execute(bindFileLocalPath: Path, task: Task): Boolean =
@@ -11,12 +12,10 @@ object MockSuccessExecutor extends Executor:
     Thread.sleep(5000)
     println(s"[${Thread.currentThread().getName}] Finished simulating delay.")
 
-    os.write.over(
-      bindFileLocalPath / s"output_${task.routingKeys.head}.txt",
-      s"Mock execution through ${task.routingKeys.head}."
+    val _ = FileSystemUtil.saveFile(
+      task.relTaskFilePath / s"output_${task.routingKeys.head}.txt",
+      s"Mock execution through ${task.routingKeys.head}.".getBytes().toSeq
     )
-
-    throw new RuntimeException("Mock crash")
 
     true
   end execute

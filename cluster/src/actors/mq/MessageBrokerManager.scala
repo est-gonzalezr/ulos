@@ -27,6 +27,7 @@ import types.OpaqueTypes.MessageBrokerExchangeName
 import types.OpaqueTypes.MessageBrokerQueueName
 import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.Task
+import types.PublishTarget
 
 /** A persistent actor responsible for managing actors with message queue
   * related tasks. It acts as the intermediary between the message queue and the
@@ -45,7 +46,8 @@ object MessageBrokerManager:
   final case class PublishTask(
       task: Task,
       exchange: MessageBrokerExchangeName,
-      routingKey: MessageBrokerRoutingKey
+      routingKey: MessageBrokerRoutingKey,
+      target: PublishTarget
   ) extends Command
 
   // Private command protocol
@@ -53,7 +55,8 @@ object MessageBrokerManager:
       task: Task,
       bytes: Seq[Byte],
       exchange: MessageBrokerExchangeName,
-      routingKey: MessageBrokerRoutingKey
+      routingKey: MessageBrokerRoutingKey,
+      publishTarget: PublishTarget
   ) extends Command
   private final case class DeliverToOrchestrator(task: Task) extends Command
   private case object NoOp extends Command
@@ -68,7 +71,8 @@ object MessageBrokerManager:
   sealed trait Response
   sealed trait FailureResponse extends Response
 
-  final case class TaskPublished(task: Task) extends Response
+  final case class TaskPublished(task: Task, publishTarget: PublishTarget)
+      extends Response
   final case class TaskAcknowledged(task: Task) extends Response
   final case class TaskRejected(task: Task) extends Response
   final case class TaskPublishFailed(task: Task, reason: Throwable)
@@ -111,7 +115,7 @@ object MessageBrokerManager:
   ): Behavior[CommandOrResponse] =
     Behaviors
       .setup[CommandOrResponse] { context =>
-        context.log.info("MqManager started...")
+        context.log.info("MessageBrokerManager started...")
 
         val behavior = initializeBrokerLink(
           connParams
@@ -224,7 +228,7 @@ object MessageBrokerManager:
               failureResponse + (worker -> (th => TaskRejectFailed(task, th)))
             )
 
-          case PublishTask(task, exchange, routingKey) =>
+          case PublishTask(task, exchange, routingKey, publishTarget) =>
             val serializer = context.spawnAnonymous(MessageBrokerTranslator())
 
             context.askWithStatus[MessageBrokerTranslator.SerializeMessage, Seq[
@@ -234,7 +238,13 @@ object MessageBrokerManager:
               replyTo => MessageBrokerTranslator.SerializeMessage(task, replyTo)
             ) {
               case Success(bytes) =>
-                PublishSerializedTask(task, bytes, exchange, routingKey)
+                PublishSerializedTask(
+                  task,
+                  bytes,
+                  exchange,
+                  routingKey,
+                  publishTarget
+                )
               case Failure(_) => // this case will never happen
                 NoOp
             }
@@ -245,7 +255,13 @@ object MessageBrokerManager:
            * Private commands
            * ********************************************************************** */
 
-          case PublishSerializedTask(task, bytes, exchange, routingKey) =>
+          case PublishSerializedTask(
+                task,
+                bytes,
+                exchange,
+                routingKey,
+                publishTarget
+              ) =>
             val supervisedWorker =
               Behaviors
                 .supervise(MessageBrokerCommunicator(channel, context.self))
@@ -258,7 +274,8 @@ object MessageBrokerManager:
               task,
               bytes,
               exchange,
-              routingKey
+              routingKey,
+              publishTarget
             )
 
             handleMessages(
@@ -315,8 +332,8 @@ object MessageBrokerManager:
             replyTo ! TaskRejected(task)
             Behaviors.same
 
-          case MessageBrokerCommunicator.TaskPublished(task) =>
-            replyTo ! TaskPublished(task)
+          case MessageBrokerCommunicator.TaskPublished(task, publishTarget) =>
+            replyTo ! TaskPublished(task, publishTarget)
             Behaviors.same
 
         end match
