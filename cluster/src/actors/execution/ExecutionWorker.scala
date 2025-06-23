@@ -12,6 +12,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
+import scala.util.Try
 
 object ExecutionWorker:
   // Command protocol
@@ -29,6 +30,7 @@ object ExecutionWorker:
       bool: Boolean,
       replyTo: ActorRef[Response]
   ) extends Command
+  private case class TaskCrashed(th: Throwable) extends Command
 
   // Response protocol
   sealed trait Response
@@ -53,7 +55,7 @@ object ExecutionWorker:
         case ExecuteTask(task, replyTo) =>
           context.pipeToSelf(handleExecuteTask(context, task)) {
             case Success(bool) => TaskExecutedResult(task, bool, replyTo)
-            case Failure(th)   => throw th
+            case Failure(th)   => TaskCrashed(th)
           }
           Behaviors.same
 
@@ -66,6 +68,9 @@ object ExecutionWorker:
           else replyTo ! TaskHalt(task)
           end if
           Behaviors.stopped
+
+        case TaskCrashed(th) =>
+          throw th
 
       end match
     }
@@ -94,7 +99,10 @@ object ExecutionWorker:
 
     executorOption match
       case Some(executor) =>
-        Future(executeTask(executor, task))(using blockingDispatcher)
+        Try(Future(executeTask(executor, task))(using blockingDispatcher)) match
+          case Success(f)  => f
+          case Failure(th) => Future.failed(th)
+
       case None =>
         throw new IllegalArgumentException(
           s"No executor available for routing key: ${task.routingKeys.headOption}"
