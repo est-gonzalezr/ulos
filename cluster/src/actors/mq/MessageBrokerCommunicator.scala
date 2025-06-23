@@ -4,7 +4,7 @@ import com.rabbitmq.client.Channel
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import types.OpaqueTypes.MessageBrokerExchangeName
+import types.OpaqueTypes.MessageBrokerExchange
 import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.PublishTarget
 import types.Task
@@ -20,7 +20,7 @@ object MessageBrokerCommunicator:
   final case class PublishTask(
       task: Task,
       bytes: Seq[Byte],
-      exchangeName: MessageBrokerExchangeName,
+      exchangeName: MessageBrokerExchange,
       routingKey: MessageBrokerRoutingKey,
       publishTarget: PublishTarget
   ) extends Command

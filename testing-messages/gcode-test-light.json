@@ -3,5 +3,5 @@
   "taskOwnerId": "67",
   "filePath": "/ftp/one/gcode-test-light.zip",
   "timeout": 100,
-  "routingKeys": ["gcode-execution"]
+  "routingKeys": [["processing-exchange", "gcode-execution"]]
 }

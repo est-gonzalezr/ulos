@@ -1,11 +1,11 @@
 package actors
 
-import scala.concurrent.duration.*
-
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import oshi.SystemInfo
+
+import scala.concurrent.duration.*
 
 object SystemMonitor:
   sealed trait Command

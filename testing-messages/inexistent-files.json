@@ -3,5 +3,5 @@
   "taskOwnerId": "67",
   "filePath": "/ftp/one/nothing",
   "timeout": 10,
-  "routingKeys": ["pass"]
+  "routingKeys": [["processing-exchange", "pass"]]
 }

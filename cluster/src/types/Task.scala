@@ -1,14 +1,16 @@
 package types
 
-import scala.concurrent.duration.*
-
 import org.apache.pekko.util.Timeout
 import os.Path
 import os.RelPath
+import types.OpaqueTypes.MessageBrokerExchange
+import types.OpaqueTypes.MessageBrokerRoutingKey
 import zio.json.DeriveJsonDecoder
 import zio.json.DeriveJsonEncoder
 import zio.json.JsonDecoder
 import zio.json.JsonEncoder
+
+import scala.concurrent.duration.*
 
 /** This class represents a task that is going to be executed by the system.
   */
@@ -17,7 +19,7 @@ final case class Task(
     taskOwnerId: String,
     filePath: Path,
     timeout: Timeout,
-    routingKeys: List[String],
+    routingKeys: List[(MessageBrokerExchange, MessageBrokerRoutingKey)],
     logMessage: Option[String],
     mqId: Long = -1
 ):
@@ -33,15 +35,21 @@ end Task
   * decoders.
   */
 object Task:
-  implicit val pathDecoder: JsonDecoder[Path] =
-    JsonDecoder[String].map(os.Path(_))
-  implicit val timeoutDecoder: JsonDecoder[Timeout] =
+  given JsonDecoder[Path] = JsonDecoder[String].map(os.Path(_))
+  given JsonDecoder[Timeout] =
     JsonDecoder[Long].map(sec => Timeout(sec.seconds))
-  implicit val taskDecoder: JsonDecoder[Task] = DeriveJsonDecoder.gen[Task]
+  given JsonDecoder[MessageBrokerExchange] =
+    JsonDecoder[String].map(MessageBrokerExchange(_))
+  given JsonDecoder[MessageBrokerRoutingKey] =
+    JsonDecoder[String].map(MessageBrokerRoutingKey(_))
+  given JsonDecoder[Task] = DeriveJsonDecoder.gen[Task]
 
-  implicit val pathEncoder: JsonEncoder[Path] =
-    JsonEncoder[String].contramap(_.toString)
-  implicit val timeoutEncoder: JsonEncoder[Timeout] =
+  given JsonEncoder[Path] = JsonEncoder[String].contramap(_.toString)
+  given JsonEncoder[Timeout] =
     JsonEncoder[Long].contramap(_.duration.toSeconds.toInt)
-  implicit val taskEncoder: JsonEncoder[Task] = DeriveJsonEncoder.gen[Task]
+  given JsonEncoder[MessageBrokerExchange] =
+    JsonEncoder[String].contramap(_.value)
+  given JsonEncoder[MessageBrokerRoutingKey] =
+    JsonEncoder[String].contramap(_.value)
+  given JsonEncoder[Task] = DeriveJsonEncoder.gen[Task]
 end Task

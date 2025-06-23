@@ -15,20 +15,19 @@ object OpaqueTypes:
     end extension
   end MessageBrokerRoutingKey
 
-  opaque type MessageBrokerExchangeName = String
-  object MessageBrokerExchangeName:
-    def apply(value: String): MessageBrokerExchangeName = value
-    extension (routingKey: MessageBrokerExchangeName)
-      def value: String = routingKey
+  opaque type MessageBrokerExchange = String
+  object MessageBrokerExchange:
+    def apply(value: String): MessageBrokerExchange = value
+    extension (routingKey: MessageBrokerExchange) def value: String = routingKey
     end extension
-  end MessageBrokerExchangeName
+  end MessageBrokerExchange
 
-  opaque type MessageBrokerQueueName = String
-  object MessageBrokerQueueName:
-    def apply(value: String): MessageBrokerQueueName = value
-    extension (queueName: MessageBrokerQueueName) def value: String = queueName
+  opaque type MessageBrokerQueue = String
+  object MessageBrokerQueue:
+    def apply(value: String): MessageBrokerQueue = value
+    extension (queueName: MessageBrokerQueue) def value: String = queueName
     end extension
-  end MessageBrokerQueueName
+  end MessageBrokerQueue
 
   opaque type MessageBrokerHost = String
   object MessageBrokerHost:

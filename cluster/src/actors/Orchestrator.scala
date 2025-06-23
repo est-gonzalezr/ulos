@@ -1,7 +1,5 @@
 package actors
 
-import scala.concurrent.duration.*
-
 import actors.execution.ExecutionManager
 import actors.mq.MessageBrokerManager
 import actors.mq.MessageBrokerManager.TaskAckFailed
@@ -12,14 +10,17 @@ import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.ChildFailed
 import org.apache.pekko.actor.typed.SupervisorStrategy
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import types.MessageQueueConnectionParams
-import types.OpaqueTypes.MessageBrokerExchangeName
-import types.OpaqueTypes.MessageBrokerQueueName
+import types.MessageBrokerConnectionParams
+import types.MessageBrokerRoutingInfo
+import types.OpaqueTypes.MessageBrokerExchange
+import types.OpaqueTypes.MessageBrokerQueue
 import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.OrchestratorSetup
 import types.PublishTarget
 import types.RemoteStorageConnectionParams
 import types.Task
+
+import scala.concurrent.duration.*
 
 val MaxConsecutiveRestarts = 5
 
@@ -35,21 +36,21 @@ object Orchestrator:
     RemoteStorageManager.Response | MessageBrokerManager.Response
 
   def apply(
-      mqExchangeName: MessageBrokerExchangeName,
-      mqQueueName: MessageBrokerQueueName,
-      mqConnParams: MessageQueueConnectionParams,
+      mqLogsExchangeName: MessageBrokerExchange,
+      mqConsumptionQueueName: MessageBrokerQueue,
+      mqConnParams: MessageBrokerConnectionParams,
       rsConnParams: RemoteStorageConnectionParams
   ): Behavior[CommandOrResponse] = setup(
-    mqExchangeName,
-    mqQueueName,
+    mqLogsExchangeName,
+    mqConsumptionQueueName,
     mqConnParams,
     rsConnParams
   )
 
   def setup(
-      mqExchangeName: MessageBrokerExchangeName,
-      mqQueueName: MessageBrokerQueueName,
-      mqConnParams: MessageQueueConnectionParams,
+      mqLogsExchangeName: MessageBrokerExchange,
+      mqConsumptionQueueName: MessageBrokerQueue,
+      mqConnParams: MessageBrokerConnectionParams,
       rsConnParams: RemoteStorageConnectionParams
   ): Behavior[CommandOrResponse] =
     Behaviors.setup[CommandOrResponse] { context =>
@@ -78,7 +79,11 @@ object Orchestrator:
 
       val supervisedMqManager = Behaviors
         .supervise(
-          MessageBrokerManager(mqConnParams, mqQueueName, context.self)
+          MessageBrokerManager(
+            mqConnParams,
+            mqConsumptionQueueName,
+            context.self
+          )
         )
         .onFailure(
           SupervisorStrategy
@@ -109,13 +114,13 @@ object Orchestrator:
         systemMonitor
       )
 
-      orchestrating(setup, mqExchangeName)
+      orchestrating(setup, mqLogsExchangeName)
     }
   end setup
 
   def orchestrating(
       setup: OrchestratorSetup,
-      mqExchangeName: MessageBrokerExchangeName
+      mqLogsExchangeName: MessageBrokerExchange
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -149,8 +154,10 @@ object Orchestrator:
 
             setup.messageQueueManager ! MessageBrokerManager.PublishTask(
               taskWithLog,
-              mqExchangeName,
-              MessageBrokerRoutingKey("updates"),
+              MessageBrokerRoutingInfo(
+                mqLogsExchangeName,
+                MessageBrokerRoutingKey("updates")
+              ),
               PublishTarget.Reporting
             )
             Behaviors.same
@@ -183,10 +190,13 @@ object Orchestrator:
             )
 
             if taskForNextStage.routingKeys.nonEmpty then
+              val (exchange, routingKey) = taskForNextStage.routingKeys.head
               setup.messageQueueManager ! MessageBrokerManager.PublishTask(
                 taskForNextStage,
-                mqExchangeName,
-                MessageBrokerRoutingKey(taskForNextStage.routingKeys.head),
+                MessageBrokerRoutingInfo(
+                  exchange,
+                  routingKey
+                ),
                 PublishTarget.Processing
               )
             else

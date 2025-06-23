@@ -1,5 +1,8 @@
 package types
 
+import com.rabbitmq.client.AMQP.BasicProperties
+import com.rabbitmq.client.Envelope
+
 /** This class represents a message that can either be received or sent to the
   * Message Queue.
   *
@@ -8,6 +11,10 @@ package types
   * @param bytes
   *   The bytes of the message
   */
-final case class MqMessage(mqId: Long, bytes: Seq[Byte]):
-  override def toString: String = s"MqMessage(mqId=$mqId, bytes=...)"
+final case class MqMessage(
+    consumerTag: String,
+    envelope: Envelope,
+    properties: BasicProperties,
+    body: Seq[Byte]
+):
 end MqMessage

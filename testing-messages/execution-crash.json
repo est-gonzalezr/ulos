@@ -3,5 +3,5 @@
   "taskOwnerId": "67",
   "filePath": "/ftp/one/testing.zip",
   "timeout": 10,
-  "routingKeys": ["crash"]
+  "routingKeys": [["processing-exchange", "crash"]]
 }

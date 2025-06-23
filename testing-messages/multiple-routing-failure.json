@@ -3,5 +3,11 @@
   "taskOwnerId": "67",
   "filePath": "/ftp/one/testing.zip",
   "timeout": 10,
-  "routingKeys": ["testing-1", "testing-2", "fail", "testing-4", "testing-5"]
+  "routingKeys": [
+    ["processing-exchange", "testing-1"],
+    ["processing-exchange", "testing-2"],
+    ["processing-exchange", "fail"],
+    ["processing-exchange", "testing-4"],
+    ["processing-exchange", "testing-5"]
+  ]
 }

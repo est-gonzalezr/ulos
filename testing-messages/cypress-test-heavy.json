@@ -3,5 +3,8 @@
   "taskOwnerId": "67",
   "filePath": "/ftp/one/cypress-test-heavy.zip",
   "timeout": 500,
-  "routingKeys": ["cypress-grammar", "cypress-execution"]
+  "routingKeys": [
+    ["processing-exchange", "cypress-grammar"],
+    ["processing-exchange", "cypress-execution"]
+  ]
 }

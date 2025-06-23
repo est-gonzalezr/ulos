@@ -1,7 +1,5 @@
 package executors
 
-import scala.collection.mutable.ListBuffer
-
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.model.Bind
@@ -11,6 +9,8 @@ import com.github.dockerjava.api.model.WaitResponse
 import com.github.dockerjava.core.DockerClientBuilder
 import os.Path
 import types.Task
+
+import scala.collection.mutable.ListBuffer
 
 object GCodeExecutor extends Executor:
   def execute(bindFileLocalPath: Path, task: Task): Boolean =

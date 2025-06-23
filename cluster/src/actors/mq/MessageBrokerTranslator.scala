@@ -4,7 +4,6 @@ import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.pattern.StatusReply
-import types.MqMessage
 import types.Task
 import zio.json.*
 
@@ -21,7 +20,7 @@ object MessageBrokerTranslator:
       replyTo: ActorRef[StatusReply[Seq[Byte]]]
   ) extends Command
   final case class DeserializeMessage(
-      mqMessage: MqMessage,
+      bytes: Seq[Byte],
       replyTo: ActorRef[StatusReply[Task]]
   ) extends Command
 
@@ -48,8 +47,8 @@ object MessageBrokerTranslator:
 
         /* ------------------------------- DeserializeMessage ------------------------------- */
 
-        case DeserializeMessage(mqMessage, replyTo) =>
-          replyTo ! convertMqMessageToTask(mqMessage).fold(
+        case DeserializeMessage(bytes, replyTo) =>
+          replyTo ! convertMqMessageToTask(bytes).fold(
             StatusReply.Error(_),
             StatusReply.Success(_)
           )
@@ -66,7 +65,7 @@ object MessageBrokerTranslator:
     *   The task to be serialized.
     *
     * @return
-    *   The serialized message.
+    *   The serialized message as bytes.
     */
   private def convertTaskToBytes(task: Task): Seq[Byte] =
     task.toJson.map(_.toByte)
@@ -74,17 +73,16 @@ object MessageBrokerTranslator:
   /** Deserializes the given message received from the message queue.
     *
     * @param mqMessage
-    *   The message to be deserialized.
+    *   The bytes to be deserialized.
     *
     * @return
     *   Either a Task or an error message.
     */
   private def convertMqMessageToTask(
-      mqMessage: MqMessage
+      bytes: Seq[Byte]
   ): Either[String, Task] =
-    mqMessage.bytes
+    bytes
       .map(_.toChar)
       .mkString
       .fromJson[Task]
-      .map(task => task.copy(mqId = mqMessage.mqId))
 end MessageBrokerTranslator

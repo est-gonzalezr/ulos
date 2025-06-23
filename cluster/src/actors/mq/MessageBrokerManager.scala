@@ -1,11 +1,6 @@
 package actors.mq
 
-import scala.concurrent.duration.*
-import scala.util.Failure
-import scala.util.Success
-
 import actors.Orchestrator
-import org.apache.pekko.util.Timeout
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
@@ -20,13 +15,19 @@ import org.apache.pekko.actor.typed.PreRestart
 import org.apache.pekko.actor.typed.SupervisorStrategy
 import org.apache.pekko.actor.typed.Terminated
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import types.MessageQueueConnectionParams
+import org.apache.pekko.util.Timeout
+import types.MessageBrokerConnectionParams
+import types.MessageBrokerRoutingInfo
 import types.MqMessage
-import types.OpaqueTypes.MessageBrokerExchangeName
-import types.OpaqueTypes.MessageBrokerQueueName
+import types.OpaqueTypes.MessageBrokerExchange
+import types.OpaqueTypes.MessageBrokerQueue
 import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.PublishTarget
 import types.Task
+
+import scala.concurrent.duration.*
+import scala.util.Failure
+import scala.util.Success
 
 /** A persistent actor responsible for managing actors with message queue
   * related tasks. It acts as the intermediary between the message queue and the
@@ -44,8 +45,7 @@ object MessageBrokerManager:
   final case class RejectTask(task: Task) extends Command
   final case class PublishTask(
       task: Task,
-      exchange: MessageBrokerExchangeName,
-      routingKey: MessageBrokerRoutingKey,
+      routingInfo: MessageBrokerRoutingInfo,
       target: PublishTarget
   ) extends Command
 
@@ -53,7 +53,7 @@ object MessageBrokerManager:
   private final case class PublishSerializedTask(
       task: Task,
       bytes: Seq[Byte],
-      exchange: MessageBrokerExchangeName,
+      exchange: MessageBrokerExchange,
       routingKey: MessageBrokerRoutingKey,
       publishTarget: PublishTarget
   ) extends Command
@@ -84,8 +84,8 @@ object MessageBrokerManager:
   private type CommandOrResponse = Command | MessageBrokerCommunicator.Response
 
   def apply(
-      connParams: MessageQueueConnectionParams,
-      consumptionQueue: MessageBrokerQueueName,
+      connParams: MessageBrokerConnectionParams,
+      consumptionQueue: MessageBrokerQueue,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     setup(
@@ -108,8 +108,8 @@ object MessageBrokerManager:
     *   A Behavior that processes the messages sent to the actor.
     */
   private def setup(
-      connParams: MessageQueueConnectionParams,
-      consumptionQueue: MessageBrokerQueueName,
+      connParams: MessageBrokerConnectionParams,
+      consumptionQueue: MessageBrokerQueue,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     Behaviors.setup[CommandOrResponse] { context =>
@@ -159,7 +159,8 @@ object MessageBrokerManager:
               .askWithStatus[MessageBrokerTranslator.DeserializeMessage, Task](
                 deserializer,
                 replyTo =>
-                  MessageBrokerTranslator.DeserializeMessage(mqMessage, replyTo)
+                  MessageBrokerTranslator
+                    .DeserializeMessage(mqMessage.body, replyTo)
               ) {
                 case Success(task) =>
                   DeliverToOrchestrator(task)
@@ -171,9 +172,9 @@ object MessageBrokerManager:
                       taskOwnerId = "",
                       filePath = os.Path("/"),
                       timeout = 0.seconds,
-                      routingKeys = List.empty[String],
+                      routingKeys = Nil,
                       logMessage = Some("Failed to deserialize message"),
-                      mqId = mqMessage.mqId
+                      mqId = mqMessage.envelope.getDeliveryTag()
                     )
                   )
               }
@@ -213,7 +214,7 @@ object MessageBrokerManager:
               failureResponse + (worker -> (th => TaskRejectFailed(task, th)))
             )
 
-          case PublishTask(task, exchange, routingKey, publishTarget) =>
+          case PublishTask(task, routingInfo, publishTarget) =>
             val serializer = context.spawnAnonymous(MessageBrokerTranslator())
 
             context.askWithStatus[MessageBrokerTranslator.SerializeMessage, Seq[
@@ -226,8 +227,8 @@ object MessageBrokerManager:
                 PublishSerializedTask(
                   task,
                   bytes,
-                  exchange,
-                  routingKey,
+                  routingInfo.exchangeName,
+                  routingInfo.routingKey,
                   publishTarget
                 )
               case Failure(_) => // this case will never happen
@@ -357,7 +358,7 @@ object MessageBrokerManager:
     *   A Try containing the initialized connection and channel.
     */
   private def initializeBrokerLink(
-      connParams: MessageQueueConnectionParams
+      connParams: MessageBrokerConnectionParams
   ): (Connection, Channel) =
     val factory = ConnectionFactory()
     factory.setHost(connParams.host.value)
@@ -387,7 +388,7 @@ object MessageBrokerManager:
         body: Array[Byte]
     ): Unit =
       replyTo ! MessageBrokerManager.ProcessTask(
-        MqMessage(envelope.getDeliveryTag, body.toSeq)
+        MqMessage(consumerTag, envelope, properties, body.toSeq)
       )
     end handleDelivery
   end RabbitMqConsumer

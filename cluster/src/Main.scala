@@ -1,10 +1,10 @@
-import scala.sys
-
 import actors.Orchestrator
 import org.apache.pekko.actor.typed.ActorSystem
-import types.MessageQueueConnectionParams
+import types.MessageBrokerConnectionParams
 import types.OpaqueTypes.*
 import types.RemoteStorageConnectionParams
+
+import scala.sys
 
 @main def main(): Unit =
 
@@ -21,7 +21,7 @@ end main
 def setup(): Either[String, ActorSystem[?]] =
   getEnvVars() match
     case Right(envMap) =>
-      val mqConnParams = MessageQueueConnectionParams(
+      val mqConnParams = MessageBrokerConnectionParams(
         MessageBrokerHost(envMap("MQ_HOST")),
         MessageBrokerPort(envMap("MQ_PORT").toInt),
         MessageBrokerUsername(envMap("MQ_USER")),
@@ -38,8 +38,8 @@ def setup(): Either[String, ActorSystem[?]] =
       Right(
         ActorSystem(
           Orchestrator(
-            MessageBrokerExchangeName(envMap("MQ_EXCHANGE_NAME")),
-            MessageBrokerQueueName(envMap("MQ_QUEUE_NAME")),
+            MessageBrokerExchange(envMap("MQ_LOGS_EXCHANGE_NAME")),
+            MessageBrokerQueue(envMap("MQ_CONSUMPTION_QUEUE_NAME")),
             mqConnParams,
             rsConnParams
           ),
@@ -58,8 +58,8 @@ def getEnvVars(): Either[(String, List[String]), Map[String, String]] =
     "MQ_PORT",
     "MQ_USER",
     "MQ_PASSWORD",
-    "MQ_EXCHANGE_NAME",
-    "MQ_QUEUE_NAME",
+    "MQ_LOGS_EXCHANGE_NAME",
+    "MQ_CONSUMPTION_QUEUE_NAME",
     "REMOTE_STORAGE_HOST",
     "REMOTE_STORAGE_PORT",
     "REMOTE_STORAGE_USER",

@@ -1,10 +1,5 @@
 package actors.execution
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
-
 import executors.*
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
@@ -12,6 +7,11 @@ import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import types.Task
 import utilities.FileSystemUtil
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
 
 object ExecutionWorker:
   // Command protocol
@@ -79,17 +79,18 @@ object ExecutionWorker:
       context.system.classicSystem.dispatchers
         .lookup("akka.actor.default-blocking-io-dispatcher")
 
-    val executorOption = task.routingKeys.headOption match
-      case Some("pass")              => Some(MockSuccessExecutor)
-      case Some("fail")              => Some(MockFailureExecutor)
-      case Some("crash")             => Some(MockCrashExecutor)
-      case Some("cypress-grammar")   => Some(CypressGrammarExecutor)
-      case Some("cypress-execution") => Some(CypressExecutor)
-      case Some("gcode-execution")   => Some(GCodeExecutor)
-      case Some("kotlin-execution")  => Some(KotlinExecutor)
-      case Some(pattern) if "testing*".r.matches(pattern) =>
-        Some(MockSuccessExecutor)
-      case _ => None
+    val executorOption =
+      task.routingKeys.headOption.map(elem => elem(0).value) match
+        case Some("pass")              => Some(MockSuccessExecutor)
+        case Some("fail")              => Some(MockFailureExecutor)
+        case Some("crash")             => Some(MockCrashExecutor)
+        case Some("cypress-grammar")   => Some(CypressGrammarExecutor)
+        case Some("cypress-execution") => Some(CypressExecutor)
+        case Some("gcode-execution")   => Some(GCodeExecutor)
+        case Some("kotlin-execution")  => Some(KotlinExecutor)
+        case Some(pattern) if "testing*".r.matches(pattern) =>
+          Some(MockSuccessExecutor)
+        case _ => None
 
     executorOption match
       case Some(executor) =>
