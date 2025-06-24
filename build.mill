@@ -34,7 +34,6 @@ trait ProjectConfigs extends ScalaModule:
 end ProjectConfigs
 
 trait Dependencies extends ScalaModule:
-  val LogbackVersion = "1.5.18"
 
   override def mvnDeps = Seq(
     mvn"org.scala-lang::toolkit::0.7.0",
@@ -43,8 +42,9 @@ trait Dependencies extends ScalaModule:
     mvn"com.rabbitmq:amqp-client:5.25.0",
     mvn"commons-net:commons-net:3.11.1",
     mvn"org.apache.pekko::pekko-actor-typed::1.1.4",
-    mvn"ch.qos.logback:logback-classic::$LogbackVersion",
-    mvn"ch.qos.logback:logback-core::$LogbackVersion",
+    mvn"org.apache.logging.log4j:log4j-core:2.25.0",
+    mvn"org.apache.logging.log4j:log4j-api:2.25.0",
+    mvn"org.apache.logging.log4j:log4j-slf4j2-impl:2.25.0",
     mvn"dev.zio::zio-json::0.7.44",
     mvn"com.github.oshi:oshi-core:6.8.2",
     mvn"com.github.docker-java:docker-java:3.5.1"
