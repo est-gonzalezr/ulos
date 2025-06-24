@@ -321,7 +321,7 @@ object Orchestrator:
             Behaviors.same
 
           case MessageBrokerManager.TaskRejected(task) =>
-            context.log.info(
+            context.log.warn(
               s"TaskRejected response received"
             )
 
