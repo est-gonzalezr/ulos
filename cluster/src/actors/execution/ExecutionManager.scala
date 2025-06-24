@@ -8,6 +8,10 @@ import org.apache.pekko.actor.typed.Terminated
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import types.Task
 
+/** A persistent actor responsible for managing actors with execution-related
+  * tasks. It acts as the intermediary between the execution system and the
+  * system that processes the tasks.
+  */
 object ExecutionManager:
   // Command protocol
   sealed trait Command
@@ -40,7 +44,7 @@ object ExecutionManager:
     setup(replyTo)
   end apply
 
-  def setup(
+  private def setup(
       replyTo: ActorRef[Response]
   ): Behavior[CommandOrResponse] =
     Behaviors.setup { context =>
@@ -56,11 +60,13 @@ object ExecutionManager:
     * @param failureResponse
     *   Map of child references to failure response functions in case of a child
     *   failure.
+    *
+    * @return
+    *   A Behavior that handles messages received by the actor.
     */
-  def handleMessages(
+  private def handleMessages(
       replyTo: ActorRef[Response],
-      failureResponse: Map[ActorRef[Nothing], Throwable => FailureResponse] =
-        Map()
+      failureResponse: Map[ActorRef[?], Throwable => FailureResponse] = Map()
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -74,13 +80,13 @@ object ExecutionManager:
             // delegateTaskExecution(context, task)
             val supervisedWorker =
               Behaviors
-                .supervise(ExecutionWorker())
+                .supervise(ExecutionWorker(context.self))
                 .onFailure(SupervisorStrategy.stop)
             val worker =
               context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
 
-            worker ! ExecutionWorker.ExecuteTask(task, context.self)
+            worker ! ExecutionWorker.ExecuteTask(task)
 
             handleMessages(
               replyTo,

@@ -23,15 +23,13 @@ object ExecutionWorker:
 
   // Public command protocol
   final case class ExecuteTask(
-      task: Task,
-      replyTo: ActorRef[Response]
+      task: Task
   ) extends Command
 
   // Private command protocol
   private case class TaskExecutedResult(
       task: Task,
-      bool: Boolean,
-      replyTo: ActorRef[Response]
+      bool: Boolean
   ) extends Command
   private case class TaskCrashed(th: Throwable) extends Command
 
@@ -41,23 +39,25 @@ object ExecutionWorker:
   final case class TaskPass(task: Task) extends Response
   final case class TaskHalt(task: Task) extends Response
 
-  def apply(): Behavior[Command] = processing()
+  def apply(replyTo: ActorRef[Response]): Behavior[Command] = processing(
+    replyTo
+  )
 
-  /** This behavior represents the processing state of the actor.
+  /** Processing state of the actor.
     *
     * @return
     *   A Behavior that processes a task and then stops.
     */
-  def processing(): Behavior[Command] =
+  def processing(replyTo: ActorRef[Response]): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
         /* **********************************************************************
          * Public commands
          * ********************************************************************** */
 
-        case ExecuteTask(task, replyTo) =>
+        case ExecuteTask(task) =>
           context.pipeToSelf(handleExecuteTask(context, task)) {
-            case Success(bool) => TaskExecutedResult(task, bool, replyTo)
+            case Success(bool) => TaskExecutedResult(task, bool)
             case Failure(th)   => TaskCrashed(th)
           }
           Behaviors.same
@@ -66,7 +66,7 @@ object ExecutionWorker:
          * Private commands
          * ********************************************************************** */
 
-        case TaskExecutedResult(task, bool, replyTo) =>
+        case TaskExecutedResult(task, bool) =>
           if bool then replyTo ! TaskPass(task)
           else replyTo ! TaskHalt(task)
           end if

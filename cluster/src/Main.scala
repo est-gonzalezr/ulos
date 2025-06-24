@@ -1,24 +1,34 @@
+package src
+
 import actors.Orchestrator
 import org.apache.pekko.actor.typed.ActorSystem
 import types.MessageBrokerConnectionParams
 import types.OpaqueTypes.*
 import types.RemoteStorageConnectionParams
 
+import scala.concurrent.Await
+import scala.concurrent.duration.*
 import scala.sys
 
 @main def main(): Unit =
-
-  setup() match
-    case Right(guardian) =>
+  val _ = setup() match
+    case Right(createGuardian) =>
+      val guardian = createGuardian()
       println(guardian)
+      guardian.terminate()
+      val _ = Await.result(guardian.whenTerminated, 10.seconds)
+      Thread.getAllStackTraces.keySet().forEach { t =>
+        println(
+          s"THREAD: ${t.getName}, Daemon: ${t.isDaemon}, Alive: ${t.isAlive}"
+        )
+      }
     case Left(error) =>
-      println(s"An error was encountered reading environment variables: $error")
-  end match
+      s"An error was encountered reading environment variables: $error"
 
   println("Cluster application started successfully!")
 end main
 
-def setup(): Either[String, ActorSystem[?]] =
+def setup(): Either[String, () => ActorSystem[?]] =
   getEnvVars() match
     case Right(envMap) =>
       val mqConnParams = MessageBrokerConnectionParams(
@@ -45,9 +55,7 @@ def setup(): Either[String, ActorSystem[?]] =
         "task-orchestrator"
       )
 
-      Right(
-        guardian
-      )
+      Right(() => guardian)
     case Left(error, errorVars) =>
       println(s"An error was encountered reading environment variales:")
       Left(s"$error: $errorVars")

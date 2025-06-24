@@ -40,12 +40,8 @@ object MessageBrokerTranslator:
          * Public commands
          * ********************************************************************** */
 
-        /* ------------------------------- SerializeMessage ------------------------------- */
-
         case SerializeMessage(task, replyTo) =>
           replyTo ! StatusReply.Success(convertTaskToBytes(task))
-
-        /* ------------------------------- DeserializeMessage ------------------------------- */
 
         case DeserializeMessage(bytes, replyTo) =>
           replyTo ! convertMqMessageToTask(bytes).fold(

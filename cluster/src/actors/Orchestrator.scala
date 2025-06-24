@@ -8,7 +8,9 @@ import actors.storage.RemoteStorageManager
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.ChildFailed
+import org.apache.pekko.actor.typed.PostStop
 import org.apache.pekko.actor.typed.SupervisorStrategy
+import org.apache.pekko.actor.typed.Terminated
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import types.MessageBrokerConnectionParams
 import types.MessageBrokerRoutingInfo
@@ -353,13 +355,22 @@ object Orchestrator:
 
         end match
       }
-      .receiveSignal { case (context, ChildFailed(ref)) =>
-        context.log.error(s"Child actor failed: $ref")
-        context.stop(setup.messageQueueManager)
-        context.stop(setup.executionManager)
-        context.stop(setup.remoteStorageManager)
-        context.stop(setup.systemMonitor)
-        Behaviors.stopped
+      .receiveSignal {
+        case (context, ChildFailed(ref, reason)) =>
+          context.log.error(s"Child actor failed - $ref. Crash reason: $reason")
+          Behaviors.stopped
+
+        case (context, Terminated(ref)) =>
+          context.log.info(s"Child actor terminated - $ref")
+          Behaviors.same
+
+        case (context, PostStop) =>
+          context.log.info("Orchestrator received PostStop signal")
+          context.stop(setup.messageQueueManager)
+          context.stop(setup.executionManager)
+          context.stop(setup.remoteStorageManager)
+          context.stop(setup.systemMonitor)
+          Behaviors.same
       }
   end orchestrating
 

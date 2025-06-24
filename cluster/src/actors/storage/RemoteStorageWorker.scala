@@ -23,16 +23,13 @@ object RemoteStorageWorker:
 
   // Public command protocol
   final case class DownloadFiles(
-      task: Task,
-      replyTo: ActorRef[Response]
+      task: Task
   ) extends Command
   final case class UploadFiles(
-      task: Task,
-      replyTo: ActorRef[Response]
+      task: Task
   ) extends Command
   final case class DeleteFiles(
-      task: Task,
-      replyTo: ActorRef[Response]
+      task: Task
   ) extends Command
 
   // Response protocol
@@ -42,8 +39,11 @@ object RemoteStorageWorker:
   final case class TaskUploaded(task: Task) extends Response
   final case class TaskDeleted(task: Task) extends Response
 
-  def apply(connParams: RemoteStorageConnectionParams): Behavior[Command] =
-    manipulate(connParams)
+  def apply(
+      connParams: RemoteStorageConnectionParams,
+      replyTo: ActorRef[Response]
+  ): Behavior[Command] =
+    manipulate(connParams, replyTo)
 
   /** Handles the manipulation of files on remote storage.
     * @param connParams
@@ -53,7 +53,8 @@ object RemoteStorageWorker:
     *   A Behavior that handles the manipulation of files on remote storage.
     */
   private def manipulate(
-      connParams: RemoteStorageConnectionParams
+      connParams: RemoteStorageConnectionParams,
+      replyTo: ActorRef[Response]
   ): Behavior[Command] =
     Behaviors.receive { (_, message) =>
       message match
@@ -62,7 +63,7 @@ object RemoteStorageWorker:
          * Public commands
          * ********************************************************************** */
 
-        case DownloadFiles(task, replyTo) =>
+        case DownloadFiles(task) =>
           val filesPath = task.filePath
 
           val bytes = downloadFile(connParams, filesPath)
@@ -76,7 +77,7 @@ object RemoteStorageWorker:
 
           Behaviors.stopped
 
-        case UploadFiles(task, replyTo) =>
+        case UploadFiles(task) =>
           val bytes = loadFile(task.relTaskFilePath)
           uploadFile(connParams, task.filePath, bytes)
 
@@ -84,7 +85,7 @@ object RemoteStorageWorker:
 
           Behaviors.stopped
 
-        case DeleteFiles(task, replyTo) =>
+        case DeleteFiles(task) =>
           val _ = deleteTaskBaseDir(task.relTaskFilePath)
           val _ = deleteFile(task.relTaskFilePath)
 

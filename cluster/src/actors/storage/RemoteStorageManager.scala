@@ -106,12 +106,12 @@ object RemoteStorageManager:
 
           case DownloadTaskFiles(task) =>
             val supervisedWorker = Behaviors
-              .supervise(RemoteStorageWorker(connParams))
+              .supervise(RemoteStorageWorker(connParams, context.self))
               .onFailure(SupervisorStrategy.stop)
             val worker = context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
 
-            worker ! RemoteStorageWorker.DownloadFiles(task, context.self)
+            worker ! RemoteStorageWorker.DownloadFiles(task)
 
             handleMessages(
               connParams,
@@ -121,12 +121,12 @@ object RemoteStorageManager:
 
           case UploadTaskFiles(task) =>
             val supervisedWorker = Behaviors
-              .supervise(RemoteStorageWorker(connParams))
+              .supervise(RemoteStorageWorker(connParams, context.self))
               .onFailure(SupervisorStrategy.stop)
             val worker = context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
 
-            worker ! RemoteStorageWorker.UploadFiles(task, context.self)
+            worker ! RemoteStorageWorker.UploadFiles(task)
 
             handleMessages(
               connParams,
@@ -136,11 +136,11 @@ object RemoteStorageManager:
 
           case DeleteFiles(task) =>
             val supervisedWorker = Behaviors
-              .supervise(RemoteStorageWorker(connParams))
+              .supervise(RemoteStorageWorker(connParams, context.self))
               .onFailure(SupervisorStrategy.stop)
             val worker = context.spawnAnonymous(supervisedWorker)
 
-            worker ! RemoteStorageWorker.DeleteFiles(task, context.self)
+            worker ! RemoteStorageWorker.DeleteFiles(task)
 
             Behaviors.same
 

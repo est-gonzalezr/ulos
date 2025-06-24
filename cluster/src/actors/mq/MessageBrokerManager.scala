@@ -141,8 +141,7 @@ object MessageBrokerManager:
       connection: Connection,
       channel: Channel,
       replyTo: ActorRef[Orchestrator.Command | Response],
-      failureResponse: Map[ActorRef[Nothing], Throwable => FailureResponse] =
-        Map()
+      failureResponse: Map[ActorRef[?], Throwable => FailureResponse] = Map()
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -337,18 +336,20 @@ object MessageBrokerManager:
 
         case (context, PreRestart) =>
           context.log.info("PreRestart for MessageBrokerManager")
-          connection.close()
-          channel.close()
+          if channel.isOpen() then channel.close()
+          end if
+          if connection.isOpen() then connection.close()
+          end if
           Behaviors.same
 
         case (context, PostStop) =>
           context.log.info("PostStop for MessageBrokerManager")
-          connection.close()
-          channel.close()
+          if channel.isOpen() then channel.close()
+          end if
+          if connection.isOpen() then connection.close()
+          end if
           Behaviors.same
-
       }
-
   end handleMessages
 
   /** Initializes the broker link.
