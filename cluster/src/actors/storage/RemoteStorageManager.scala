@@ -25,6 +25,9 @@ object RemoteStorageManager:
   final case class UploadTaskFiles(
       task: Task
   ) extends Command
+  final case class DeleteFiles(
+      task: Task
+  ) extends Command
 
   // Private command protocol
   private final case class ChildCrashed(
@@ -131,6 +134,16 @@ object RemoteStorageManager:
               failureResponse + (worker -> (th => TaskUploadFailed(task, th)))
             )
 
+          case DeleteFiles(task) =>
+            val supervisedWorker = Behaviors
+              .supervise(RemoteStorageWorker(connParams))
+              .onFailure(SupervisorStrategy.stop)
+            val worker = context.spawnAnonymous(supervisedWorker)
+
+            worker ! RemoteStorageWorker.DeleteFiles(task, context.self)
+
+            Behaviors.same
+
           /* **********************************************************************
            * Private commands
            * ********************************************************************** */
@@ -142,7 +155,9 @@ object RemoteStorageManager:
                 handleMessages(connParams, replyTo, failureResponse - ref)
 
               case None =>
-                context.log.error(s"Reference $ref not found.")
+                context.log.error(
+                  s"Reference not found - $ref. Crash reason - $reason"
+                )
                 Behaviors.same
             end match
 
@@ -164,6 +179,9 @@ object RemoteStorageManager:
 
           case RemoteStorageWorker.TaskUploaded(task) =>
             replyTo ! TaskUploaded(task)
+            Behaviors.same
+
+          case RemoteStorageWorker.TaskDeleted(task) =>
             Behaviors.same
 
         end match

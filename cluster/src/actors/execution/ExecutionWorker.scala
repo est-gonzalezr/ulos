@@ -5,14 +5,17 @@ import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import os.Path
+import os.RelPath
 import types.Task
-import utilities.FileSystemUtil
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
+val excludedPatterns = Seq("__MACOSX".r, ".DS_Store".r)
 
 object ExecutionWorker:
   // Command protocol
@@ -84,38 +87,78 @@ object ExecutionWorker:
       context.system.classicSystem.dispatchers
         .lookup("akka.actor.default-blocking-io-dispatcher")
 
+    Try(Future(executeTask(task))(using blockingDispatcher)) match
+      case Success(f)  => f
+      case Failure(th) => Future.failed(th)
+    end match
+
+  end handleExecuteTask
+
+  private def executeTask(task: Task): Boolean =
+    val absFilesDir = unzipFile(task.relTaskFilePath)
+
     val executorOption =
       task.routingKeys.headOption.map(elem => elem(0).value) match
-        case Some("pass")              => Some(MockSuccessExecutor)
-        case Some("fail")              => Some(MockFailureExecutor)
-        case Some("crash")             => Some(MockCrashExecutor)
-        case Some("cypress-grammar")   => Some(CypressGrammarExecutor)
-        case Some("cypress-execution") => Some(CypressExecutor)
-        case Some("gcode-execution")   => Some(GCodeExecutor)
-        case Some("kotlin-execution")  => Some(KotlinExecutor)
+        case Some("pass")  => Some(MockSuccessExecutor(task, absFilesDir))
+        case Some("fail")  => Some(MockFailureExecutor(task, absFilesDir))
+        case Some("crash") => Some(MockCrashExecutor(task, absFilesDir))
+        case Some("cypress-grammar") =>
+          Some(CypressGrammarExecutor(task, absFilesDir))
+        case Some("cypress-execution") =>
+          Some(CypressExecutor(task, absFilesDir))
+        case Some("gcode-execution")  => Some(GCodeExecutor(task, absFilesDir))
+        case Some("kotlin-execution") => Some(KotlinExecutor(task, absFilesDir))
         case Some(pattern) if "testing*".r.matches(pattern) =>
-          Some(MockSuccessExecutor)
+          Some(MockSuccessExecutor(task, absFilesDir))
         case _ => None
 
     executorOption match
       case Some(executor) =>
-        Try(Future(executeTask(executor, task))(using blockingDispatcher)) match
-          case Success(f)  => f
-          case Failure(th) => Future.failed(th)
-
+        val canContinue = executor.execute()
+        val _ = zipFile(task.relTaskFilePath)
+        canContinue
       case None =>
         throw new IllegalArgumentException(
           s"No executor available for routing key: ${task.routingKeys.headOption}"
         )
     end match
-  end handleExecuteTask
-
-  private def executeTask(executor: Executor, task: Task): Boolean =
-    val dir = FileSystemUtil.unzipFile(task.relTaskFilePath)
-    val canContinue = executor.execute(dir, task)
-    val _ = FileSystemUtil.zipFile(task.relTaskFilePath)
-
-    canContinue
-
   end executeTask
+
+  private def unzipFile(relPath: RelPath): Path =
+    val absPath = os.pwd / relPath
+    val unzipPath = absPath / os.up / absPath.baseName
+    val tempDir = "temporaryTransferDir"
+
+    val _ = os.remove.all(unzipPath)
+    val _ = os.unzip(
+      absPath,
+      unzipPath,
+      excludePatterns = excludedPatterns
+    )
+
+    if os.list(unzipPath).length == 1 && os.isDir(os.list(unzipPath).head)
+    then
+      os.list(unzipPath)
+        .foreach(path =>
+          os.move(path, path / os.up / tempDir, replaceExisting = true)
+        )
+
+      os.list(unzipPath / tempDir)
+        .foreach(path =>
+          os.move(path, unzipPath / path.last, replaceExisting = true)
+        )
+      os.remove.all(unzipPath / tempDir)
+    end if
+
+    unzipPath
+  end unzipFile
+
+  private def zipFile(relPath: RelPath): Path =
+    val absPath = os.pwd / relPath
+    val zipPath = absPath / os.up / absPath.baseName
+    val _ = os.remove.all(absPath)
+
+    os.zip(absPath, Seq(zipPath), excludePatterns = excludedPatterns)
+
+  end zipFile
 end ExecutionWorker

@@ -12,8 +12,10 @@ import types.Task
 
 import scala.collection.mutable.ListBuffer
 
-object CypressGrammarExecutor extends Executor:
-  def execute(bindFileLocalPath: Path, task: Task): Boolean =
+class CypressGrammarExecutor(task: Task, absFilesDir: Path)
+    extends Executor(task, absFilesDir):
+
+  def execute(): Boolean =
     val image = "cypress-grammar"
     val workingDir = "/mnt/tests/"
     val cmdSeq = List("run")
@@ -29,7 +31,7 @@ object CypressGrammarExecutor extends Executor:
         HostConfig()
           .withBinds(
             Bind.parse(
-              s"${bindFileLocalPath.toString}:$workingDir"
+              s"${absFilesDir.toString}:$workingDir"
             )
           )
           .withAutoRemove(true)
@@ -74,8 +76,9 @@ object CypressGrammarExecutor extends Executor:
     // println("------------------------------------------")
 
     os.write.over(
-      bindFileLocalPath / s"output_${task.routingKeys.head}.txt",
-      logBuffer.mkString("\n")
+      absFilesDir / s"output_${task.routingKeys.head}.txt",
+      logBuffer.mkString("\n"),
+      createFolders = true
     )
 
     exitCode == 0

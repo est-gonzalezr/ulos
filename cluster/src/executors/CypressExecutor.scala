@@ -12,8 +12,10 @@ import types.Task
 
 import scala.collection.mutable.ListBuffer
 
-object CypressExecutor extends Executor:
-  def execute(bindFileLocalPath: Path, task: Task): Boolean =
+class CypressExecutor(task: Task, absFilesDir: Path)
+    extends Executor(task, absFilesDir):
+
+  def execute(): Boolean =
     val image = "cypress-executor"
     val workingDir = "/mnt/tests/"
     val cmdSeq = List("run")
@@ -28,7 +30,7 @@ object CypressExecutor extends Executor:
         HostConfig()
           .withBinds(
             Bind.parse(
-              s"${bindFileLocalPath.toString}:$workingDir"
+              s"${absFilesDir.toString}:$workingDir"
             )
           )
           .withAutoRemove(true)
@@ -64,17 +66,11 @@ object CypressExecutor extends Executor:
 
     finally logStream.close()
     end try
-    // println("------------------------------------------")
-    // println("Here is a container for start")
-    // println(containerId)
-    // println(exitCode)
-    // println(output)
-    // println("here is a container for stop")
-    // println("------------------------------------------")
 
     os.write.over(
-      bindFileLocalPath / s"output_${task.routingKeys.head}.txt",
-      logBuffer.mkString("\n")
+      absFilesDir / s"output_${task.routingKeys.head}.txt",
+      logBuffer.mkString("\n"),
+      createFolders = true
     )
 
     exitCode == 0

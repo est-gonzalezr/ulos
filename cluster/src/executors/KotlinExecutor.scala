@@ -12,8 +12,10 @@ import types.Task
 
 import scala.collection.mutable.ListBuffer
 
-object KotlinExecutor extends Executor:
-  def execute(bindFileLocalPath: Path, task: Task): Boolean =
+class KotlinExecutor(task: Task, absFilesDir: Path)
+    extends Executor(task, absFilesDir):
+
+  def execute(): Boolean =
     val image = "android-deployer"
     val workingDir = "/app/"
     val cmdSeq = List("run")
@@ -35,7 +37,7 @@ object KotlinExecutor extends Executor:
         HostConfig()
           .withBinds(
             Bind.parse(
-              s"${bindFileLocalPath.toString}:$workingDir"
+              s"${absFilesDir.toString}:$workingDir"
             )
           )
           .withAutoRemove(true)
@@ -71,17 +73,11 @@ object KotlinExecutor extends Executor:
 
     finally logStream.close()
     end try
-    // println("------------------------------------------")
-    // println("Here is a container for start")
-    // println(containerId)
-    // println(exitCode)
-    // println(output)
-    // println("here is a container for stop")
-    // println("------------------------------------------")
 
     os.write.over(
-      bindFileLocalPath / s"output_${task.routingKeys.head}.txt",
-      logBuffer.mkString("\n")
+      absFilesDir / s"output_${task.routingKeys.head}.txt",
+      logBuffer.mkString("\n"),
+      createFolders = true
     )
 
     exitCode == 0

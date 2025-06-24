@@ -289,7 +289,9 @@ object MessageBrokerManager:
                   failureResponse - ref
                 )
               case None =>
-                context.log.error(s"Reference $ref not found.")
+                context.log.error(
+                  s"Reference not found - $ref. Crash reason - $reason"
+                )
                 Behaviors.same
             end match
 

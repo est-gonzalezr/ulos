@@ -6,13 +6,13 @@ import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import os.Path
+import os.RelPath
 import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
 import types.OpaqueTypes.RemoteStorageUsername
 import types.RemoteStorageConnectionParams
 import types.Task
-import utilities.FileSystemUtil
 
 /** A stateless actor responsible for managing remote storage operations. A new
   * instance is created for each request.
@@ -30,12 +30,17 @@ object RemoteStorageWorker:
       task: Task,
       replyTo: ActorRef[Response]
   ) extends Command
+  final case class DeleteFiles(
+      task: Task,
+      replyTo: ActorRef[Response]
+  ) extends Command
 
   // Response protocol
   sealed trait Response
 
   final case class TaskDownloaded(task: Task) extends Response
   final case class TaskUploaded(task: Task) extends Response
+  final case class TaskDeleted(task: Task) extends Response
 
   def apply(connParams: RemoteStorageConnectionParams): Behavior[Command] =
     manipulate(connParams)
@@ -61,20 +66,29 @@ object RemoteStorageWorker:
           val filesPath = task.filePath
 
           val bytes = downloadFile(connParams, filesPath)
-          val _ = FileSystemUtil.saveFile(task.relTaskFilePath, bytes)
+          os.write.over(
+            os.pwd / task.relTaskFilePath,
+            bytes.toArray,
+            createFolders = true
+          )
 
           replyTo ! TaskDownloaded(task)
 
           Behaviors.stopped
 
         case UploadFiles(task, replyTo) =>
-          val bytes = FileSystemUtil.loadFile(task.relTaskFilePath)
+          val bytes = loadFile(task.relTaskFilePath)
           uploadFile(connParams, task.filePath, bytes)
 
-          val _ = FileSystemUtil.deleteTaskBaseDir(task.relTaskFilePath)
-          val _ = FileSystemUtil.deleteFile(task.relTaskFilePath)
-
           replyTo ! TaskUploaded(task)
+
+          Behaviors.stopped
+
+        case DeleteFiles(task, replyTo) =>
+          val _ = deleteTaskBaseDir(task.relTaskFilePath)
+          val _ = deleteFile(task.relTaskFilePath)
+
+          replyTo ! TaskDeleted(task)
 
           Behaviors.stopped
     }
@@ -149,5 +163,24 @@ object RemoteStorageWorker:
     client.setFileType(FTP.BINARY_FILE_TYPE)
     ()
   end setFtpClient
+
+  private def deleteTaskBaseDir(relPath: RelPath): Path =
+    val absPath = os.pwd / relPath
+    val deletePath = absPath / os.up / absPath.baseName
+    os.remove.all(deletePath)
+    absPath
+  end deleteTaskBaseDir
+
+  private def deleteFile(relPath: RelPath): Path =
+    val absPath = os.pwd / relPath
+    if os.remove(absPath) then absPath
+    else throw Throwable("File doesn't exist")
+    end if
+  end deleteFile
+
+  private def loadFile(relPath: RelPath): Seq[Byte] =
+    val absPath = os.pwd / relPath
+    os.read.bytes(absPath).toSeq
+  end loadFile
 
 end RemoteStorageWorker

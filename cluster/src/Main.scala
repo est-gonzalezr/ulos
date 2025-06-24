@@ -9,8 +9,8 @@ import scala.sys
 @main def main(): Unit =
 
   setup() match
-    case Right(_) =>
-    // guardian.terminate()
+    case Right(guardian) =>
+      println(guardian)
     case Left(error) =>
       println(s"An error was encountered reading environment variables: $error")
   end match
@@ -35,16 +35,18 @@ def setup(): Either[String, ActorSystem[?]] =
         RemoteStoragePassword(envMap("REMOTE_STORAGE_PASSWORD"))
       )
 
+      lazy val guardian = ActorSystem(
+        Orchestrator(
+          MessageBrokerExchange(envMap("MQ_LOGS_EXCHANGE_NAME")),
+          MessageBrokerQueue(envMap("MQ_CONSUMPTION_QUEUE_NAME")),
+          mqConnParams,
+          rsConnParams
+        ),
+        "task-orchestrator"
+      )
+
       Right(
-        ActorSystem(
-          Orchestrator(
-            MessageBrokerExchange(envMap("MQ_LOGS_EXCHANGE_NAME")),
-            MessageBrokerQueue(envMap("MQ_CONSUMPTION_QUEUE_NAME")),
-            mqConnParams,
-            rsConnParams
-          ),
-          "task-orchestrator"
-        )
+        guardian
       )
     case Left(error, errorVars) =>
       println(s"An error was encountered reading environment variales:")
