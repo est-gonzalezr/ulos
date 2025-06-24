@@ -156,7 +156,7 @@ object RemoteStorageManager:
 
               case None =>
                 context.log.error(
-                  s"Reference not found - $ref. Crash reason - $reason"
+                  s"Reference $ref not found, crash reason - $reason"
                 )
                 Behaviors.same
             end match
@@ -165,7 +165,7 @@ object RemoteStorageManager:
             if failureResponse.contains(ref) then
               handleMessages(connParams, replyTo, failureResponse - ref)
             else
-              context.log.error(s"Reference $ref not found.")
+              context.log.error(s"Reference $ref not found")
               Behaviors.same
             end if
 

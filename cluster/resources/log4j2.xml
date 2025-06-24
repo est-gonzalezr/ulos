@@ -2,7 +2,7 @@
 <Configuration monitorInterval="1" status="info">
   <Properties>
       <Property name="layout">
-          %style{%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}}{white} %style{[%-50.50thread]}{blue} %highlight{%-5level} %style{%-30.30logger}{cyan} - %msg%n
+          %style{%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}}{white} %style{[%-50.50thread]}{blue} %highlight{%-5level} %style{%-30.30logger}{cyan} - %msg%n%throwable
       </Property>
   </Properties>
 

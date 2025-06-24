@@ -134,7 +134,7 @@ object Orchestrator:
 
           case ProcessTask(task) =>
             context.log.info(
-              s"ProcessTask command received."
+              s"ProcessTask command received"
             )
             setup.remoteStorageManager ! RemoteStorageManager
               .DownloadTaskFiles(
@@ -142,7 +142,7 @@ object Orchestrator:
               )
             context.self ! RegisterLog(
               task,
-              "Task received for processing."
+              "Task received for processing"
             )
 
             Behaviors.same
@@ -151,7 +151,7 @@ object Orchestrator:
             val taskWithLog = task.copy(logMessage = Some(log))
 
             context.log.info(
-              s"RegisterLog command received. Task --> $taskWithLog."
+              s"RegisterLog command received - Task --> $taskWithLog"
             )
 
             setup.messageQueueManager ! MessageBrokerManager.PublishTask(
@@ -170,11 +170,11 @@ object Orchestrator:
 
           case RemoteStorageManager.TaskDownloaded(task) =>
             context.log.info(
-              s"TaskDownloaded response received."
+              s"TaskDownloaded response received"
             )
             context.self ! RegisterLog(
               task,
-              "Task files donwloaded for processing."
+              "Task files donwloaded for processing"
             )
 
             setup.executionManager ! ExecutionManager.ExecuteTask(task)
@@ -183,9 +183,9 @@ object Orchestrator:
 
           case RemoteStorageManager.TaskUploaded(task) =>
             context.log.info(
-              s"TaskUploaded response received."
+              s"TaskUploaded response received"
             )
-            context.self ! RegisterLog(task, "Task execution files uploaded.")
+            context.self ! RegisterLog(task, "Task execution files uploaded")
 
             setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 
@@ -212,28 +212,28 @@ object Orchestrator:
             Behaviors.same
 
           case RemoteStorageManager.TaskDownloadFailed(task, reason) =>
-            context.log.info(
-              s"TaskDownloadFailed response received."
+            context.log.error(
+              s"TaskDownloadFailed response received"
             )
 
             context.self ! RegisterLog(
               task,
-              s"Task files download failed with reason - ${reason.getMessage()}."
+              s"Task files download failed with reason - $reason"
             )
 
             setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
             Behaviors.same
 
           case RemoteStorageManager.TaskUploadFailed(task, reason) =>
-            context.log.info(
-              s"TaskUploadFailed response received."
+            context.log.error(
+              s"TaskUploadFailed response received"
             )
 
             setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 
             context.self ! RegisterLog(
               task,
-              s"Task files upload failed with reason - ${reason.getMessage()}."
+              s"Task files upload failed with reason - $reason"
             )
 
             setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
@@ -245,11 +245,11 @@ object Orchestrator:
 
           case ExecutionManager.TaskPass(task) =>
             context.log.info(
-              s"TaskExecuted response received."
+              s"TaskExecuted response received"
             )
             context.self ! RegisterLog(
               task,
-              "Task processing completed successfully."
+              "Task processing completed successfully"
             )
 
             setup.remoteStorageManager ! RemoteStorageManager
@@ -259,11 +259,11 @@ object Orchestrator:
 
           case ExecutionManager.TaskHalt(task) =>
             context.log.info(
-              s"TaskHalt response received."
+              s"TaskHalt response received"
             )
             context.self ! RegisterLog(
               task,
-              "Task processing completed unsuccessfully."
+              "Task processing completed unsuccessfully"
             )
 
             val taskWithoutStages =
@@ -275,15 +275,15 @@ object Orchestrator:
             Behaviors.same
 
           case ExecutionManager.TaskExecutionError(task, reason) =>
-            context.log.info(
-              s"TaskExecutionError response received."
+            context.log.error(
+              s"TaskExecutionError response received"
             )
 
             setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 
             context.self ! RegisterLog(
               task,
-              s"Task execution failed with reason - ${reason.getMessage()}"
+              s"Task execution failed with reason - $reason"
             )
 
             setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
@@ -295,13 +295,13 @@ object Orchestrator:
 
           case MessageBrokerManager.TaskPublished(task, publishTarget) =>
             context.log.info(
-              s"TaskPublished ($publishTarget) response received."
+              s"TaskPublished ($publishTarget) response received"
             )
 
             if publishTarget == PublishTarget.Processing then
               context.self ! RegisterLog(
                 task,
-                "Task sent for next processing stage."
+                "Task sent for next processing stage"
               )
               setup.messageQueueManager ! MessageBrokerManager.AckTask(task)
             end if
@@ -310,45 +310,45 @@ object Orchestrator:
 
           case MessageBrokerManager.TaskAcknowledged(task) =>
             context.log.info(
-              s"TaskAcknowledged response received."
+              s"TaskAcknowledged response received"
             )
 
             context.self ! RegisterLog(
               task,
-              "Task acknowledged to message broker."
+              "Task acknowledged to message broker"
             )
 
             Behaviors.same
 
           case MessageBrokerManager.TaskRejected(task) =>
             context.log.info(
-              s"TaskRejected response received."
+              s"TaskRejected response received"
             )
 
             context.self ! RegisterLog(
               task,
-              "Task rejected to message broker."
+              "Task rejected to message broker"
             )
 
             Behaviors.same
 
           case MessageBrokerManager.TaskPublishFailed(task, reason) =>
             context.log.error(
-              s"TaskPublishFailed response received."
+              s"TaskPublishFailed response received"
             )
 
             Behaviors.same
 
           case MessageBrokerManager.TaskAckFailed(task, reason) =>
             context.log.error(
-              s"TaskAckFailed response received."
+              s"TaskAckFailed response received"
             )
 
             Behaviors.same
 
           case MessageBrokerManager.TaskRejectFailed(task, reason) =>
             context.log.error(
-              s"TaskRejectFailed response received."
+              s"TaskRejectFailed response received"
             )
 
             Behaviors.same
@@ -357,15 +357,15 @@ object Orchestrator:
       }
       .receiveSignal {
         case (context, ChildFailed(ref, reason)) =>
-          context.log.error(s"Child actor failed - $ref. Crash reason: $reason")
+          context.log.error(s"Reference $ref failed with reason - $reason")
           Behaviors.stopped
 
         case (context, Terminated(ref)) =>
-          context.log.info(s"Child actor terminated - $ref")
+          context.log.info(s"Reference $ref terminated")
           Behaviors.same
 
         case (context, PostStop) =>
-          context.log.info("Orchestrator received PostStop signal")
+          context.log.warn("PostStop signal")
           context.stop(setup.messageQueueManager)
           context.stop(setup.executionManager)
           context.stop(setup.remoteStorageManager)

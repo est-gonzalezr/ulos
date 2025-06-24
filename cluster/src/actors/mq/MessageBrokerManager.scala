@@ -289,7 +289,7 @@ object MessageBrokerManager:
                 )
               case None =>
                 context.log.error(
-                  s"Reference not found - $ref. Crash reason - $reason"
+                  s"Reference $ref not found, crash reason - $reason"
                 )
                 Behaviors.same
             end match
@@ -303,7 +303,7 @@ object MessageBrokerManager:
                 failureResponse - ref
               )
             else
-              context.log.error(s"Reference $ref not found.")
+              context.log.error(s"Reference $ref not found")
               Behaviors.same
             end if
 
@@ -334,16 +334,14 @@ object MessageBrokerManager:
           context.self ! ChildTerminated(ref)
           Behaviors.same
 
-        case (context, PreRestart) =>
-          context.log.info("PreRestart for MessageBrokerManager")
+        case (_, PreRestart) =>
           if channel.isOpen() then channel.close()
           end if
           if connection.isOpen() then connection.close()
           end if
           Behaviors.same
 
-        case (context, PostStop) =>
-          context.log.info("PostStop for MessageBrokerManager")
+        case (_, PostStop) =>
           if channel.isOpen() then channel.close()
           end if
           if connection.isOpen() then connection.close()
