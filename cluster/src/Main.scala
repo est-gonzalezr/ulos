@@ -6,26 +6,15 @@ import types.MessageBrokerConnectionParams
 import types.OpaqueTypes.*
 import types.RemoteStorageConnectionParams
 
-import scala.concurrent.Await
-import scala.concurrent.duration.*
 import scala.sys
 
 @main def main(): Unit =
   val _ = setup() match
     case Right(createGuardian) =>
-      val guardian = createGuardian()
-      println(guardian)
-      guardian.terminate()
-      val _ = Await.result(guardian.whenTerminated, 10.seconds)
-      Thread.getAllStackTraces.keySet().forEach { t =>
-        println(
-          s"THREAD: ${t.getName}, Daemon: ${t.isDaemon}, Alive: ${t.isAlive}"
-        )
-      }
+      val _ = createGuardian()
+
     case Left(error) =>
       s"An error was encountered reading environment variables: $error"
-
-  println("Cluster application started successfully!")
 end main
 
 def setup(): Either[String, () => ActorSystem[?]] =
