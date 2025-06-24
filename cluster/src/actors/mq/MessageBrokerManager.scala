@@ -162,7 +162,9 @@ object MessageBrokerManager:
                     .DeserializeMessage(mqMessage.body, replyTo)
               ) {
                 case Success(task) =>
-                  DeliverToOrchestrator(task)
+                  DeliverToOrchestrator(
+                    task.copy(mqId = mqMessage.envelope.getDeliveryTag())
+                  )
 
                 case Failure(_) =>
                   RejectTask(
