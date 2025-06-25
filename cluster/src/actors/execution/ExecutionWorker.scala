@@ -110,6 +110,7 @@ object ExecutionWorker:
   private def executeTask(task: Task): Boolean =
     val absFilesDir = unzipFile(task.relTaskFilePath)
     val routingKey = task.routingKeys.headOption.map(_(1).value)
+    println(routingKey)
 
     val executorOption = routingKey match
       case Some("pass")  => Some(MockSuccessExecutor(task, absFilesDir))
@@ -121,7 +122,7 @@ object ExecutionWorker:
         Some(CypressExecutor(task, absFilesDir))
       case Some("gcode-execution")  => Some(GCodeExecutor(task, absFilesDir))
       case Some("kotlin-execution") => Some(KotlinExecutor(task, absFilesDir))
-      case Some(pattern) if "testing*".r.matches(pattern) =>
+      case Some(pattern) if pattern.matches("testing.*") =>
         Some(MockSuccessExecutor(task, absFilesDir))
       case _ => None
 
@@ -132,7 +133,7 @@ object ExecutionWorker:
         canContinue
       case None =>
         throw new IllegalArgumentException(
-          s"No executor available for routing key: ${task.routingKeys.headOption}"
+          s"No executor available for routing key: $routingKey"
         )
     end match
   end executeTask
