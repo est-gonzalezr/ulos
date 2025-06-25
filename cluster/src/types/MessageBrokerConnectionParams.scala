@@ -1,5 +1,6 @@
 package types
 
+import pureconfig.ConfigReader
 import types.OpaqueTypes.MessageBrokerHost
 import types.OpaqueTypes.MessageBrokerPassword
 import types.OpaqueTypes.MessageBrokerPort
@@ -12,4 +13,19 @@ final case class MessageBrokerConnectionParams(
     port: MessageBrokerPort,
     username: MessageBrokerUsername,
     password: MessageBrokerPassword
-)
+) derives ConfigReader
+
+object MessageBrokerConnectionParams:
+  given ConfigReader[MessageBrokerHost] =
+    ConfigReader.fromString(str => Right(MessageBrokerHost(str)))
+
+  given ConfigReader[MessageBrokerPort] =
+    ConfigReader.fromCursor(_.asInt.map(MessageBrokerPort(_)))
+
+  given ConfigReader[MessageBrokerUsername] =
+    ConfigReader.fromString(str => Right(MessageBrokerUsername(str)))
+
+  given ConfigReader[MessageBrokerPassword] =
+    ConfigReader.fromString(str => Right(MessageBrokerPassword(str)))
+
+end MessageBrokerConnectionParams

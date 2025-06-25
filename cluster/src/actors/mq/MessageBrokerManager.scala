@@ -117,6 +117,7 @@ object MessageBrokerManager:
 
       val (connection, channel) = initializeBrokerLink(connParams)
       val consumer = RabbitMqConsumer(channel, context.self)
+      channel.basicQos(10, false)
       val _ = channel.basicConsume(consumptionQueue.value, false, consumer)
       handleMessages(connection, channel, replyTo)
     }

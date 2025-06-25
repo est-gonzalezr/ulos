@@ -12,14 +12,12 @@ import org.apache.pekko.actor.typed.PostStop
 import org.apache.pekko.actor.typed.SupervisorStrategy
 import org.apache.pekko.actor.typed.Terminated
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import types.MessageBrokerConnectionParams
+import types.AppConfig
 import types.MessageBrokerRoutingInfo
 import types.OpaqueTypes.MessageBrokerExchange
-import types.OpaqueTypes.MessageBrokerQueue
 import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.OrchestratorSetup
 import types.PublishTarget
-import types.RemoteStorageConnectionParams
 import types.Task
 
 import scala.concurrent.duration.*
@@ -37,24 +35,11 @@ object Orchestrator:
   private type CommandOrResponse = Command | ExecutionManager.Response |
     RemoteStorageManager.Response | MessageBrokerManager.Response
 
-  def apply(
-      mqLogsExchangeName: MessageBrokerExchange,
-      mqConsumptionQueueName: MessageBrokerQueue,
-      mqConnParams: MessageBrokerConnectionParams,
-      rsConnParams: RemoteStorageConnectionParams
-  ): Behavior[CommandOrResponse] = setup(
-    mqLogsExchangeName,
-    mqConsumptionQueueName,
-    mqConnParams,
-    rsConnParams
+  def apply(appConfig: AppConfig): Behavior[CommandOrResponse] = setup(
+    appConfig
   )
 
-  def setup(
-      mqLogsExchangeName: MessageBrokerExchange,
-      mqConsumptionQueueName: MessageBrokerQueue,
-      mqConnParams: MessageBrokerConnectionParams,
-      rsConnParams: RemoteStorageConnectionParams
-  ): Behavior[CommandOrResponse] =
+  def setup(appConfig: AppConfig): Behavior[CommandOrResponse] =
     Behaviors.setup[CommandOrResponse] { context =>
       context.log.info("Orchestrator started...")
 
@@ -68,7 +53,9 @@ object Orchestrator:
       context.watch(executionManager)
 
       val supervisedRsManager = Behaviors
-        .supervise(RemoteStorageManager(rsConnParams, context.self))
+        .supervise(
+          RemoteStorageManager(appConfig.remoteStorageConfig, context.self)
+        )
         .onFailure(
           SupervisorStrategy.restart
             .withLimit(MaxConsecutiveRestarts, 5.minutes)
@@ -82,8 +69,8 @@ object Orchestrator:
       val supervisedMqManager = Behaviors
         .supervise(
           MessageBrokerManager(
-            mqConnParams,
-            mqConsumptionQueueName,
+            appConfig.messageBrokerConfig,
+            appConfig.consumptionQueue,
             context.self
           )
         )
@@ -116,13 +103,13 @@ object Orchestrator:
         systemMonitor
       )
 
-      orchestrating(setup, mqLogsExchangeName)
+      orchestrating(setup, appConfig.logsExchange)
     }
   end setup
 
   def orchestrating(
       setup: OrchestratorSetup,
-      mqLogsExchangeName: MessageBrokerExchange
+      mqLogsExchange: MessageBrokerExchange
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -157,7 +144,7 @@ object Orchestrator:
             setup.messageQueueManager ! MessageBrokerManager.PublishTask(
               taskWithLog,
               MessageBrokerRoutingInfo(
-                mqLogsExchangeName,
+                mqLogsExchange,
                 MessageBrokerRoutingKey("task.log")
               ),
               PublishTarget.Reporting

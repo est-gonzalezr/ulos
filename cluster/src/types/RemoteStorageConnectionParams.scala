@@ -1,5 +1,6 @@
 package types
 
+import pureconfig.ConfigReader
 import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
@@ -12,4 +13,4 @@ final case class RemoteStorageConnectionParams(
     port: RemoteStoragePort,
     username: RemoteStorageUsername,
     password: RemoteStoragePassword
-)
+) derives ConfigReader

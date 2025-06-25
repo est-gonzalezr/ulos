@@ -38,7 +38,7 @@ trait Dependencies extends ScalaModule:
   override def mvnDeps = Seq(
     mvn"org.scala-lang::toolkit::0.7.0",
     mvn"org.scalameta::munit::1.0.1",
-    mvn"org.virtuslab::scala-yaml::0.3.0",
+    mvn"com.github.pureconfig::pureconfig-core::0.17.9",
     mvn"com.rabbitmq:amqp-client:5.25.0",
     mvn"commons-net:commons-net:3.11.1",
     mvn"org.apache.pekko::pekko-actor-typed::1.1.4",
@@ -54,15 +54,15 @@ end Dependencies
 object cluster extends Dependencies, ProjectConfigs:
   // def moduleDeps = Seq(coreUtils, storageUtils)
   def forkEnv = Map(
-    "MQ_HOST" -> "localhost",
-    "MQ_PORT" -> "5672",
-    "MQ_USER" -> "guest",
-    "MQ_PASSWORD" -> "guest",
-    "MQ_LOGS_EXCHANGE_NAME" -> "processing-exchange",
-    "MQ_CONSUMPTION_QUEUE_NAME" -> "processing-queue",
+    "MESSAGE_BROKER_HOST" -> "localhost",
+    "MESSAGE_BROKER_PORT" -> "5672",
+    "MESSAGE_BROKER_USERNAME" -> "guest",
+    "MESSAGE_BROKER_PASSWORD" -> "guest",
+    "MESSAGE_BROKER_LOGS_EXCHANGE" -> "processing-exchange",
+    "MESSAGE_BROKER_CONSUMPTION_QUEUE" -> "processing-queue",
     "REMOTE_STORAGE_HOST" -> "localhost",
     "REMOTE_STORAGE_PORT" -> "21",
-    "REMOTE_STORAGE_USER" -> "one",
+    "REMOTE_STORAGE_USERNAME" -> "one",
     "REMOTE_STORAGE_PASSWORD" -> "123"
   )
 end cluster
