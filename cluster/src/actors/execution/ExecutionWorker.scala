@@ -3,6 +3,7 @@ package actors.execution
 import executors.*
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.DispatcherSelector
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import os.Path
@@ -84,8 +85,9 @@ object ExecutionWorker:
       task: Task
   ): Future[Boolean] =
     given blockingDispatcher: ExecutionContext =
-      context.system.classicSystem.dispatchers
-        .lookup("akka.actor.default-blocking-io-dispatcher")
+      context.system.dispatchers.lookup(
+        DispatcherSelector.fromConfig("blocking-dispatcher")
+      )
 
     Try(Future(executeTask(task))(using blockingDispatcher)) match
       case Success(f)  => f
@@ -96,21 +98,21 @@ object ExecutionWorker:
 
   private def executeTask(task: Task): Boolean =
     val absFilesDir = unzipFile(task.relTaskFilePath)
+    val routingKey = task.routingKeys.headOption.map(_(1).value)
 
-    val executorOption =
-      task.routingKeys.headOption.map(elem => elem(0).value) match
-        case Some("pass")  => Some(MockSuccessExecutor(task, absFilesDir))
-        case Some("fail")  => Some(MockFailureExecutor(task, absFilesDir))
-        case Some("crash") => Some(MockCrashExecutor(task, absFilesDir))
-        case Some("cypress-grammar") =>
-          Some(CypressGrammarExecutor(task, absFilesDir))
-        case Some("cypress-execution") =>
-          Some(CypressExecutor(task, absFilesDir))
-        case Some("gcode-execution")  => Some(GCodeExecutor(task, absFilesDir))
-        case Some("kotlin-execution") => Some(KotlinExecutor(task, absFilesDir))
-        case Some(pattern) if "testing*".r.matches(pattern) =>
-          Some(MockSuccessExecutor(task, absFilesDir))
-        case _ => None
+    val executorOption = routingKey match
+      case Some("pass")  => Some(MockSuccessExecutor(task, absFilesDir))
+      case Some("fail")  => Some(MockFailureExecutor(task, absFilesDir))
+      case Some("crash") => Some(MockCrashExecutor(task, absFilesDir))
+      case Some("cypress-grammar") =>
+        Some(CypressGrammarExecutor(task, absFilesDir))
+      case Some("cypress-execution") =>
+        Some(CypressExecutor(task, absFilesDir))
+      case Some("gcode-execution")  => Some(GCodeExecutor(task, absFilesDir))
+      case Some("kotlin-execution") => Some(KotlinExecutor(task, absFilesDir))
+      case Some(pattern) if "testing*".r.matches(pattern) =>
+        Some(MockSuccessExecutor(task, absFilesDir))
+      case _ => None
 
     executorOption match
       case Some(executor) =>

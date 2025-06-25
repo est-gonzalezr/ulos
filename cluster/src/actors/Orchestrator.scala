@@ -158,7 +158,7 @@ object Orchestrator:
               taskWithLog,
               MessageBrokerRoutingInfo(
                 mqLogsExchangeName,
-                MessageBrokerRoutingKey("updates")
+                MessageBrokerRoutingKey("task.log")
               ),
               PublishTarget.Reporting
             )
