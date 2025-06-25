@@ -28,7 +28,7 @@ final case class Task(
   def relTaskFileDir: RelPath =
     relTaskFilePath / os.up / relTaskFilePath.baseName
   override def toString: String =
-    s"Task(taskId=$taskId, taskOwnerId=$taskOwnerId, filePath=$filePath, routingKeys=$routingKeys, logMessage=$logMessage, mqId=$mqId)"
+    s"Task(taskId=$taskId, filePath=$filePath, timeout=$timeout, routingKeys=$routingKeys, logMessage=$logMessage, mqId=$mqId)"
 end Task
 
 /** Companion object for the Task class. It contains the JSON encoders and

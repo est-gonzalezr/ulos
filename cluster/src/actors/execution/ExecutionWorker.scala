@@ -10,6 +10,7 @@ import os.Path
 import os.RelPath
 import types.Task
 
+import java.util.concurrent.TimeoutException
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Failure
@@ -89,7 +90,17 @@ object ExecutionWorker:
         DispatcherSelector.fromConfig("blocking-dispatcher")
       )
 
-    Try(Future(executeTask(task))(using blockingDispatcher)) match
+    val executeOrTimeout = Future.firstCompletedOf(
+      List(
+        Future({
+          Thread.sleep(task.timeout.duration.toMillis);
+          throw TimeoutException("Task execution timed out")
+        })(using blockingDispatcher),
+        Future(executeTask(task))(using blockingDispatcher)
+      )
+    )(using blockingDispatcher)
+
+    Try(executeOrTimeout) match
       case Success(f)  => f
       case Failure(th) => Future.failed(th)
     end match

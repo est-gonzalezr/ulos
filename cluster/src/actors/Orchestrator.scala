@@ -62,7 +62,7 @@ object Orchestrator:
         )
       val rsManager = context.spawn(
         supervisedRsManager,
-        "ftp-manager"
+        "remote-storage-manager"
       )
       context.watch(rsManager)
 
@@ -76,12 +76,12 @@ object Orchestrator:
         )
         .onFailure(
           SupervisorStrategy
-            .restartWithBackoff(1.seconds, 5.seconds, 0.2)
+            .restartWithBackoff(10.seconds, 5.minutes, 0.2)
             .withMaxRestarts(MaxConsecutiveRestarts)
         )
       val mqManager = context.spawn(
         supervisedMqManager,
-        "mq-manager"
+        "message-broker-manager"
       )
       context.watch(mqManager)
 
