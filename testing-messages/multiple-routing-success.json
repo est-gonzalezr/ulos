@@ -8,6 +8,7 @@
     ["processing-exchange", "testing-2"],
     ["processing-exchange", "testing-3"],
     ["processing-exchange", "testing-4"],
-    ["processing-exchange", "testing-5"]
+    ["processing-exchange", "testing-5"],
+    ["processing-exchange", "done"]
   ]
 }

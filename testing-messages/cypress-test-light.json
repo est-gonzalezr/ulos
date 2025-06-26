@@ -5,6 +5,7 @@
   "timeout": 500,
   "routingKeys": [
     ["processing-exchange", "cypress-grammar"],
-    ["processing-exchange", "cypress-execution"]
+    ["processing-exchange", "cypress-execution"],
+    ["processing-exchange", "done"]
   ]
 }

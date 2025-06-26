@@ -112,6 +112,7 @@ object ExecutionWorker:
     val routingKey = task.routingKeys.headOption.map(_(1).value)
 
     val executorOption = routingKey match
+      case Some("skip")  => Some(MockSkipExecutor(task, absFilesDir))
       case Some("pass")  => Some(MockSuccessExecutor(task, absFilesDir))
       case Some("fail")  => Some(MockFailureExecutor(task, absFilesDir))
       case Some("crash") => Some(MockCrashExecutor(task, absFilesDir))
