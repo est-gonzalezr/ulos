@@ -35,7 +35,7 @@ for i in range(1, N + 1):
     task = {
         "taskId": f"{10000 + i}",
         "taskOwnerId": f"{i % 100}",
-        "filePath": f"/ftp/one/empty_zip_files/zip_{i}.zip",
+        "filePath": f"/ftp/one/testing_zip_files/zip_{i}.zip",
         "timeout": 1,
         "routingTree": {
             "exchange": "processing-exchange",

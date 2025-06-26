@@ -118,6 +118,8 @@ object MessageBrokerManager:
       val (connection, channel) = initializeBrokerLink(connParams)
       val consumer = RabbitMqConsumer(channel, context.self)
 
+      channel.confirmSelect()
+
       // hardcoded value for prefetch count, might change in the future
       channel.basicQos(10, false)
 

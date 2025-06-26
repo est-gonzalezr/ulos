@@ -1,5 +1,6 @@
 package actors.mq
 
+import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
@@ -67,7 +68,7 @@ object MessageBrokerCommunicator:
           channel.basicPublish(
             exchangeName.value,
             routingKey.value,
-            null,
+            BasicProperties.Builder().deliveryMode(2).build(),
             bytes.toArray
           )
 
