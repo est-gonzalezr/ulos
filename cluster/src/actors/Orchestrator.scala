@@ -17,7 +17,6 @@ import types.MessageBrokerRoutingInfo
 import types.OrchestratorSetup
 import types.PublishTarget
 import types.Task
-import types.TaskStatus
 
 import scala.concurrent.duration.*
 
@@ -175,24 +174,13 @@ object Orchestrator:
 
             setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 
-            val taskForNextStage = task.status match
-              case TaskStatus.Successful =>
-                task.copy(routingTree =
-                  task.routingTree.flatMap(_.successRoutingDecision)
-                )
-              case TaskStatus.Failed =>
-                task.copy(routingTree =
-                  task.routingTree.flatMap(_.failureRoutingDecision)
-                )
-              case _ => task.copy(routingTree = None)
-
-            taskForNextStage.routingTree.fold {
+            task.routingTree.fold {
               setup.messageQueueManager ! MessageBrokerManager.AckTask(
-                taskForNextStage
+                task
               )
             } { routingNode =>
               setup.messageQueueManager ! MessageBrokerManager.PublishTask(
-                taskForNextStage,
+                task,
                 MessageBrokerRoutingInfo(
                   routingNode.exchange,
                   routingNode.routingKey
@@ -204,37 +192,27 @@ object Orchestrator:
             Behaviors.same
 
           case RemoteStorageManager.TaskDownloadFailed(task, reason) =>
-            val crashedTask = task.copy(status = TaskStatus.Crashed)
-
             context.log.error(s"TaskDownloadFailed response received")
 
             context.self ! RegisterLog(
-              crashedTask,
+              task,
               s"Task files download failed with reason - $reason"
             )
 
-            setup.messageQueueManager ! MessageBrokerManager.RejectTask(
-              crashedTask
-            )
+            setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
             Behaviors.same
 
           case RemoteStorageManager.TaskUploadFailed(task, reason) =>
-            val crashedTask = task.copy(status = TaskStatus.Crashed)
-
             context.log.error(s"TaskUploadFailed response received")
 
-            setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(
-              crashedTask
-            )
+            setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 
             context.self ! RegisterLog(
-              crashedTask,
+              task,
               s"Task files upload failed with reason - $reason"
             )
 
-            setup.messageQueueManager ! MessageBrokerManager.RejectTask(
-              crashedTask
-            )
+            setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
             Behaviors.same
 
           /* **********************************************************************
@@ -242,53 +220,46 @@ object Orchestrator:
            * ********************************************************************** */
 
           case ExecutionManager.TaskPass(task) =>
-            val successfulTask =
-              task.copy(status = TaskStatus.Successful)
-
             context.log.info(s"TaskExecuted response received")
             context.self ! RegisterLog(
-              successfulTask,
+              task,
               "Task processing completed successfully"
             )
 
-            setup.remoteStorageManager ! RemoteStorageManager
-              .UploadTaskFiles(successfulTask)
+            setup.remoteStorageManager ! RemoteStorageManager.UploadTaskFiles(
+              task.copy(routingTree =
+                task.routingTree.flatMap(_.successRoutingDecision)
+              )
+            )
 
             Behaviors.same
 
           case ExecutionManager.TaskHalt(task) =>
-            val failedTask = task.copy(status = TaskStatus.Failed)
-
-            context.log.info(
-              s"TaskHalt response received"
-            )
+            context.log.info(s"TaskHalt response received")
             context.self ! RegisterLog(
-              failedTask,
+              task,
               "Task processing completed unsuccessfully"
             )
 
-            setup.remoteStorageManager ! RemoteStorageManager
-              .UploadTaskFiles(failedTask)
+            setup.remoteStorageManager ! RemoteStorageManager.UploadTaskFiles(
+              task.copy(routingTree =
+                task.routingTree.flatMap(_.failureRoutingDecision)
+              )
+            )
 
             Behaviors.same
 
           case ExecutionManager.TaskExecutionError(task, reason) =>
-            val crashedTask = task.copy(status = TaskStatus.Crashed)
-
             context.log.error(s"TaskExecutionError response received")
 
-            setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(
-              crashedTask
-            )
+            setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 
             context.self ! RegisterLog(
-              crashedTask,
+              task,
               s"Task execution failed with reason - $reason"
             )
 
-            setup.messageQueueManager ! MessageBrokerManager.RejectTask(
-              crashedTask
-            )
+            setup.messageQueueManager ! MessageBrokerManager.RejectTask(task)
             Behaviors.same
 
           /* **********************************************************************
@@ -332,17 +303,14 @@ object Orchestrator:
 
           case MessageBrokerManager.TaskPublishFailed(task, reason) =>
             context.log.error(s"TaskPublishFailed response received")
-
             Behaviors.same
 
           case MessageBrokerManager.TaskAckFailed(task, reason) =>
             context.log.error(s"TaskAckFailed response received")
-
             Behaviors.same
 
           case MessageBrokerManager.TaskRejectFailed(task, reason) =>
             context.log.error(s"TaskRejectFailed response received")
-
             Behaviors.same
 
         end match

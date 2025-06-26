@@ -24,7 +24,6 @@ import types.OpaqueTypes.MessageBrokerQueue
 import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.PublishTarget
 import types.Task
-import types.TaskStatus
 
 import scala.concurrent.duration.*
 import scala.util.Failure
@@ -168,10 +167,7 @@ object MessageBrokerManager:
               ) {
                 case Success(task) =>
                   DeliverToOrchestrator(
-                    task.copy(
-                      mqId = mqMessage.envelope.getDeliveryTag(),
-                      status = TaskStatus.Processing
-                    )
+                    task.copy(mqId = mqMessage.envelope.getDeliveryTag())
                   )
 
                 case Failure(_) =>
@@ -183,8 +179,7 @@ object MessageBrokerManager:
                       timeout = 0.seconds,
                       routingTree = None,
                       logMessage = Some("Failed to deserialize message"),
-                      mqId = mqMessage.envelope.getDeliveryTag(),
-                      status = TaskStatus.Crashed
+                      mqId = mqMessage.envelope.getDeliveryTag()
                     )
                   )
               }

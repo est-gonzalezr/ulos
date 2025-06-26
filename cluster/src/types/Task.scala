@@ -19,8 +19,7 @@ final case class Task(
     timeout: Timeout,
     routingTree: Option[RoutingDecision],
     logMessage: Option[String],
-    mqId: Long = -1,
-    status: TaskStatus = TaskStatus.Processing
+    mqId: Long = -1
 ):
 
   def relTaskFilePath: RelPath = filePath.relativeTo(os.root)
