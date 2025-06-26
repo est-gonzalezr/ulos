@@ -4,6 +4,6 @@ import types.OpaqueTypes.MessageBrokerExchange
 import types.OpaqueTypes.MessageBrokerRoutingKey
 
 final case class MessageBrokerRoutingInfo(
-    exchangeName: MessageBrokerExchange,
+    exchange: MessageBrokerExchange,
     routingKey: MessageBrokerRoutingKey
 )

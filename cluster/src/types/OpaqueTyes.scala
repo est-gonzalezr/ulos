@@ -18,6 +18,8 @@ object OpaqueTypes:
       def value: String = routingKey
     end extension
 
+    given ConfigReader[MessageBrokerRoutingKey] =
+      ConfigReader.fromString(str => Right(MessageBrokerRoutingKey(str)))
     given JsonDecoder[MessageBrokerRoutingKey] =
       JsonDecoder[String].map(MessageBrokerRoutingKey(_))
     given JsonEncoder[MessageBrokerRoutingKey] =

@@ -237,7 +237,7 @@ object MessageBrokerManager:
                 PublishSerializedTask(
                   task,
                   bytes,
-                  routingInfo.exchangeName,
+                  routingInfo.exchange,
                   routingInfo.routingKey,
                   publishTarget
                 )

@@ -2,7 +2,7 @@ package src
 
 import actors.Orchestrator
 import org.apache.pekko.actor.typed.ActorSystem
-import pureconfig.*
+import pureconfig.ConfigSource
 import types.AppConfig
 
 @main def main(): Unit =

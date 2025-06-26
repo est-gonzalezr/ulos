@@ -14,8 +14,6 @@ import org.apache.pekko.actor.typed.Terminated
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import types.AppConfig
 import types.MessageBrokerRoutingInfo
-import types.OpaqueTypes.MessageBrokerExchange
-import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.OrchestratorSetup
 import types.PublishTarget
 import types.Task
@@ -104,13 +102,19 @@ object Orchestrator:
         systemMonitor
       )
 
-      orchestrating(setup, appConfig.logsExchange)
+      orchestrating(
+        setup,
+        MessageBrokerRoutingInfo(
+          appConfig.logsExchange,
+          appConfig.logsRoutingKey
+        )
+      )
     }
   end setup
 
   def orchestrating(
       setup: OrchestratorSetup,
-      mqLogsExchange: MessageBrokerExchange
+      mqLogsRoutingInfo: MessageBrokerRoutingInfo
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -143,8 +147,8 @@ object Orchestrator:
             setup.messageQueueManager ! MessageBrokerManager.PublishTask(
               taskWithLog,
               MessageBrokerRoutingInfo(
-                mqLogsExchange,
-                MessageBrokerRoutingKey("task.log")
+                mqLogsRoutingInfo.exchange,
+                mqLogsRoutingInfo.routingKey
               ),
               PublishTarget.Reporting
             )
