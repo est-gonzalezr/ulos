@@ -28,7 +28,11 @@ object Orchestrator:
 
   // Public command protocol
   final case class ProcessTask(task: Task) extends Command
-  final case class RegisterLog(task: Task, log: String) extends Command
+
+  // Private command protocol
+  private final case class RegisterLog(task: Task, log: String) extends Command
+  private final case class RegisterCrash(task: Task, reason: Throwable)
+      extends Command
 
   private type CommandOrResponse = Command | ExecutionManager.Response |
     RemoteStorageManager.Response | MessageBrokerManager.Response
@@ -37,7 +41,7 @@ object Orchestrator:
     appConfig
   )
 
-  def setup(appConfig: AppConfig): Behavior[CommandOrResponse] =
+  private def setup(appConfig: AppConfig): Behavior[CommandOrResponse] =
     Behaviors.setup[CommandOrResponse] { context =>
       context.log.info("Orchestrator started...")
 
@@ -106,14 +110,19 @@ object Orchestrator:
         MessageBrokerRoutingInfo(
           appConfig.logsExchange,
           appConfig.logsRoutingKey
+        ),
+        MessageBrokerRoutingInfo(
+          appConfig.crashExchange,
+          appConfig.crashRoutingKey
         )
       )
     }
   end setup
 
-  def orchestrating(
+  private def orchestrating(
       setup: OrchestratorSetup,
-      mqLogsRoutingInfo: MessageBrokerRoutingInfo
+      mqLogsRoutingInfo: MessageBrokerRoutingInfo,
+      mqCrashRoutingInfo: MessageBrokerRoutingInfo
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -149,7 +158,29 @@ object Orchestrator:
                 mqLogsRoutingInfo.exchange,
                 mqLogsRoutingInfo.routingKey
               ),
-              PublishTarget.Reporting
+              PublishTarget.Logging
+            )
+            Behaviors.same
+
+          case RegisterCrash(task, reason) =>
+            val taskWithLog = task.copy(logMessage = Some(s"$reason"))
+
+            context.log.info(
+              s"RegisterCrash command received - Task --> $taskWithLog"
+            )
+
+            context.self ! RegisterLog(
+              task,
+              s"Task crashed with reason - $reason"
+            )
+
+            setup.messageQueueManager ! MessageBrokerManager.PublishTask(
+              taskWithLog,
+              MessageBrokerRoutingInfo(
+                mqCrashRoutingInfo.exchange,
+                mqCrashRoutingInfo.routingKey
+              ),
+              PublishTarget.Crashed
             )
             Behaviors.same
 
@@ -194,6 +225,8 @@ object Orchestrator:
           case RemoteStorageManager.TaskDownloadFailed(task, reason) =>
             context.log.error(s"TaskDownloadFailed response received")
 
+            context.self ! RegisterCrash(task, reason)
+
             context.self ! RegisterLog(
               task,
               s"Task files download failed with reason - $reason"
@@ -204,6 +237,8 @@ object Orchestrator:
 
           case RemoteStorageManager.TaskUploadFailed(task, reason) =>
             context.log.error(s"TaskUploadFailed response received")
+
+            context.self ! RegisterCrash(task, reason)
 
             setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 
@@ -251,6 +286,8 @@ object Orchestrator:
 
           case ExecutionManager.TaskExecutionError(task, reason) =>
             context.log.error(s"TaskExecutionError response received")
+
+            context.self ! RegisterCrash(task, reason)
 
             setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 

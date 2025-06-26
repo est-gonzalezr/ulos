@@ -1,5 +1,5 @@
 package types
 
 enum PublishTarget:
-  case Processing, Reporting
+  case Processing, Logging, Crashed
 end PublishTarget

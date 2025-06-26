@@ -60,6 +60,8 @@ object cluster extends Dependencies, ProjectConfigs:
     "MESSAGE_BROKER_PASSWORD" -> "guest",
     "MESSAGE_BROKER_LOGS_EXCHANGE" -> "processing-exchange",
     "MESSAGE_BROKER_LOGS_ROUTING_KEY" -> "task.log",
+    "MESSAGE_BROKER_CRASH_EXCHANGE" -> "processing-exchange",
+    "MESSAGE_BROKER_CRASH_ROUTING_KEY" -> "task.crashed",
     "MESSAGE_BROKER_CONSUMPTION_QUEUE" -> "processing-queue",
     "REMOTE_STORAGE_HOST" -> "localhost",
     "REMOTE_STORAGE_PORT" -> "21",

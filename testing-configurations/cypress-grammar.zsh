@@ -4,6 +4,8 @@ export MESSAGE_BROKER_USERNAME=guest
 export MESSAGE_BROKER_PASSWORD=guest
 export MESSAGE_BROKER_LOGS_EXCHANGE=processing-exchange
 export MESSAGE_BROKER_LOGS_ROUTING_KEY=task.log
+export MESSAGE_BROKER_CRASH_EXCHANGE -> processing-exchange
+export MESSAGE_BROKER_CRASH_ROUTING_KEY -> task.crashed
 export MESSAGE_BROKER_CONSUMPTION_QUEUE=cypress-grammar
 export REMOTE_STORAGE_HOST=localhost
 export REMOTE_STORAGE_PORT=21

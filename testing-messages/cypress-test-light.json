@@ -12,6 +12,10 @@
       "successRoutingDecision": {
         "exchange": "processing-exchange",
         "routingKey": "task.done"
+      },
+      "failureRoutingDecision": {
+        "exchange": "processing-exchange",
+        "routingKey": "task.failed"
       }
     },
     "failureRoutingDecision": {

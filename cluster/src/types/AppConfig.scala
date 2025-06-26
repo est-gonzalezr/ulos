@@ -8,5 +8,7 @@ final case class AppConfig(
     remoteStorageConfig: RemoteStorageConnectionParams,
     logsExchange: MessageBrokerExchange,
     logsRoutingKey: MessageBrokerRoutingKey,
+    crashExchange: MessageBrokerExchange,
+    crashRoutingKey: MessageBrokerRoutingKey,
     consumptionQueue: MessageBrokerQueue
 ) derives ConfigReader

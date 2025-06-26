@@ -67,6 +67,17 @@ class GCodeExecutor(task: Task, absFilesDir: Path)
     finally logStream.close()
     end try
 
+    val passedLogPath = absFilesDir / "results" / "passed.log"
+
+    if os.exists(passedLogPath) then
+      println("Passed log found")
+      exitCode = 0
+      val _ = os.remove(passedLogPath)
+    else
+      println("No passed log found")
+      exitCode = -1
+    end if
+
     os.write.over(
       absFilesDir / s"output_${task.routingTree.get.exchange}_${task.routingTree.get.routingKey}.txt",
       logBuffer.mkString("\n"),

@@ -26,35 +26,35 @@
             },
             "failureRoutingDecision": {
               "exchange": "processing-exchange",
-              "routingKey": "task.crashed",
+              "routingKey": "task.failed",
               "successRoutingDecision": null,
               "failureRoutingDecision": null
             }
           },
           "failureRoutingDecision": {
             "exchange": "processing-exchange",
-            "routingKey": "task.crashed",
+            "routingKey": "task.failed",
             "successRoutingDecision": null,
             "failureRoutingDecision": null
           }
         },
         "failureRoutingDecision": {
           "exchange": "processing-exchange",
-          "routingKey": "task.crashed",
+          "routingKey": "task.failed",
           "successRoutingDecision": null,
           "failureRoutingDecision": null
         }
       },
       "failureRoutingDecision": {
         "exchange": "processing-exchange",
-        "routingKey": "task.crashed",
+        "routingKey": "task.failed",
         "successRoutingDecision": null,
         "failureRoutingDecision": null
       }
     },
     "failureRoutingDecision": {
       "exchange": "processing-exchange",
-      "routingKey": "task.crashed",
+      "routingKey": "task.failed",
       "successRoutingDecision": null,
       "failureRoutingDecision": null
     }

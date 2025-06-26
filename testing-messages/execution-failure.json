@@ -6,6 +6,10 @@
   "routingTree": {
     "exchange": "processing-exchange",
     "routingKey": "fail",
+    "successRoutingDecision": {
+      "exchange": "processing-exchange",
+      "routingKey": "task.unexpected"
+    },
     "failureRoutingDecision": {
       "exchange": "processing-exchange",
       "routingKey": "task.failed"

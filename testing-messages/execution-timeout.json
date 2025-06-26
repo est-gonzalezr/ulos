@@ -8,7 +8,7 @@
     "routingKey": "pass",
     "successRoutingDecision": {
       "exchange": "processing-exchange",
-      "routingKey": "task.done"
+      "routingKey": "task.unexpected"
     },
     "failureRoutingDecision": {
       "exchange": "processing-exchange",

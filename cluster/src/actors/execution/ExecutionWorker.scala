@@ -13,6 +13,7 @@ import types.Task
 import java.util.concurrent.TimeoutException
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -50,7 +51,7 @@ object ExecutionWorker:
     * @return
     *   A Behavior that processes a task and then stops.
     */
-  def processing(replyTo: ActorRef[Response]): Behavior[Command] =
+  private def processing(replyTo: ActorRef[Response]): Behavior[Command] =
     Behaviors.receive { (context, message) =>
       message match
         /* **********************************************************************
@@ -90,20 +91,35 @@ object ExecutionWorker:
         DispatcherSelector.fromConfig("blocking-dispatcher")
       )
 
-    val executeOrTimeout = Future.firstCompletedOf(
-      List(
-        Future({
-          Thread.sleep(task.timeout.duration.toMillis);
-          throw TimeoutException("Task execution timed out")
-        })(using blockingDispatcher),
-        Future(executeTask(task))(using blockingDispatcher)
-      )
-    )(using blockingDispatcher)
+    val executionPromise = Promise[Boolean]()
 
-    Try(executeOrTimeout) match
-      case Success(f)  => f
-      case Failure(th) => Future.failed(th)
-    end match
+    val _ = Future {
+      Thread.sleep(task.timeout.duration.toMillis)
+      executionPromise.tryFailure(TimeoutException("Task execution timed out"))
+    }(using blockingDispatcher)
+
+    val _ = Future {
+      Try(executeTask(task)) match
+        case Success(result) => executionPromise.trySuccess(result)
+        case Failure(th)     => executionPromise.tryFailure(th)
+    }(using blockingDispatcher)
+
+    executionPromise.future
+
+    // val executeOrTimeout = Future.firstCompletedOf(
+    //   List(
+    //     Future({
+    //       Thread.sleep(task.timeout.duration.toMillis);
+    //       throw TimeoutException("Task execution timed out")
+    //     })(using blockingDispatcher),
+    //     Future(executeTask(task))(using blockingDispatcher)
+    //   )
+    // )(using blockingDispatcher)
+
+    // Try(executeOrTimeout) match
+    //   case Success(f)  => f
+    //   case Failure(th) => Future.failed(th)
+    // end match
 
   end handleExecuteTask
 
