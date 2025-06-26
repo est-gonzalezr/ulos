@@ -15,9 +15,10 @@ import scala.collection.mutable.ListBuffer
 class GCodeExecutor(task: Task, absFilesDir: Path)
     extends Executor(task, absFilesDir):
 
+  println(absFilesDir)
+
   def execute(): Boolean =
     val image = "gcode-visualizer"
-    val workingDir = "/app/tests/"
     val cmdSeq = List("run")
 
     val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
@@ -25,12 +26,11 @@ class GCodeExecutor(task: Task, absFilesDir: Path)
     val container = dockerClient
       .createContainerCmd(image)
       .withCmd(cmdSeq*)
-      .withWorkingDir(workingDir)
       .withHostConfig(
         HostConfig()
           .withBinds(
             Bind.parse(
-              s"${absFilesDir.toString}:$workingDir"
+              s"${absFilesDir.toString}:/app/tests/"
             )
           )
           .withAutoRemove(true)

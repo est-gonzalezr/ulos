@@ -17,7 +17,6 @@ class CypressExecutor(task: Task, absFilesDir: Path)
 
   def execute(): Boolean =
     val image = "cypress-executor"
-    val workingDir = "/mnt/tests/"
     val cmdSeq = List("run")
 
     val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
@@ -25,12 +24,11 @@ class CypressExecutor(task: Task, absFilesDir: Path)
     val container = dockerClient
       .createContainerCmd(image)
       .withCmd(cmdSeq*)
-      .withWorkingDir(workingDir)
       .withHostConfig(
         HostConfig()
           .withBinds(
             Bind.parse(
-              s"${absFilesDir.toString}:$workingDir"
+              s"${absFilesDir.toString}:/mnt/tests/"
             )
           )
           .withAutoRemove(true)

@@ -176,9 +176,8 @@ object Orchestrator:
 
             setup.remoteStorageManager ! RemoteStorageManager.DeleteFiles(task)
 
-            val taskForNextStage = task.copy(
-              routingKeys = task.routingKeys.tail
-            )
+            val taskForNextStage =
+              task.copy(routingKeys = task.routingKeys.drop(1))
 
             if taskForNextStage.routingKeys.nonEmpty then
               val (exchange, routingKey) = taskForNextStage.routingKeys.head
@@ -254,7 +253,7 @@ object Orchestrator:
             )
 
             val taskWithoutStages =
-              task.copy(routingKeys = task.routingKeys.head :: Nil)
+              task.copy(routingKeys = Nil)
 
             setup.remoteStorageManager ! RemoteStorageManager
               .UploadTaskFiles(taskWithoutStages)

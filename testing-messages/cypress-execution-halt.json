@@ -1,0 +1,10 @@
+{
+  "taskId": "12345",
+  "taskOwnerId": "67",
+  "filePath": "/ftp/one/cypress-test-fail.zip",
+  "timeout": 500,
+  "routingKeys": [
+    ["processing-exchange", "cypress-grammar"],
+    ["processing-exchange", "cypress-execution"]
+  ]
+}

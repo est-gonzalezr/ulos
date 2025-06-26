@@ -110,7 +110,6 @@ object ExecutionWorker:
   private def executeTask(task: Task): Boolean =
     val absFilesDir = unzipFile(task.relTaskFilePath)
     val routingKey = task.routingKeys.headOption.map(_(1).value)
-    println(routingKey)
 
     val executorOption = routingKey match
       case Some("pass")  => Some(MockSuccessExecutor(task, absFilesDir))

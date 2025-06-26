@@ -17,7 +17,6 @@ class CypressGrammarExecutor(task: Task, absFilesDir: Path)
 
   def execute(): Boolean =
     val image = "cypress-grammar"
-    val workingDir = "/mnt/tests/"
     val cmdSeq = List("run")
 
     val dockerClient: DockerClient = DockerClientBuilder.getInstance().build()
@@ -25,13 +24,12 @@ class CypressGrammarExecutor(task: Task, absFilesDir: Path)
     val container = dockerClient
       .createContainerCmd(image)
       .withCmd(cmdSeq*)
-      .withWorkingDir(workingDir)
       .withEnv("FILES_DIR=cypress/e2e", "FILE_EXT=cy.js")
       .withHostConfig(
         HostConfig()
           .withBinds(
             Bind.parse(
-              s"${absFilesDir.toString}:$workingDir"
+              s"${absFilesDir.toString}:/mnt/tests/"
             )
           )
           .withAutoRemove(true)
@@ -55,7 +53,7 @@ class CypressGrammarExecutor(task: Task, absFilesDir: Path)
       .withFollowStream(true)
       .exec(logCallback)
 
-    @volatile var exitCode = 0
+    @volatile var exitCode = -1
     try
       // Wait for container to finish and capture exit code
       val waitCallback = new ResultCallback.Adapter[WaitResponse]:
@@ -67,13 +65,17 @@ class CypressGrammarExecutor(task: Task, absFilesDir: Path)
 
     finally logStream.close()
     end try
-    // println("------------------------------------------")
-    // println("Here is a container for start")
-    // println(containerId)
-    // println(exitCode)
-    // println(output)
-    // println("here is a container for stop")
-    // println("------------------------------------------")
+
+    val passedLogPath = absFilesDir / "results" / "passed.log"
+
+    if os.exists(passedLogPath) then
+      println("Passed log found")
+      exitCode = 0
+      val _ = os.remove(passedLogPath)
+    else
+      println("No passed log found")
+      exitCode = -1
+    end if
 
     os.write.over(
       absFilesDir / s"output_${task.routingKeys.head}.txt",
