@@ -4,7 +4,7 @@ import json
 # Connection parameters
 RABBITMQ_HOST = 'localhost'
 RABBITMQ_PORT = 5672
-RABBITMQ_QUEUE = 'logging'
+RABBITMQ_QUEUE = 'logs'
 RABBITMQ_USER = 'guest'
 RABBITMQ_PASS = 'guest'
 

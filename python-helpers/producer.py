@@ -1,43 +1,67 @@
 import pika
-import yaml
+import json
 
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', 5672))
+# Number of messages to publish
+N = int(input("Enter the number of messages to publish: "))
+
+# Connection parameters
+RABBITMQ_HOST = 'localhost'
+RABBITMQ_PORT = 5672
+RABBITMQ_USER = 'guest'
+RABBITMQ_PASS = 'guest'
+RABBITMQ_EXCHANGE = 'processing-exchange'
+RABBITMQ_QUEUE = 'processing-queue'
+ROUTING_KEY = 'task.process'
+
+# Setup credentials
+credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+
+# Connection setup with credentials
+connection_params = pika.ConnectionParameters(
+    host=RABBITMQ_HOST,
+    port=RABBITMQ_PORT,
+    credentials=credentials
+)
+
+# Setup connection and channel
+connection = pika.BlockingConnection(connection_params)
 channel = connection.channel()
 
-# channel.queue_declare(queue='hello')
-# channel.basic_qos(prefetch_count=1, global_qos=True)
+# Ensure the queue exists
+channel.queue_declare(queue=RABBITMQ_QUEUE, durable=True)
 
-with open("goodMessage.yaml", "r") as f:
-    good_data = yaml.safe_load(f)
-    # to bytes
-    good_data = yaml.dump(good_data).encode('utf-8')
+# Publish N messages
+for i in range(1, N + 1):
+    task = {
+        "taskId": f"{10000 + i}",
+        "taskOwnerId": f"{i % 100}",
+        "filePath": f"/ftp/one/empty_zip_files/zip_{i}.zip",
+        "timeout": 1,
+        "routingTree": {
+            "exchange": "processing-exchange",
+            "routingKey": "skip",
+            "successRoutingDecision": {
+                "exchange": "processing-exchange",
+                "routingKey": "task.done"
+            },
+            "failureRoutingDecision": {
+                "exchange": "processing-exchange",
+                "routingKey": "task.failed"
+            }
+        }
+    }
 
-with open("badMessage.yaml", "r") as f:
-    bad_data = yaml.safe_load(f)
-    # to bytes
-    bad_data = yaml.dump(bad_data).encode('utf-8')
+    body = json.dumps(task)
+    channel.basic_publish(
+        exchange=RABBITMQ_EXCHANGE,
+        routing_key=ROUTING_KEY,
+        body=body,
+        properties=pika.BasicProperties(
+            delivery_mode=2  # make message persistent
+        )
+    )
 
-channel.basic_publish(exchange='processing_exchange', routing_key='task.parsing', body=good_data)
-# channel.basic_publish(exchange='processing_exchange', routing_key='task.parsing', body=bad_data)
+    print(f"[x] Sent task {i}")
 
-print(" [x] Sent Message'")
-
-
-# from time import sleep
-
-# def printd(text, delay=.5):
-#     print(end=text)
-#     n_dots = 0
-
-#     while True:
-#         if n_dots == 3:
-#             print(end='\b\b\b', flush=True)
-#             print(end='   ',    flush=True)
-#             print(end='\b\b\b', flush=True)
-#             n_dots = 0
-#         else:
-#             print(end='.', flush=True)
-#             n_dots += 1
-#         sleep(delay)
-
-# printd("Hello World", delay=.5)
+# Cleanup
+connection.close()
