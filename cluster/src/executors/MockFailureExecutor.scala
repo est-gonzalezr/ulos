@@ -14,8 +14,8 @@ class MockFailureExecutor(task: Task, absFilesDir: Path)
     println(s"[${Thread.currentThread().getName}] Finished simulating delay.")
 
     os.write.over(
-      absFilesDir / s"output_${task.routingKeys.head}.txt",
-      s"Mock execution through ${task.routingKeys.head}.".getBytes(),
+      absFilesDir / s"output_${task.routingTree.get.exchange}_${task.routingTree.get.routingKey}.txt",
+      s"Mock execution.".getBytes(),
       createFolders = true
     )
 

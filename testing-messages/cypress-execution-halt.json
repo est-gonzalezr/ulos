@@ -3,9 +3,20 @@
   "taskOwnerId": "67",
   "filePath": "/ftp/one/cypress-test-fail.zip",
   "timeout": 500,
-  "routingKeys": [
-    ["processing-exchange", "cypress-grammar"],
-    ["processing-exchange", "cypress-execution"],
-    ["processing-exchange", "done"]
-  ]
+  "routingTree": {
+    "exchange": "processing-exchange",
+    "routingKey": "cypress-grammar",
+    "successRoutingDecision": {
+      "exchange": "processing-exchange",
+      "routingKey": "cypress-execution",
+      "successRoutingDecision": {
+        "exchange": "processing-exchange",
+        "routingKey": "task.done"
+      }
+    },
+    "failureRoutingDecision": {
+      "exchange": "processing-exchange",
+      "routingKey": "task.failed"
+    }
+  }
 }

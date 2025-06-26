@@ -1,6 +1,8 @@
 package types
 
 import pureconfig.ConfigReader
+import zio.json.JsonDecoder
+import zio.json.JsonEncoder
 
 /** Provides the opaque types for the messaging system elements. This is a way
   * to provide a type-safe way to handle the different elements of the messaging
@@ -15,6 +17,11 @@ object OpaqueTypes:
     extension (routingKey: MessageBrokerRoutingKey)
       def value: String = routingKey
     end extension
+
+    given JsonDecoder[MessageBrokerRoutingKey] =
+      JsonDecoder[String].map(MessageBrokerRoutingKey(_))
+    given JsonEncoder[MessageBrokerRoutingKey] =
+      JsonEncoder[String].contramap(_.value)
   end MessageBrokerRoutingKey
 
   opaque type MessageBrokerExchange = String
@@ -25,6 +32,10 @@ object OpaqueTypes:
 
     given ConfigReader[MessageBrokerExchange] =
       ConfigReader.fromString(str => Right(MessageBrokerExchange(str)))
+    given JsonDecoder[MessageBrokerExchange] =
+      JsonDecoder[String].map(MessageBrokerExchange(_))
+    given JsonEncoder[MessageBrokerExchange] =
+      JsonEncoder[String].contramap(_.value)
   end MessageBrokerExchange
 
   opaque type MessageBrokerQueue = String

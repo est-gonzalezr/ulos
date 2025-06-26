@@ -75,7 +75,7 @@ class KotlinExecutor(task: Task, absFilesDir: Path)
     end try
 
     os.write.over(
-      absFilesDir / s"output_${task.routingKeys.head}.txt",
+      absFilesDir / s"output_${task.routingTree.get.exchange}_${task.routingTree.get.routingKey}.txt",
       logBuffer.mkString("\n"),
       createFolders = true
     )

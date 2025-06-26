@@ -109,7 +109,7 @@ object ExecutionWorker:
 
   private def executeTask(task: Task): Boolean =
     val absFilesDir = unzipFile(task.relTaskFilePath)
-    val routingKey = task.routingKeys.headOption.map(_(1).value)
+    val routingKey = task.routingTree.map(node => node.routingKey.value)
 
     val executorOption = routingKey match
       case Some("skip")  => Some(MockSkipExecutor(task, absFilesDir))

@@ -3,8 +3,12 @@
   "taskOwnerId": "67",
   "filePath": "/ftp/one/testing.zip",
   "timeout": 10,
-  "routingKeys": [
-    ["processing-exchange", "crash"],
-    ["processing-exchange", "done"]
-  ]
+  "routingTree": {
+    "exchange": "processing-exchange",
+    "routingKey": "crash",
+    "failureRoutingDecision": {
+      "exchange": "processing-exchange",
+      "routingKey": "task.crashed"
+    }
+  }
 }

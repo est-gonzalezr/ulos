@@ -3,8 +3,16 @@
   "taskOwnerId": "67",
   "filePath": "/ftp/one/nothing",
   "timeout": 10,
-  "routingKeys": [
-    ["processing-exchange", "pass"],
-    ["processing-exchange", "done"]
-  ]
+  "routingTree": {
+    "exchange": "processing-exchange",
+    "routingKey": "pass",
+    "successRoutingDecision": {
+      "exchange": "processing-exchange",
+      "routingKey": "task.done"
+    },
+    "failureRoutingDecision": {
+      "exchange": "processing-exchange",
+      "routingKey": "task.crashed"
+    }
+  }
 }
