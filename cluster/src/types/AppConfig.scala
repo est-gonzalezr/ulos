@@ -13,5 +13,8 @@ final case class AppConfig(
     messageBrokerConsumptionQueue: MessageBrokerQueue,
     messageBrokerPrefetchCount: Int
 ) derives ConfigReader:
-  require(messageBrokerPrefetchCount >= 0)
+  require(
+    messageBrokerPrefetchCount >= 0,
+    "Message broker prefetch count must be non-negative"
+  )
 end AppConfig
