@@ -86,11 +86,13 @@ object MessageBrokerManager:
   def apply(
       connParams: MessageBrokerConnectionParams,
       consumptionQueue: MessageBrokerQueue,
+      prefetchCount: Int,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     setup(
       connParams,
       consumptionQueue,
+      prefetchCount,
       replyTo
     )
   end apply
@@ -110,6 +112,7 @@ object MessageBrokerManager:
   private def setup(
       connParams: MessageBrokerConnectionParams,
       consumptionQueue: MessageBrokerQueue,
+      prefetchCount: Int,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     Behaviors.setup[CommandOrResponse] { context =>
@@ -121,7 +124,7 @@ object MessageBrokerManager:
       channel.confirmSelect()
 
       // hardcoded value for prefetch count, might change in the future
-      channel.basicQos(10, false)
+      channel.basicQos(if prefetchCount >= 0 then prefetchCount else 0, false)
 
       val _ = channel.basicConsume(consumptionQueue.value, false, consumer)
       handleMessages(connection, channel, replyTo)

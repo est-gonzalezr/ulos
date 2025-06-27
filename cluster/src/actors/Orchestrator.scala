@@ -72,7 +72,8 @@ object Orchestrator:
         .supervise(
           MessageBrokerManager(
             appConfig.messageBrokerConfig,
-            appConfig.consumptionQueue,
+            appConfig.messageBrokerConsumptionQueue,
+            appConfig.messageBrokerPrefetchCount,
             context.self
           )
         )
@@ -107,13 +108,13 @@ object Orchestrator:
 
       orchestrating(
         setup,
-        MessageBrokerRoutingInfo(
-          appConfig.logsExchange,
-          appConfig.logsRoutingKey
+        mqLogsRoutingInfo = MessageBrokerRoutingInfo(
+          appConfig.messageBrokerLogsExchange,
+          appConfig.messageBrokerLogsRoutingKey
         ),
-        MessageBrokerRoutingInfo(
-          appConfig.crashExchange,
-          appConfig.crashRoutingKey
+        mqCrashRoutingInfo = MessageBrokerRoutingInfo(
+          appConfig.messageBrokerCrashExchange,
+          appConfig.messageBrokerCrashRoutingKey
         )
       )
     }
