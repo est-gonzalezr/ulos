@@ -118,16 +118,20 @@ object MessageBrokerManager:
     Behaviors.setup[CommandOrResponse] { context =>
       context.log.info("MessageBrokerManager started...")
 
-      val (connection, channel) = initializeBrokerLink(connParams)
-      val consumer = RabbitMqConsumer(channel, context.self)
+      val connection = initializeBrokerLink(connParams)
+      val consumerChannel = connection.createChannel()
 
-      channel.confirmSelect()
+      consumerChannel.confirmSelect()
+      consumerChannel.basicQos(
+        if prefetchCount >= 0 then prefetchCount else 0,
+        false
+      )
 
-      // hardcoded value for prefetch count, might change in the future
-      channel.basicQos(if prefetchCount >= 0 then prefetchCount else 0, false)
+      val consumer = RabbitMqConsumer(consumerChannel, context.self)
 
-      val _ = channel.basicConsume(consumptionQueue.value, false, consumer)
-      handleMessages(connection, channel, replyTo)
+      val _ =
+        consumerChannel.basicConsume(consumptionQueue.value, false, consumer)
+      handleMessages(connection, consumerChannel, replyTo)
     }
   end setup
 
@@ -135,8 +139,8 @@ object MessageBrokerManager:
     *
     * @param connection
     *   The connection to the message broker.
-    * @param channel
-    *   The channel to the message broker.
+    * @param consumerChannel
+    *   The consumer channel to the message broker.
     * @param replyTo
     *   Reference to reply to with messages.
     * @param failureResponse
@@ -148,7 +152,7 @@ object MessageBrokerManager:
     */
   private def handleMessages(
       connection: Connection,
-      channel: Channel,
+      consumerChannel: Channel,
       replyTo: ActorRef[Orchestrator.Command | Response],
       failureResponse: Map[ActorRef[?], Throwable => FailureResponse] = Map()
   ): Behavior[CommandOrResponse] =
@@ -193,7 +197,7 @@ object MessageBrokerManager:
           case AckTask(task) =>
             val supervisedWorker =
               Behaviors
-                .supervise(MessageBrokerCommunicator(channel, context.self))
+                .supervise(MessageBrokerCommunicator(connection, context.self))
                 .onFailure(SupervisorStrategy.stop)
             val worker = context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
@@ -202,7 +206,7 @@ object MessageBrokerManager:
 
             handleMessages(
               connection,
-              channel,
+              consumerChannel,
               replyTo,
               failureResponse + (worker -> (th => TaskAckFailed(task, th)))
             )
@@ -210,7 +214,7 @@ object MessageBrokerManager:
           case RejectTask(task) =>
             val supervisedWorker =
               Behaviors
-                .supervise(MessageBrokerCommunicator(channel, context.self))
+                .supervise(MessageBrokerCommunicator(connection, context.self))
                 .onFailure(SupervisorStrategy.stop)
             val worker = context.spawnAnonymous(supervisedWorker)
             context.watch(worker)
@@ -219,7 +223,7 @@ object MessageBrokerManager:
 
             handleMessages(
               connection,
-              channel,
+              consumerChannel,
               replyTo,
               failureResponse + (worker -> (th => TaskRejectFailed(task, th)))
             )
@@ -260,7 +264,7 @@ object MessageBrokerManager:
               ) =>
             val supervisedWorker =
               Behaviors
-                .supervise(MessageBrokerCommunicator(channel, context.self))
+                .supervise(MessageBrokerCommunicator(connection, context.self))
                 .onFailure(SupervisorStrategy.stop)
             val worker =
               context.spawnAnonymous(supervisedWorker)
@@ -276,7 +280,7 @@ object MessageBrokerManager:
 
             handleMessages(
               connection,
-              channel,
+              consumerChannel,
               replyTo,
               failureResponse + (worker -> (th => TaskPublishFailed(task, th)))
             )
@@ -294,7 +298,7 @@ object MessageBrokerManager:
                 replyTo ! errorApplicationFunction(reason)
                 handleMessages(
                   connection,
-                  channel,
+                  consumerChannel,
                   replyTo,
                   failureResponse - ref
                 )
@@ -309,7 +313,7 @@ object MessageBrokerManager:
             if failureResponse.contains(ref) then
               handleMessages(
                 connection,
-                channel,
+                consumerChannel,
                 replyTo,
                 failureResponse - ref
               )
@@ -346,14 +350,14 @@ object MessageBrokerManager:
           Behaviors.same
 
         case (_, PreRestart) =>
-          if channel.isOpen() then channel.close()
+          if consumerChannel.isOpen() then consumerChannel.close()
           end if
           if connection.isOpen() then connection.close()
           end if
           Behaviors.same
 
         case (_, PostStop) =>
-          if channel.isOpen() then channel.close()
+          if consumerChannel.isOpen() then consumerChannel.close()
           end if
           if connection.isOpen() then connection.close()
           end if
@@ -371,15 +375,13 @@ object MessageBrokerManager:
     */
   private def initializeBrokerLink(
       connParams: MessageBrokerConnectionParams
-  ): (Connection, Channel) =
+  ): Connection =
     val factory = ConnectionFactory()
     factory.setHost(connParams.host.value)
     factory.setPort(connParams.port.value)
     factory.setUsername(connParams.username.value)
     factory.setPassword(connParams.password.value)
-    val connection = factory.newConnection()
-    val channel = connection.createChannel()
-    (connection, channel)
+    factory.newConnection()
   end initializeBrokerLink
 
   /** A RabbitMQ consumer that consumes messages from the message queue..

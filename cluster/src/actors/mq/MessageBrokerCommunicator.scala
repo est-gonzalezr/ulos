@@ -1,7 +1,7 @@
 package actors.mq
 
 import com.rabbitmq.client.AMQP.BasicProperties
-import com.rabbitmq.client.Channel
+import com.rabbitmq.client.Connection
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
@@ -36,19 +36,24 @@ object MessageBrokerCommunicator:
   final case class TaskAcknowledged(task: Task) extends Response
   final case class TaskRejected(task: Task) extends Response
 
-  def apply(channel: Channel, replyTo: ActorRef[Response]): Behavior[Command] =
-    handleMessages(channel, replyTo)
+  def apply(
+      connection: Connection,
+      replyTo: ActorRef[Response]
+  ): Behavior[Command] =
+    handleMessages(connection, replyTo)
 
   /** Handles outgoing messages for the message broker.
     *
-    * @param channel
-    *   The channel used to publish messages.
+    * @param connection
+    *   The connection used to communicate with the message broker.
+    * @param replyTo
+    *   The actor that will receive the response from the message broker.
     *
     * @return
     *   A Behavior that tries to send the desired action to the message broker.
     */
   private def handleMessages(
-      channel: Channel,
+      connection: Connection,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
     Behaviors.receive { (_, message) =>
@@ -65,6 +70,8 @@ object MessageBrokerCommunicator:
               routingKey,
               publishTarget
             ) =>
+          val channel = connection.createChannel()
+
           channel.basicPublish(
             exchangeName.value,
             routingKey.value,
@@ -72,15 +79,25 @@ object MessageBrokerCommunicator:
             bytes.toArray
           )
 
+          channel.close()
+
           replyTo ! TaskPublished(task, publishTarget)
 
         case AckTask(task) =>
+          val channel = connection.createChannel()
+
           channel.basicAck(task.mqId, false)
           replyTo ! TaskAcknowledged(task)
 
+          channel.close()
+
         case RejectTask(task) =>
+          val channel = connection.createChannel()
+
           channel.basicReject(task.mqId, false)
           replyTo ! TaskRejected(task)
+
+          channel.close()
 
       end match
 
