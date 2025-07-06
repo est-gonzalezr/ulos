@@ -6,7 +6,7 @@ import org.apache.pekko.actor.typed.ChildFailed
 import org.apache.pekko.actor.typed.SupervisorStrategy
 import org.apache.pekko.actor.typed.Terminated
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import types.RemoteStorageConnectionParams
+import types.RemoteStorageConfiguration
 import types.Task
 
 /** A persistent actor responsible for managing actors with remote storage
@@ -51,7 +51,7 @@ object RemoteStorageManager:
   private type CommandOrResponse = Command | RemoteStorageWorker.Response
 
   def apply(
-      connParams: RemoteStorageConnectionParams,
+      connParams: RemoteStorageConfiguration,
       replyTo: ActorRef[Response]
   ): Behavior[CommandOrResponse] =
     setup(
@@ -67,7 +67,7 @@ object RemoteStorageManager:
       *   reference to the Orchestrator actor
       */
   private def setup(
-      connParams: RemoteStorageConnectionParams,
+      connParams: RemoteStorageConfiguration,
       replyTo: ActorRef[Response]
   ): Behavior[CommandOrResponse] = Behaviors.setup { context =>
     context.log.info("RemoteStorageManager started...")
@@ -92,7 +92,7 @@ object RemoteStorageManager:
     *   A Behavior that handles messages received by the actor.
     */
   private def handleMessages(
-      connParams: RemoteStorageConnectionParams,
+      connParams: RemoteStorageConfiguration,
       replyTo: ActorRef[Response],
       failureResponse: Map[ActorRef[?], Throwable => FailureResponse] = Map()
   ): Behavior[CommandOrResponse] =

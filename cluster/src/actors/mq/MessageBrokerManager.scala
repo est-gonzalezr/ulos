@@ -16,7 +16,7 @@ import org.apache.pekko.actor.typed.SupervisorStrategy
 import org.apache.pekko.actor.typed.Terminated
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.util.Timeout
-import types.MessageBrokerConnectionParams
+import types.MessageBrokerConfigurations
 import types.MessageBrokerRoutingInfo
 import types.MqMessage
 import types.OpaqueTypes.MessageBrokerExchange
@@ -28,6 +28,8 @@ import types.Task
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
+
+val MaxConsecutiveRestarts = 5
 
 /** A persistent actor responsible for managing actors with message queue
   * related tasks. It acts as the intermediary between the message queue and the
@@ -59,12 +61,6 @@ object MessageBrokerManager:
   ) extends Command
   private final case class DeliverToOrchestrator(task: Task) extends Command
   private case object NoOp extends Command
-  private final case class ChildCrashed(
-      ref: ActorRef[Nothing],
-      reason: Throwable
-  ) extends Command
-  private final case class ChildTerminated(ref: ActorRef[Nothing])
-      extends Command
 
   // Response protocol
   sealed trait Response
@@ -74,25 +70,17 @@ object MessageBrokerManager:
       extends Response
   final case class TaskAcknowledged(task: Task) extends Response
   final case class TaskRejected(task: Task) extends Response
-  final case class TaskPublishFailed(task: Task, reason: Throwable)
-      extends FailureResponse
-  final case class TaskAckFailed(task: Task, reason: Throwable)
-      extends FailureResponse
-  final case class TaskRejectFailed(task: Task, reason: Throwable)
-      extends FailureResponse
 
   private type CommandOrResponse = Command | MessageBrokerCommunicator.Response
 
   def apply(
-      connParams: MessageBrokerConnectionParams,
+      connParams: MessageBrokerConfigurations,
       consumptionQueue: MessageBrokerQueue,
-      prefetchCount: Int,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     setup(
       connParams,
       consumptionQueue,
-      prefetchCount,
       replyTo
     )
   end apply
@@ -110,28 +98,43 @@ object MessageBrokerManager:
     *   A Behavior that processes the messages sent to the actor.
     */
   private def setup(
-      connParams: MessageBrokerConnectionParams,
+      connParams: MessageBrokerConfigurations,
       consumptionQueue: MessageBrokerQueue,
-      prefetchCount: Int,
       replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     Behaviors.setup[CommandOrResponse] { context =>
       context.log.info("MessageBrokerManager started...")
 
       val connection = initializeBrokerLink(connParams)
-      val consumerChannel = connection.createChannel()
+      val channel = connection.createChannel()
 
-      consumerChannel.confirmSelect()
-      consumerChannel.basicQos(
-        if prefetchCount >= 0 then prefetchCount else 0,
+      channel.confirmSelect()
+      channel.basicQos(
+        if connParams.prefetchCount >= 0 then connParams.prefetchCount else 0,
         false
       )
 
-      val consumer = RabbitMqConsumer(consumerChannel, context.self)
+      val consumer = RabbitMqConsumer(channel, context.self)
+
+      val supervisedCommunicator =
+        Behaviors
+          .supervise(
+            MessageBrokerCommunicator(
+              channel,
+              connParams.requeueOnReject,
+              context.self
+            )
+          )
+          .onFailure(
+            SupervisorStrategy.restart
+              .withLimit(MaxConsecutiveRestarts, 10.seconds)
+          )
+      val communicator = context.spawnAnonymous(supervisedCommunicator)
+      context.watch(communicator)
 
       val _ =
-        consumerChannel.basicConsume(consumptionQueue.value, false, consumer)
-      handleMessages(connection, consumerChannel, replyTo)
+        channel.basicConsume(consumptionQueue.value, false, consumer)
+      handleMessages(connection, channel, communicator, replyTo)
     }
   end setup
 
@@ -139,22 +142,21 @@ object MessageBrokerManager:
     *
     * @param connection
     *   The connection to the message broker.
-    * @param consumerChannel
-    *   The consumer channel to the message broker.
+    * @param channel
+    *   The channel to the message broker.
+    * @param communicator
+    *   The actor responsible for communicating with the message broker.
     * @param replyTo
     *   Reference to reply to with messages.
-    * @param failureResponse
-    *   Map of child references to failure response functions in case of a child
-    *   failure.
     *
     * @return
     *   A Behavior that handles messages received by the actor.
     */
   private def handleMessages(
       connection: Connection,
-      consumerChannel: Channel,
-      replyTo: ActorRef[Orchestrator.Command | Response],
-      failureResponse: Map[ActorRef[?], Throwable => FailureResponse] = Map()
+      channel: Channel,
+      communicator: ActorRef[MessageBrokerCommunicator.Command],
+      replyTo: ActorRef[Orchestrator.Command | Response]
   ): Behavior[CommandOrResponse] =
     Behaviors
       .receive[CommandOrResponse] { (context, message) =>
@@ -192,41 +194,12 @@ object MessageBrokerManager:
                     )
                   )
               }
-            Behaviors.same
 
           case AckTask(task) =>
-            val supervisedWorker =
-              Behaviors
-                .supervise(MessageBrokerCommunicator(connection, context.self))
-                .onFailure(SupervisorStrategy.stop)
-            val worker = context.spawnAnonymous(supervisedWorker)
-            context.watch(worker)
-
-            worker ! MessageBrokerCommunicator.AckTask(task)
-
-            handleMessages(
-              connection,
-              consumerChannel,
-              replyTo,
-              failureResponse + (worker -> (th => TaskAckFailed(task, th)))
-            )
+            communicator ! MessageBrokerCommunicator.AckTask(task)
 
           case RejectTask(task) =>
-            val supervisedWorker =
-              Behaviors
-                .supervise(MessageBrokerCommunicator(connection, context.self))
-                .onFailure(SupervisorStrategy.stop)
-            val worker = context.spawnAnonymous(supervisedWorker)
-            context.watch(worker)
-
-            worker ! MessageBrokerCommunicator.RejectTask(task)
-
-            handleMessages(
-              connection,
-              consumerChannel,
-              replyTo,
-              failureResponse + (worker -> (th => TaskRejectFailed(task, th)))
-            )
+            communicator ! MessageBrokerCommunicator.RejectTask(task)
 
           case PublishTask(task, routingInfo, publishTarget) =>
             val serializer = context.spawnAnonymous(MessageBrokerTranslator())
@@ -249,8 +222,6 @@ object MessageBrokerManager:
                 NoOp
             }
 
-            Behaviors.same
-
           /* **********************************************************************
            * Private commands
            * ********************************************************************** */
@@ -262,15 +233,8 @@ object MessageBrokerManager:
                 routingKey,
                 publishTarget
               ) =>
-            val supervisedWorker =
-              Behaviors
-                .supervise(MessageBrokerCommunicator(connection, context.self))
-                .onFailure(SupervisorStrategy.stop)
-            val worker =
-              context.spawnAnonymous(supervisedWorker)
-            context.watch(worker)
 
-            worker ! MessageBrokerCommunicator.PublishTask(
+            communicator ! MessageBrokerCommunicator.PublishTask(
               task,
               bytes,
               exchange,
@@ -278,49 +242,10 @@ object MessageBrokerManager:
               publishTarget
             )
 
-            handleMessages(
-              connection,
-              consumerChannel,
-              replyTo,
-              failureResponse + (worker -> (th => TaskPublishFailed(task, th)))
-            )
-
           case DeliverToOrchestrator(task) =>
             replyTo ! Orchestrator.ProcessTask(task)
-            Behaviors.same
 
           case NoOp =>
-            Behaviors.same
-
-          case ChildCrashed(ref, reason) =>
-            failureResponse.get(ref) match
-              case Some(errorApplicationFunction) =>
-                replyTo ! errorApplicationFunction(reason)
-                handleMessages(
-                  connection,
-                  consumerChannel,
-                  replyTo,
-                  failureResponse - ref
-                )
-              case None =>
-                context.log.error(
-                  s"Reference $ref not found, crash reason - $reason"
-                )
-                Behaviors.same
-            end match
-
-          case ChildTerminated(ref) =>
-            if failureResponse.contains(ref) then
-              handleMessages(
-                connection,
-                consumerChannel,
-                replyTo,
-                failureResponse - ref
-              )
-            else
-              context.log.error(s"Reference $ref not found")
-              Behaviors.same
-            end if
 
           /* **********************************************************************
            * Responses
@@ -328,36 +253,34 @@ object MessageBrokerManager:
 
           case MessageBrokerCommunicator.TaskAcknowledged(task) =>
             replyTo ! TaskAcknowledged(task)
-            Behaviors.same
 
           case MessageBrokerCommunicator.TaskRejected(task) =>
             replyTo ! TaskRejected(task)
-            Behaviors.same
 
           case MessageBrokerCommunicator.TaskPublished(task, publishTarget) =>
             replyTo ! TaskPublished(task, publishTarget)
-            Behaviors.same
 
         end match
+        Behaviors.same
       }
       .receiveSignal {
         case (context, ChildFailed(ref, reason)) =>
-          context.self ! ChildCrashed(ref, reason)
+          context.log.error(s"Reference $ref failed with reason - $reason")
           Behaviors.same
 
         case (context, Terminated(ref)) =>
-          context.self ! ChildTerminated(ref)
+          context.log.info(s"Reference $ref terminated")
           Behaviors.same
 
         case (_, PreRestart) =>
-          if consumerChannel.isOpen() then consumerChannel.close()
+          if channel.isOpen() then channel.close()
           end if
           if connection.isOpen() then connection.close()
           end if
           Behaviors.same
 
         case (_, PostStop) =>
-          if consumerChannel.isOpen() then consumerChannel.close()
+          if channel.isOpen() then channel.close()
           end if
           if connection.isOpen() then connection.close()
           end if
@@ -374,7 +297,7 @@ object MessageBrokerManager:
     *   A Try containing the initialized connection and channel.
     */
   private def initializeBrokerLink(
-      connParams: MessageBrokerConnectionParams
+      connParams: MessageBrokerConfigurations
   ): Connection =
     val factory = ConnectionFactory()
     factory.setHost(connParams.host.value)

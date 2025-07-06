@@ -2,8 +2,6 @@ package actors
 
 import actors.execution.ExecutionManager
 import actors.mq.MessageBrokerManager
-import actors.mq.MessageBrokerManager.TaskAckFailed
-import actors.mq.MessageBrokerManager.TaskPublishFailed
 import actors.storage.RemoteStorageManager
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
@@ -73,7 +71,6 @@ object Orchestrator:
           MessageBrokerManager(
             appConfig.messageBrokerConfig,
             appConfig.messageBrokerConsumptionQueue,
-            appConfig.messageBrokerPrefetchCount,
             context.self
           )
         )
@@ -337,18 +334,6 @@ object Orchestrator:
               "Task rejected to message broker"
             )
 
-            Behaviors.same
-
-          case MessageBrokerManager.TaskPublishFailed(task, reason) =>
-            context.log.error(s"TaskPublishFailed response received")
-            Behaviors.same
-
-          case MessageBrokerManager.TaskAckFailed(task, reason) =>
-            context.log.error(s"TaskAckFailed response received")
-            Behaviors.same
-
-          case MessageBrokerManager.TaskRejectFailed(task, reason) =>
-            context.log.error(s"TaskRejectFailed response received")
             Behaviors.same
 
         end match

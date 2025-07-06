@@ -8,7 +8,7 @@ import types.OpaqueTypes.RemoteStorageUsername
 
 /** Connection parameters for the remote storage.
   */
-final case class RemoteStorageConnectionParams(
+final case class RemoteStorageConfiguration(
     host: RemoteStorageHost,
     port: RemoteStoragePort,
     username: RemoteStorageUsername,

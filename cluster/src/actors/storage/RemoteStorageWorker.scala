@@ -11,7 +11,7 @@ import types.OpaqueTypes.RemoteStorageHost
 import types.OpaqueTypes.RemoteStoragePassword
 import types.OpaqueTypes.RemoteStoragePort
 import types.OpaqueTypes.RemoteStorageUsername
-import types.RemoteStorageConnectionParams
+import types.RemoteStorageConfiguration
 import types.Task
 
 /** A stateless actor responsible for managing remote storage operations. A new
@@ -40,7 +40,7 @@ object RemoteStorageWorker:
   final case class TaskDeleted(task: Task) extends Response
 
   def apply(
-      connParams: RemoteStorageConnectionParams,
+      connParams: RemoteStorageConfiguration,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
     manipulate(connParams, replyTo)
@@ -53,7 +53,7 @@ object RemoteStorageWorker:
     *   A Behavior that handles the manipulation of files on remote storage.
     */
   private def manipulate(
-      connParams: RemoteStorageConnectionParams,
+      connParams: RemoteStorageConfiguration,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
     Behaviors.receive { (_, message) =>
@@ -105,7 +105,7 @@ object RemoteStorageWorker:
     *   The downloaded file as a sequence of bytes.
     */
   private def downloadFile(
-      connParams: RemoteStorageConnectionParams,
+      connParams: RemoteStorageConfiguration,
       path: Path
   ): Seq[Byte] =
     val client = FTPClient()
@@ -134,7 +134,7 @@ object RemoteStorageWorker:
     *   A boolean indicating whether the upload was successful.
     */
   private def uploadFile(
-      connParams: RemoteStorageConnectionParams,
+      connParams: RemoteStorageConfiguration,
       path: Path,
       file: Seq[Byte]
   ): Unit =
@@ -155,7 +155,7 @@ object RemoteStorageWorker:
   end uploadFile
 
   private def setFtpClient(
-      connParams: RemoteStorageConnectionParams,
+      connParams: RemoteStorageConfiguration,
       client: FTPClient
   ): Unit =
     client.connect(connParams.host.value, connParams.port.value)

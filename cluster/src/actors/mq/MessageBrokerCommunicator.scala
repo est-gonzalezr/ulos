@@ -1,7 +1,7 @@
 package actors.mq
 
 import com.rabbitmq.client.AMQP.BasicProperties
-import com.rabbitmq.client.Connection
+import com.rabbitmq.client.Channel
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
@@ -10,8 +10,7 @@ import types.OpaqueTypes.MessageBrokerRoutingKey
 import types.PublishTarget
 import types.Task
 
-/** A stateless actor responsible for communicating outbound messages to the
-  * message broker.
+/** Actor responsible for communicating outbound messages to the message broker.
   */
 object MessageBrokerCommunicator:
   // Command protocol
@@ -37,15 +36,18 @@ object MessageBrokerCommunicator:
   final case class TaskRejected(task: Task) extends Response
 
   def apply(
-      connection: Connection,
+      channel: Channel,
+      requeueOnReject: Boolean,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
-    handleMessages(connection, replyTo)
+    handleMessages(channel, requeueOnReject, replyTo)
 
   /** Handles outgoing messages for the message broker.
     *
-    * @param connection
-    *   The connection used to communicate with the message broker.
+    * @param channel
+    *   The channel used to communicate with the message broker.
+    * @param requeueOnReject
+    *   Whether to requeue the task if it is rejected by the message broker.
     * @param replyTo
     *   The actor that will receive the response from the message broker.
     *
@@ -53,7 +55,8 @@ object MessageBrokerCommunicator:
     *   A Behavior that tries to send the desired action to the message broker.
     */
   private def handleMessages(
-      connection: Connection,
+      channel: Channel,
+      requeueOnReject: Boolean,
       replyTo: ActorRef[Response]
   ): Behavior[Command] =
     Behaviors.receive { (_, message) =>
@@ -70,7 +73,6 @@ object MessageBrokerCommunicator:
               routingKey,
               publishTarget
             ) =>
-          val channel = connection.createChannel()
 
           channel.basicPublish(
             exchangeName.value,
@@ -79,29 +81,19 @@ object MessageBrokerCommunicator:
             bytes.toArray
           )
 
-          channel.close()
-
           replyTo ! TaskPublished(task, publishTarget)
 
         case AckTask(task) =>
-          val channel = connection.createChannel()
-
           channel.basicAck(task.mqId, false)
           replyTo ! TaskAcknowledged(task)
 
-          channel.close()
-
         case RejectTask(task) =>
-          val channel = connection.createChannel()
-
-          channel.basicReject(task.mqId, false)
+          channel.basicReject(task.mqId, requeueOnReject)
           replyTo ! TaskRejected(task)
-
-          channel.close()
 
       end match
 
-      Behaviors.stopped
+      Behaviors.same
     }
   end handleMessages
 end MessageBrokerCommunicator

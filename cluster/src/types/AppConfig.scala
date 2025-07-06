@@ -4,17 +4,16 @@ import pureconfig.ConfigReader
 import types.OpaqueTypes.*
 
 final case class AppConfig(
-    remoteStorageConfig: RemoteStorageConnectionParams,
-    messageBrokerConfig: MessageBrokerConnectionParams,
+    remoteStorageConfig: RemoteStorageConfiguration,
+    messageBrokerConfig: MessageBrokerConfigurations,
     messageBrokerLogsExchange: MessageBrokerExchange,
     messageBrokerLogsRoutingKey: MessageBrokerRoutingKey,
     messageBrokerCrashExchange: MessageBrokerExchange,
     messageBrokerCrashRoutingKey: MessageBrokerRoutingKey,
-    messageBrokerConsumptionQueue: MessageBrokerQueue,
-    messageBrokerPrefetchCount: Int
+    messageBrokerConsumptionQueue: MessageBrokerQueue
 ) derives ConfigReader:
   require(
-    messageBrokerPrefetchCount >= 0,
+    messageBrokerConfig.prefetchCount >= 0,
     "Message broker prefetch count must be non-negative"
   )
 end AppConfig

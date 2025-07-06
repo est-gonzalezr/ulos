@@ -8,14 +8,16 @@ import types.OpaqueTypes.MessageBrokerUsername
 
 /** Connection parameters for the message queue.
   */
-final case class MessageBrokerConnectionParams(
+final case class MessageBrokerConfigurations(
     host: MessageBrokerHost,
     port: MessageBrokerPort,
     username: MessageBrokerUsername,
-    password: MessageBrokerPassword
+    password: MessageBrokerPassword,
+    prefetchCount: Int,
+    requeueOnReject: Boolean
 ) derives ConfigReader
 
-object MessageBrokerConnectionParams:
+object MessageBrokerConfigurations:
   given ConfigReader[MessageBrokerHost] =
     ConfigReader.fromString(str => Right(MessageBrokerHost(str)))
 
@@ -28,4 +30,4 @@ object MessageBrokerConnectionParams:
   given ConfigReader[MessageBrokerPassword] =
     ConfigReader.fromString(str => Right(MessageBrokerPassword(str)))
 
-end MessageBrokerConnectionParams
+end MessageBrokerConfigurations
