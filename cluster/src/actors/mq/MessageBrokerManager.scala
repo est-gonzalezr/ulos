@@ -60,6 +60,7 @@ object MessageBrokerManager:
       publishTarget: PublishTarget
   ) extends Command
   private final case class DeliverToOrchestrator(task: Task) extends Command
+  private final case class ChannelDropped(th: Throwable) extends Command
   private case object NoOp extends Command
 
   // Response protocol
@@ -112,6 +113,10 @@ object MessageBrokerManager:
       channel.basicQos(
         if connParams.prefetchCount >= 0 then connParams.prefetchCount else 0,
         false
+      )
+
+      channel.addShutdownListener(reason =>
+        context.self ! ChannelDropped(reason)
       )
 
       val consumer = RabbitMqConsumer(channel, context.self)
@@ -245,6 +250,10 @@ object MessageBrokerManager:
           case DeliverToOrchestrator(task) =>
             replyTo ! Orchestrator.ProcessTask(task)
 
+          case ChannelDropped(th) =>
+            context.log.error(s"Connection dropped with reason - $th")
+            throw th
+
           case NoOp =>
 
           /* **********************************************************************
@@ -300,6 +309,7 @@ object MessageBrokerManager:
       connParams: MessageBrokerConfigurations
   ): Connection =
     val factory = ConnectionFactory()
+    factory.setAutomaticRecoveryEnabled(false)
     factory.setHost(connParams.host.value)
     factory.setPort(connParams.port.value)
     factory.setUsername(connParams.username.value)
