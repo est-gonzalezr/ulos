@@ -254,7 +254,7 @@ object MessageBrokerManager:
             context.log.error(s"Connection dropped with reason - $th")
             throw th
 
-          case NoOp =>
+          case NoOp => ()
 
           /* **********************************************************************
            * Responses
