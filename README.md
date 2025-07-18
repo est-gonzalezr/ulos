@@ -4,9 +4,8 @@ This project implements a distributed, actor-based system for executing multista
 
 Built with Scala and Pekko (a fork of Akka), the system leverages message-driven concurrency and RabbitMQ as the communication backbone between distributed nodes.
 
-For a deeper understanding, refer to the master's thesis that lays the theoretical foundations of the project.
-
----
+For a deeper understanding, refer to the master's thesis [Architectural Foundations for Multistage
+Task Orchestration in Educational Systems]() that lays the theoretical foundations of the project.
 
 # Requirements
 
@@ -32,8 +31,6 @@ To develop and run this project, the following tools must be installed on your s
 
   To install Python, visit [Python](https://www.python.org/) and follow the installation instructions.
 
----
-
 # Runtime Dependencies
 
 To be able to run the system, some external dependencies are required:
@@ -58,8 +55,6 @@ To be able to run the system, some external dependencies are required:
   ```
 
   For production purposes, a dedicated server is recommended with a custom username and password.
-
----
 
 # Compiling and Running
 
@@ -107,7 +102,7 @@ Some variables are not as self-explanatory so a more thorough explanation of som
 
 The systems emits some messages that are not meant to be consumed by the system itself but rather directed to other systems. Such messages are the Log Messages and the Crash Messages. Log Messages serve as a way to track the progress of a task within the system. These messages are published to the `MESSAGE_BROKER_LOGS_EXCHANGE` exchange with the routing key `MESSAGE_BROKER_LOGS_ROUTING_KEY` so that another system can consume them and decide what to do with them. The Crash Messages serve as a way to notify other systems of a task-induced crash within the system. Unless catastrophic, these crashes don't crash the system and are just logged. These messages are published to the `MESSAGE_BROKER_CRASHES_EXCHANGE` exchange with the routing key `MESSAGE_BROKER_CRASHES_ROUTING_KEY` so that another system can consume them and decide what to do with them.
 
-The MESSAGE_BROKER_CONSUMPTION_QUEUE is a queue that specifies from which RabbitMQ queue the system will consume messages from. Since the system can be deployed multiple times, multiple instances of the system can consume messages from the same queue. Since the idea of the system is to process a variety of tasks, multiple instances of the system can consume from different queues to diversify task type processing. The MESSAGE_BROKER_PREFETCH_COUNT is the number of messages that the system will prefetch from the RabbitMQ queue without them being acknowledged. This needs to be fine tuned by the system administrator to optimize performance based on the system's load and the nature of the tasks being processed. The MESSAGE_BROKER_REQUEUE_ON_REJECT is a boolean flag that specifies whether the system should requeue messages that are rejected by the system. This flag should be left on `false` if the RabbitMQ server is not configured with dead-letter queues and ways to identify consistently rejected messages. More information on how to configure this can be found in the [RabbitMQ Documentation](https://www.rabbitmq.com/docs). Under normal circumstances, messages that are rejected by the system have an an underlying crash and so will be sent to the crash exchange with the crash routing key; a consuming system can determine what to do with them.
+The `MESSAGE_BROKER_CONSUMPTION_QUEUE` is a queue that specifies from which RabbitMQ queue the system will consume messages from. Since the system can be deployed multiple times, multiple instances of the system can consume messages from the same queue. Since the idea of the system is to process a variety of tasks, multiple instances of the system can consume from different queues to diversify task type processing. The MESSAGE_BROKER_PREFETCH_COUNT is the number of messages that the system will prefetch from the RabbitMQ queue without them being acknowledged. This needs to be fine tuned by the system administrator to optimize performance based on the system's load and the nature of the tasks being processed. The `MESSAGE_BROKER_REQUEUE_ON_REJECT` is a boolean flag that specifies whether the system should requeue messages that are rejected by the system. This flag should be left on `false` if the RabbitMQ server is not configured with dead-letter queues and ways to identify consistently rejected messages. More information on how to configure this can be found in the [RabbitMQ Documentation](https://www.rabbitmq.com/docs). Under normal circumstances, messages that are rejected by the system have an an underlying crash and so will be sent to the crash exchange with the crash routing key; a consuming system can determine what to do with them.
 
 ## Compiling
 
@@ -134,8 +129,6 @@ If you want to run the project without having to compile it, you can use the fol
 ```
 
 Remember to configure the environment variables and have a running RabbitMQ and FTP server before running the system.
-
----
 
 # Usage and Considerations
 
@@ -248,7 +241,6 @@ The `routingTree` is recursive structure that defines the routing path for the t
 
 Routing steps are not mandatory, so an equally valid example can look as follows:
 
-````json
 ```json
 {
   "taskId": "12345",
@@ -269,14 +261,14 @@ Routing steps are not mandatory, so an equally valid example can look as follows
           "routingKey": "testing-4",
           "successRoutingDecision": {
             "exchange": "processing-exchange",
-            "routingKey": "testing-5",
-          },
-        },
-      },
-    },
+            "routingKey": "testing-5"
+          }
+        }
+      }
+    }
   }
 }
-````
+```
 
 This task only has routing steps if the task is successful. If a task fails (crash is not failure, failure is determined internally by the system), then the task will not be routed to any exchange.
 
