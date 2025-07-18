@@ -4,8 +4,7 @@ This project implements a distributed, actor-based system for executing multista
 
 Built with Scala and Pekko (a fork of Akka), the system leverages message-driven concurrency and RabbitMQ as the communication backbone between distributed nodes.
 
-For a deeper understanding, refer to the master's thesis [Architectural Foundations for Multistage
-Task Orchestration in Educational Systems]() that lays the theoretical foundations of the project.
+For a deeper understanding, refer to the master's thesis [Architectural Foundations for Multistage Task Orchestration in Educational Systems]() that lays the motivation and theoretical foundations of the project.
 
 # Requirements
 
@@ -295,3 +294,7 @@ Since there is no automatic upload of files to the FTP server, make sure to uplo
 ## System Considerations
 
 Make sure to never send two messages with the same `ftpPath` to a same node since, based on how the system is designed, two tasks might be accessing information about the same file at the same time, which could lead to data corruption, race conditions, and/or inconsistent state.
+
+# Future Work
+
+Future work is included in the master's thesis referenced at the beginning of the README. For future maintainers of the system, please make sure you are familiar with functional programming concepts and the actor model.
