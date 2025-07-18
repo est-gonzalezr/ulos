@@ -41,7 +41,7 @@ To be able to run the system, some external dependencies are required:
 
 - **Docker**
 
-  Currently some of the executors run in Docker containers. To install Docker, visit [Docker](https://www.docker.com/).
+  Currently some of the executors run in Docker containers. To install Docker, visit [Docker](https://www.docker.com/) and follow the installation instructions.
 
 - **RabbitMQ**
 
@@ -55,7 +55,7 @@ To be able to run the system, some external dependencies are required:
 
 - **FTP Server**
 
-  FTP is the default file transfer protocol used by the system. To install FTP, visit [FTP](https://www.ftp.com/) and follow the installation instructions. The FTP server does not need to be running on the same machine as the system, but is must be reachable from the system. For development purposes, you can run FTP in a Docker container using the following command:
+  FTP is the default file transfer protocol used by the system. To install FTP, choose a suitable FTP server software and follow the installation instructions. The FTP server does not need to be running on the same machine as the system, but is must be reachable from the system. For development purposes, you can run FTP in a Docker container using the following command:
 
   ```zsh
   docker run -d --hostname delfer --name DelferFtpServer -p 21:21 -p 21000-21010:21000-21010 -e USERS="one|123" -e ADDRESS=localhost delfer/alpine-ftp-server:latest
@@ -109,7 +109,7 @@ Some variables are not as self-explanatory so a more thorough explanation of som
 
 The systems emits some messages that are not meant to be consumed by the system itself but rather directed to other systems. Such messages are the Log Messages and the Crash Messages. Log Messages serve as a way to track the progress of a task within the system. These messages are published to the `MESSAGE_BROKER_LOGS_EXCHANGE` exchange with the routing key `MESSAGE_BROKER_LOGS_ROUTING_KEY` so that another system can consume them and decide what to do with them. The Crash Messages serve as a way to notify other systems of a task-induced crash within the system. Unless catastrophic, these crashes don't crash the system and are just logged. These messages are published to the `MESSAGE_BROKER_CRASHES_EXCHANGE` exchange with the routing key `MESSAGE_BROKER_CRASHES_ROUTING_KEY` so that another system can consume them and decide what to do with them.
 
-The `MESSAGE_BROKER_CONSUMPTION_QUEUE` is a queue that specifies from which RabbitMQ queue the system will consume messages from. Since the system can be deployed multiple times, multiple instances of the system can consume messages from the same queue. Since the idea of the system is to process a variety of tasks, multiple instances of the system can consume from different queues to diversify task type processing. The MESSAGE_BROKER_PREFETCH_COUNT is the number of messages that the system will prefetch from the RabbitMQ queue without them being acknowledged. This needs to be fine tuned by the system administrator to optimize performance based on the system's load and the nature of the tasks being processed. The `MESSAGE_BROKER_REQUEUE_ON_REJECT` is a boolean flag that specifies whether the system should requeue messages that are rejected by the system. This flag should be left on `false` if the RabbitMQ server is not configured with dead-letter queues and ways to identify consistently rejected messages. More information on how to configure this can be found in the [RabbitMQ Documentation](https://www.rabbitmq.com/docs). Under normal circumstances, messages that are rejected by the system have an an underlying crash and so will be sent to the crash exchange with the crash routing key; a consuming system can determine what to do with them.
+The `MESSAGE_BROKER_CONSUMPTION_QUEUE` is a queue that specifies from which RabbitMQ queue the system will consume messages from. Since the system can be deployed multiple times, multiple instances of the system can consume messages from the same queue. Since the idea of the system is to process a variety of tasks, multiple instances of the system can consume from different queues to diversify task type processing. The `MESSAGE_BROKER_PREFETCH_COUNT` is the number of messages that the system will prefetch from the RabbitMQ queue without them being acknowledged. This needs to be fine tuned by the system administrator to optimize performance based on the system's load and the nature of the tasks being processed. The `MESSAGE_BROKER_REQUEUE_ON_REJECT` is a boolean flag that specifies whether the system should requeue messages that are rejected by the system. This flag should be left on `false` if the RabbitMQ server is not configured with dead-letter queues and ways to identify consistently rejected messages. More information on how to configure this can be found in the [RabbitMQ Documentation](https://www.rabbitmq.com/docs). Under normal circumstances, messages that are rejected by the system have an an underlying crash and so will be sent to the crash exchange with the crash routing key; a consuming system can determine what to do with them.
 
 ## Compiling
 
@@ -142,8 +142,11 @@ Remember to configure the environment variables and have a running RabbitMQ and 
 Inside this project there will be some folders that will help you understand the system and get it up and running.
 
 The `testing-configurations` folder contains files that have multiple examples of environment-variable configurations to showcase different configurations that a system can have.
+
 The `testing-files` folder contains files that have multiple examples of files that can be uploaded to the FTP server and that the system can process.
+
 The `testing-messages` folder contains files that have multiple examples of messages that can be sent to the system via the RabbitMQ server. Each of these messages can be placed in the queue that the system is consuming from and it will be processed.
+
 The `python-helpers` folder contains files that have multiple examples of Python scripts that can be used to help you test the system.
 
 ## Message Schema
