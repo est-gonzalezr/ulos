@@ -12,21 +12,25 @@ Task Orchestration in Educational Systems]() that lays the theoretical foundatio
 To develop and run this project, the following tools must be installed on your system:
 
 - **Scala**
+
   The project is implemented in Scala.
 
   To install Scala, visit [Scala](https://www.scala-lang.org/) and follow the installation instructions. Make sure that the Scala version installed is compatible with the version that the project is using. You can check the project's Scala version by checking the `build.mill` file.
 
 - **Mill**
+
   The build tool used is Mill.
 
   To install mill, visit [Mill](https://mill-build.org/) and follow the installation instructions. Make sure that the Mill version installed is compatible with the version that the project is using. You can check the project's Mill version by checking the `build.mill` file.
 
 - **Java**
+
   The system uses Java for some of its components and as the JVM runtime environment.
 
   To install Java, visit [Java](https://www.java.com/) and follow the installation instructions.
 
 - **Python**
+
   The system uses Python scripts to help with testing and development.
 
   To install Python, visit [Python](https://www.python.org/) and follow the installation instructions.
@@ -36,9 +40,11 @@ To develop and run this project, the following tools must be installed on your s
 To be able to run the system, some external dependencies are required:
 
 - **Docker**
+
   Currently some of the executors run in Docker containers. To install Docker, visit [Docker](https://www.docker.com/).
 
 - **RabbitMQ**
+
   RabbitMQ is the default message broker implementation used by the system. To install RabbitMQ, visit [RabbitMQ](https://www.rabbitmq.com/) and follow the installation instructions. The RabbitMQ instance does not need to be running on the same machine as the system, but is must be reachable from the system. For development purposes, you can run RabbitMQ in a Docker container using the following command:
 
   ```zsh
@@ -48,6 +54,7 @@ To be able to run the system, some external dependencies are required:
   For production purposes, a dedicated server is recommended with a custom username and password.
 
 - **FTP Server**
+
   FTP is the default file transfer protocol used by the system. To install FTP, visit [FTP](https://www.ftp.com/) and follow the installation instructions. The FTP server does not need to be running on the same machine as the system, but is must be reachable from the system. For development purposes, you can run FTP in a Docker container using the following command:
 
   ```zsh
