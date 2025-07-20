@@ -295,6 +295,10 @@ Since there is no automatic upload of files to the FTP server, make sure to uplo
 
 Make sure to never send two messages with the same `ftpPath` to a same node since, based on how the system is designed, two tasks might be accessing information about the same file at the same time, which could lead to data corruption, race conditions, and/or inconsistent state.
 
+## Usage with Executors
+
+To be able to execute the system using custom executors, refer to the [Ulos Executors Repository](https://github.com/NoNameLab/ulos-executors) and follow their instructions to build the custom executors. For Docker related executors, it is necessary to have the Docker daemon running and accessible from the system and for each executor image to be mounted in the system. Also make sure that the name of the image of each executor matches the in Docker and on the corresponding executor inside of the `executors` directory inside of this project.
+
 # Future Work
 
 Future work is included in the master's thesis referenced at the beginning of the README. For future maintainers of the system, please make sure you are familiar with functional programming concepts and the actor model.
