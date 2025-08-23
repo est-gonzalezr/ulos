@@ -58,7 +58,7 @@ object cluster extends Dependencies, ProjectConfigs:
     "MESSAGE_BROKER_CRASH_ROUTING_KEY" -> "task.crashed",
     "MESSAGE_BROKER_CONSUMPTION_QUEUE" -> "processing-queue",
     "MESSAGE_BROKER_PREFETCH_COUNT" -> "10",
-		"MESSAGE_BROKER_REQUEUE_ON_REJECT" -> "false",
+    "MESSAGE_BROKER_REQUEUE_ON_REJECT" -> "false",
     "REMOTE_STORAGE_HOST" -> "localhost",
     "REMOTE_STORAGE_PORT" -> "21",
     "REMOTE_STORAGE_USERNAME" -> "one",
