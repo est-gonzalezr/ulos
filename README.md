@@ -4,7 +4,7 @@ This project implements a distributed, actor-based system for executing multista
 
 Built with Scala and Pekko (a fork of Akka), the system leverages message-driven concurrency and RabbitMQ as the communication backbone between distributed nodes.
 
-For a deeper understanding, refer to the master's thesis [Architectural Foundations for Multistage Task Orchestration in Educational Systems]() that lays the motivation and theoretical foundations of the project.
+For a deeper understanding, refer to the attached master's thesis [Architectural Foundations for Multistage Task Orchestration in Engineering Educational Systems](masters_thesis.pdf) or consult it in the [Uniandes Institutional Repository](https://nam10.safelinks.protection.outlook.com/?url=https%3A%2F%2Fhdl.handle.net%2F1992%2F77655&data=05%7C02%7Ce.gonzalez5%40uniandes.edu.co%7C4892ad831e85467aae5208de5443b661%7Cfabd047cff48492a8bbb8f98b9fb9cca%7C0%7C0%7C639040846956071221%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=64G9NXYYkvF0%2BBIpqg6xVhzKb2Xc916JPVDBdU1567k%3D&reserved=0) that lays the motivation and theoretical foundations of the project.
 
 # Requirements
 
